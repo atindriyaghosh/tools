@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DateTime Utilities</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        .tool-grid { margin-top: 1rem; }
+        .panel { margin-top: 1rem; }
+        .tz-flex { display:flex; gap:1rem; align-items:center; flex-wrap:wrap }
+        .result { margin-top: 1rem; padding:1rem; border:1px solid var(--pico-muted-border-color); border-radius:var(--pico-border-radius); background:var(--pico-card-background-color) }
+        .small-note { font-size:0.9rem; color:var(--pico-muted-color) }
+        .tz-list { max-height: 260px; overflow:auto; }
+        .copy-btn { margin-left: 0.5rem; }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <hgroup>
+            <h1>DateTime Utilities</h1>
+            <p>Convert between time zones, convert Unix timestamps, and format date/time strings</p>
+        </hgroup>
+
+        <section class="panel" id="tz-converter">
+            <h2>Timezone converter 🕒</h2>
+            <label>
+                Date & time (leave empty to use current date/time)
+                <input type="datetime-local" id="dtInput">
+            </label>
+
+            <div class="tz-flex">
+                <label>
+                    From
+                    <select id="fromTz" class="tz-list"></select>
+                </label>
+
+                <label>
+                    To
+                    <select id="toTz" class="tz-list"></select>
+                </label>
+
+                <button id="convertTzBtn">Convert</button>
+            </div>
+
+            <div class="result" id="tzResult" aria-live="polite"></div>
+            <p class="small-note">DST detection: If the timezone observes DST, the tool will indicate whether the provided date falls within DST for the selected zone.</p>
+        </section>
+
+        <section class="panel" id="unix-converter">
+            <h2>Unix timestamp ↔ human readable 🔁</h2>
+
+            <fieldset>
+                <legend>Timestamp to date</legend>
+                <label>
+                    Unix timestamp
+                    <input type="number" id="tsInput" placeholder="Seconds (e.g. 1690000000) or milliseconds">
+                </label>
+                <label>
+                    Assume input is
+                    <select id="tsUnit">
+                        <option value="auto">Auto-detect</option>
+                        <option value="s">Seconds</option>
+                        <option value="ms">Milliseconds</option>
+                    </select>
+                </label>
+                <label>
+                    Output timezone
+                    <select id="tsOutTz"></select>
+                </label>
+                <div style="margin-top:0.5rem">
+                    <button id="tsToDateBtn">Convert to Date</button>
+                </div>
+                <div class="result" id="tsToDateResult"></div>
+            </fieldset>
+
+            <fieldset style="margin-top:1rem">
+                <legend>Date to timestamp</legend>
+                <label>
+                    Date & time (leave empty for now)
+                    <input type="datetime-local" id="dateInput">
+                </label>
+                <label>
+                    Source timezone
+                    <select id="dateSrcTz"></select>
+                </label>
+                <div style="margin-top:0.5rem">
+                    <button id="dateToTsBtn">Convert to Unix</button>
+                </div>
+                <div class="result" id="dateToTsResult"></div>
+            </fieldset>
+        </section>
+
+        <section class="panel" id="format-converter">
+            <h2>Format converter 🔤</h2>
+
+            <label>
+                Input date/time string
+                <input type="text" id="formatInputText" placeholder="e.g. 2023-07-15 14:30:00">
+            </label>
+
+            <div class="tz-flex">
+                <label>
+                    Input format
+                    <select id="inputFormat"></select>
+                </label>
+
+                <label>
+                    Output format
+                    <select id="outputFormat"></select>
+                </label>
+
+                <label>
+                    Timezone
+                    <select id="formatTz" class="tz-list"></select>
+                </label>
+
+                <button id="formatConvertBtn">Convert</button>
+            </div>
+
+            <div style="margin-top:0.5rem; display:flex; gap:0.5rem; align-items:center;">
+                <input type="text" id="newFormatInput" placeholder="Custom format (e.g. YYYY-MM-DD HH:mm:ss)">
+                <button id="addFormatBtn">Add format</button>
+            </div>
+
+            <div class="result" id="formatResult"></div>
+            <p class="small-note">Supported tokens: <code>YYYY</code>, <code>MM</code>, <code>DD</code>, <code>HH</code>, <code>mm</code>, <code>ss</code></p>
+        </section>
+
+        <hr>
+        <p class="small-note">Tip: Timezone list is populated from your browser's Intl API. You can also type an IANA timezone (e.g. "America/New_York") into a select to jump to it.</p> 
+    </main>
+
+    <script>
+        // Helpers
+        function populateTimeZones(selects) {
+            const list = (typeof Intl.supportedValuesOf === 'function')
+                ? Intl.supportedValuesOf('timeZone')
+                : [
+                    'UTC','Etc/GMT','America/New_York','America/Chicago','America/Denver','America/Los_Angeles',
+                    'Europe/London','Europe/Paris','Europe/Berlin','Asia/Tokyo','Asia/Shanghai','Asia/Kolkata','Australia/Sydney'
+                  ];
+
+            list.forEach(tz => {
+                selects.forEach(sel => {
+                    const opt = document.createElement('option');
+                    opt.value = tz;
+                    opt.textContent = tz;
+                    sel.appendChild(opt);
+                });
+            });
+
+            // Set defaults
+            const local = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+            selects.forEach(sel => { sel.value = local; });
+        }
+
+        // Get the timezone offset in minutes for a given date and zone
+        function tzOffsetMinutes(date, timeZone) {
+            // Format date parts in the target timezone, then build a UTC timestamp for those parts
+            const f = new Intl.DateTimeFormat('en-US', {
+                timeZone,
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+            });
+            const parts = f.formatToParts(date).reduce((acc, p) => {
+                if (p.type !== 'literal') acc[p.type] = p.value;
+                return acc;
+            }, {});
+
+            // parts: {year, month, day, hour, minute, second}
+            const asUTC = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+            const utcMs = date.getTime();
+            const offsetMin = (utcMs - asUTC) / (60 * 1000);
+            return Math.round(offsetMin);
+        }
+
+        function formatInTimeZone(date, timeZone, opts = {}) {
+            const fmt = new Intl.DateTimeFormat(undefined, Object.assign({
+                timeZone,
+                year:'numeric', month:'short', day:'2-digit',
+                hour:'2-digit', minute:'2-digit', second:'2-digit'
+            }, opts));
+            return fmt.format(date);
+        }
+
+        // DST detection: whether the timezone uses DST and whether the given date is in DST
+        function getDSTInfo(date, timeZone) {
+            const jan = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+            const jul = new Date(Date.UTC(date.getUTCFullYear(), 6, 1));
+            const offJan = tzOffsetMinutes(jan, timeZone);
+            const offJul = tzOffsetMinutes(jul, timeZone);
+            const offDate = tzOffsetMinutes(date, timeZone);
+
+            const usesDST = offJan !== offJul;
+            // Decide which one is DST: the smaller (more negative) offset is usually DST in northern hemisphere
+            const dstOffset = Math.min(offJan, offJul);
+            const inDST = usesDST && offDate === dstOffset;
+
+            return { usesDST, inDST, offsetMin: offDate };
+        }
+
+        // Parse a datetime-local string to components
+        function parseLocalDatetimeLocal(value) {
+            if (!value) return null;
+            // value format: "YYYY-MM-DDTHH:MM" or with :SS
+            const parts = value.split('T');
+            if (parts.length !== 2) return null;
+            const [y,m,d] = parts[0].split('-').map(Number);
+            const timeParts = parts[1].split(':').map(Number);
+            const [hour, minute, second = 0] = timeParts;
+            return { y, m, d, hour, minute, second };
+        }
+
+        // Interpret the components as a time in a specific timezone and return the instant (Date)
+        function dateTimeInZoneToInstant(components, timeZone) {
+            // Build a UTC timestamp for the same Y/M/D H:M:S then apply timezone offset
+            const utcCandidate = Date.UTC(components.y, components.m - 1, components.d, components.hour, components.minute, components.second);
+            const approxDate = new Date(utcCandidate);
+            const offsetMin = tzOffsetMinutes(approxDate, timeZone);
+            const instantMs = utcCandidate - (offsetMin * 60 * 1000);
+            return new Date(instantMs);
+        }
+
+        // Convert datetime from source timezone to target timezone
+        function convertTimezone() {
+            const dtVal = document.getElementById('dtInput').value;
+            const from = document.getElementById('fromTz').value;
+            const to = document.getElementById('toTz').value;
+            const result = document.getElementById('tzResult');
+
+            const now = new Date();
+            let instant;
+            if (!dtVal) {
+                instant = now; // use current instant
+            } else {
+                const comp = parseLocalDatetimeLocal(dtVal);
+                if (!comp) { result.textContent = 'Invalid date/time'; return; }
+                instant = dateTimeInZoneToInstant(comp, from);
+            }
+
+            const srcFmt = formatInTimeZone(instant, from);
+            const dstFmt = formatInTimeZone(instant, to);
+
+            const dstInfo = getDSTInfo(instant, to);
+            result.innerHTML = `
+                <strong>Source (${from}):</strong> ${srcFmt}<br>
+                <strong>Target (${to}):</strong> ${dstFmt}<br>
+                <strong>UTC:</strong> ${instant.toISOString()}<br>
+                <strong>Target offset:</strong> ${dstInfo.offsetMin} minutes<br>
+                <strong>Uses DST:</strong> ${dstInfo.usesDST ? 'Yes' : 'No'}<br>
+                <strong>In DST on that date:</strong> ${dstInfo.inDST ? 'Yes' : 'No'}
+            `;
+        }
+
+        // Timestamp helpers
+        function convertTsToDate() {
+            const val = document.getElementById('tsInput').value.trim();
+            if (!val) { document.getElementById('tsToDateResult').textContent = 'Enter a timestamp'; return; }
+            const unit = document.getElementById('tsUnit').value;
+            const outTz = document.getElementById('tsOutTz').value;
+            let num = Number(val);
+            if (isNaN(num)) { document.getElementById('tsToDateResult').textContent = 'Invalid number'; return; }
+
+            let ms;
+            if (unit === 's') ms = num * 1000;
+            else if (unit === 'ms') ms = num;
+            else {
+                // auto-detect: if number looks like seconds (<=10 digits) treat as seconds
+                if (val.length <= 10) ms = num * 1000; else ms = num;
+            }
+
+            const date = new Date(ms);
+            const local = date.toString();
+            const tzFmt = formatInTimeZone(date, outTz);
+            document.getElementById('tsToDateResult').innerHTML = `
+                <strong>ISO (UTC):</strong> ${date.toISOString()}<br>
+                <strong>Local:</strong> ${local}<br>
+                <strong>${outTz}:</strong> ${tzFmt}
+            `;
+        }
+
+        function convertDateToTs() {
+            const dtVal = document.getElementById('dateInput').value;
+            const src = document.getElementById('dateSrcTz').value;
+            const out = document.getElementById('dateToTsResult');
+            let instant;
+            if (!dtVal) {
+                instant = new Date();
+            } else {
+                const comp = parseLocalDatetimeLocal(dtVal);
+                if (!comp) { out.textContent = 'Invalid date/time'; return; }
+                instant = dateTimeInZoneToInstant(comp, src);
+            }
+
+            out.innerHTML = `
+                <strong>ISO (UTC):</strong> ${instant.toISOString()}<br>
+                <strong>Unix (seconds):</strong> ${Math.floor(instant.getTime() / 1000)}<br>
+                <strong>Unix (ms):</strong> ${instant.getTime()}
+            `;
+        }
+
+        // Format helpers
+        const standardFormats = ['YYYY-MM-DD HH:mm:ss','YYYY-MM-DD','MM/DD/YYYY HH:mm','DD MMM YYYY HH:mm:ss','ISO','RFC2822'];
+
+        function pad(n, len=2){ return String(n).padStart(len, '0'); }
+
+        function formatDateWithPattern(instant, timeZone, pattern){
+            if (pattern === 'ISO') return instant.toISOString();
+            if (pattern === 'RFC2822') return new Date(instant.getTime()).toUTCString();
+            const offsetMin = tzOffsetMinutes(instant, timeZone);
+            const tzDate = new Date(instant.getTime() - offsetMin * 60 * 1000);
+            const YYYY = tzDate.getUTCFullYear();
+            const MM = pad(tzDate.getUTCMonth()+1);
+            const DD = pad(tzDate.getUTCDate());
+            const HH = pad(tzDate.getUTCHours());
+            const mm = pad(tzDate.getUTCMinutes());
+            const ss = pad(tzDate.getUTCSeconds());
+            return pattern.replace(/YYYY/g, YYYY)
+                          .replace(/MM/g, MM)
+                          .replace(/DD/g, DD)
+                          .replace(/HH/g, HH)
+                          .replace(/mm/g, mm)
+                          .replace(/ss/g, ss);
+        }
+
+        function patternToRegex(pattern){
+            const esc = pattern.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const withGroups = esc.replace(/YYYY/g, '(\\d{4})')
+                                  .replace(/MM/g, '(\\d{1,2})')
+                                  .replace(/DD/g, '(\\d{1,2})')
+                                  .replace(/HH/g, '(\\d{1,2})')
+                                  .replace(/mm/g, '(\\d{1,2})')
+                                  .replace(/ss/g, '(\\d{1,2})');
+            return new RegExp('^' + withGroups + '$');
+        }
+
+        function parseDateFromPattern(input, pattern, timeZone){
+            if (pattern === 'ISO' || pattern === 'RFC2822'){
+                const d = new Date(input);
+                if (isNaN(d)) return null;
+                return d;
+            }
+            const re = patternToRegex(pattern);
+            const m = input.match(re);
+            if (!m) return null;
+
+            const tokenOrder = [];
+            const tokenRegex = /(YYYY|MM|DD|HH|mm|ss)/g;
+            let match;
+            while ((match = tokenRegex.exec(pattern)) !== null) tokenOrder.push(match[1]);
+
+            const comps = { y:1970, m:1, d:1, hour:0, minute:0, second:0 };
+            for (let i=0;i<tokenOrder.length;i++){
+                const tok = tokenOrder[i];
+                const val = Number(m[i+1] || 0);
+                if (tok === 'YYYY') comps.y = val;
+                else if (tok === 'MM') comps.m = val;
+                else if (tok === 'DD') comps.d = val;
+                else if (tok === 'HH') comps.hour = val;
+                else if (tok === 'mm') comps.minute = val;
+                else if (tok === 'ss') comps.second = val;
+            }
+
+            return dateTimeInZoneToInstant(comps, timeZone);
+        }
+
+        function convertFormat(){
+            const input = document.getElementById('formatInputText').value.trim();
+            const inFmt = document.getElementById('inputFormat').value;
+            const outFmt = document.getElementById('outputFormat').value;
+            const tz = document.getElementById('formatTz').value;
+            const resultEl = document.getElementById('formatResult');
+            if (!input){ resultEl.textContent = 'Enter input string to convert'; return; }
+            const instant = parseDateFromPattern(input, inFmt, tz);
+            if (!instant || isNaN(instant)){ resultEl.textContent = 'Unable to parse input using selected format'; return; }
+            const outStr = formatDateWithPattern(instant, tz, outFmt);
+            resultEl.innerHTML = `<strong>Parsed ISO (UTC):</strong> ${instant.toISOString()}<br><strong>Result:</strong> ${outStr}`;
+        }
+
+        function addFormat(){
+            const v = document.getElementById('newFormatInput').value.trim();
+            if (!v) return;
+            const inputSel = document.getElementById('inputFormat'), outSel = document.getElementById('outputFormat');
+            [inputSel,outSel].forEach(sel=>{
+                if (![...sel.options].some(o=>o.value===v)){
+                    const opt = document.createElement('option'); opt.value = v; opt.textContent = v; sel.appendChild(opt);
+                }
+            });
+            document.getElementById('newFormatInput').value='';
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            populateTimeZones([document.getElementById('fromTz'), document.getElementById('toTz'), document.getElementById('tsOutTz'), document.getElementById('dateSrcTz'), document.getElementById('formatTz')]);
+
+            // Populate standard formats
+            const inFmtSel = document.getElementById('inputFormat');
+            const outFmtSel = document.getElementById('outputFormat');
+            standardFormats.forEach(f => { [inFmtSel, outFmtSel].forEach(sel => { const opt = document.createElement('option'); opt.value = f; opt.textContent = f; sel.appendChild(opt); }); });
+            inFmtSel.value = 'YYYY-MM-DD HH:mm:ss';
+            outFmtSel.value = 'ISO';
+
+            document.getElementById('convertTzBtn').addEventListener('click', convertTimezone);
+            document.getElementById('tsToDateBtn').addEventListener('click', convertTsToDate);
+            document.getElementById('dateToTsBtn').addEventListener('click', convertDateToTs);
+
+            document.getElementById('formatConvertBtn').addEventListener('click', convertFormat);
+            document.getElementById('addFormatBtn').addEventListener('click', addFormat);
+
+            // Allow pressing Enter on inputs
+            ['dtInput','dateInput','tsInput','formatInputText'].forEach(id => {
+                const el = document.getElementById(id);
+                el.addEventListener('keyup', (e) => { if (e.key === 'Enter') {
+                    if (id === 'tsInput') convertTsToDate();
+                    else if (id === 'dtInput') convertTimezone();
+                    else if (id === 'dateInput') convertDateToTs();
+                    else if (id === 'formatInputText') convertFormat();
+                }});
+            });
+        });
+    </script>
+</body>
+</html>
