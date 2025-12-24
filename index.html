@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tools</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        .tool-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .tool-card {
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            padding: 1.5rem;
+            transition: all 0.2s;
+            background: var(--pico-card-background-color);
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .tool-card:hover {
+            border-color: var(--pico-primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .tool-card h3 {
+            margin-bottom: 0.5rem;
+            color: var(--pico-primary);
+        }
+
+        .tool-card p {
+            margin: 0;
+            color: var(--pico-muted-color);
+            font-size: 0.9rem;
+        }
+
+        .tool-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .search-box {
+            margin-bottom: 2rem;
+        }
+
+        .tool-card.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <hgroup>
+            <h1>Tools</h1>
+            <p>A collection of web-based utilities for everyday tasks</p>
+        </hgroup>
+
+        <div class="search-box">
+            <input type="search" id="searchInput" placeholder="Search tools..." aria-label="Search tools">
+        </div>
+
+        <div class="tool-grid">
+            <a href="pdf-to-image.html" class="tool-card">
+                <span class="tool-icon">📄→🖼️</span>
+                <h3>PDF to Image Converter</h3>
+                <p>Convert PDF pages to PNG or JPEG images. Select specific pages and download them individually.</p>
+            </a>
+
+            <!-- Future tools will go here -->
+        </div>
+    </main>
+
+    <script>
+        const searchInput = document.getElementById('searchInput');
+        const toolCards = document.querySelectorAll('.tool-card');
+
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            
+            toolCards.forEach(card => {
+                const title = card.querySelector('h3').textContent.toLowerCase();
+                const description = card.querySelector('p').textContent.toLowerCase();
+                
+                if (title.includes(searchTerm) || description.includes(searchTerm)) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
