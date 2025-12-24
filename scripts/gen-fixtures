@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Deprecated helper — fixture PDFs are now committed into the repo.
+# Left in place for reference; it will run the generator if still present.
+if [ -f "tests/fixtures/generate_fixtures.py" ]; then
+  if command -v uv >/dev/null 2>&1; then
+    uv run tests/fixtures/generate_fixtures.py
+  else
+    python3 tests/fixtures/generate_fixtures.py
+  fi
+else
+  echo "No generator script found. Fixtures are included in tests/fixtures/."
+fi
