@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unix Timestamp Converter</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <style>
+        .result { margin-top: 1rem; padding:1rem; border:1px solid var(--pico-muted-border-color); border-radius:var(--pico-border-radius); background:var(--pico-card-background-color) }
+        .tz-list { max-height: 260px; overflow:auto; }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <hgroup>
+            <h1>Unix timestamp ↔ human readable 🔁</h1>
+            <p>Convert Unix timestamps to dates and dates to Unix timestamps in a chosen timezone.</p>
+        </hgroup>
+
+        <section class="panel" id="unix-converter">
+            <fieldset>
+                <legend>Timestamp to date</legend>
+                <label>
+                    Unix timestamp
+                    <input type="number" id="tsInput" placeholder="Seconds (e.g. 1690000000) or milliseconds">
+                </label>
+                <label>
+                    Assume input is
+                    <select id="tsUnit">
+                        <option value="auto">Auto-detect</option>
+                        <option value="s">Seconds</option>
+                        <option value="ms">Milliseconds</option>
+                    </select>
+                </label>
+                <label>
+                    Output timezone
+                    <select id="tsOutTz" class="tz-list"></select>
+                </label>
+                <div style="margin-top:0.5rem">
+                    <button id="tsToDateBtn">Convert to Date</button>
+                </div>
+                <div class="result" id="tsToDateResult"></div>
+            </fieldset>
+
+            <fieldset style="margin-top:1rem">
+                <legend>Date to timestamp</legend>
+                <label>
+                    Date & time (leave empty for now)
+                    <input type="datetime-local" id="dateInput">
+                </label>
+                <label>
+                    Source timezone
+                    <select id="dateSrcTz" class="tz-list"></select>
+                </label>
+                <div style="margin-top:0.5rem">
+                    <button id="dateToTsBtn">Convert to Unix</button>
+                </div>
+                <div class="result" id="dateToTsResult"></div>
+            </fieldset>
+
+            <p style="margin-top:1rem"><a href="index.html">← Back to Tools</a></p>
+        </section>
+    </main>
+
+    <script>
+        // timezone helpers reused
+        function populateTimeZones(selects) {
+            const list = (typeof Intl.supportedValuesOf === 'function')
+                ? Intl.supportedValuesOf('timeZone')
+                : ['UTC','Etc/GMT','America/New_York','Europe/London','Asia/Tokyo','Asia/Kolkata','Australia/Sydney'];
+
+            list.forEach(tz => selects.forEach(sel => { const opt = document.createElement('option'); opt.value = tz; opt.textContent = tz; sel.appendChild(opt); }));
+            const local = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+            selects.forEach(sel => { sel.value = local; });
+        }
+
+        function tzOffsetMinutes(date, timeZone) {
+            const f = new Intl.DateTimeFormat('en-US', {
+                timeZone,
+                year: 'numeric', month: '2-digit', day: '2-digit',
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+            });
+            const parts = f.formatToParts(date).reduce((acc, p) => { if (p.type !== 'literal') acc[p.type] = p.value; return acc; }, {});
+            const asUTC = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+            const utcMs = date.getTime();
+            const offsetMin = (utcMs - asUTC) / (60 * 1000);
+            return Math.round(offsetMin);
+        }
+
+        function formatInTimeZone(date, timeZone, opts = {}) {
+            const fmt = new Intl.DateTimeFormat(undefined, Object.assign({ timeZone, year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit' }, opts));
+            return fmt.format(date);
+        }
+
+        // parse local datetime-local
+        function parseLocalDatetimeLocal(value) {
+            if (!value) return null;
+            const parts = value.split('T'); if (parts.length !== 2) return null;
+            const [y,m,d] = parts[0].split('-').map(Number);
+            const timeParts = parts[1].split(':').map(Number);
+            const [hour, minute, second = 0] = timeParts;
+            return { y, m, d, hour, minute, second };
+        }
+
+        function dateTimeInZoneToInstant(components, timeZone) {
+            const utcCandidate = Date.UTC(components.y, components.m - 1, components.d, components.hour, components.minute, components.second);
+            const approxDate = new Date(utcCandidate);
+            const offsetMin = tzOffsetMinutes(approxDate, timeZone);
+            const instantMs = utcCandidate - (offsetMin * 60 * 1000);
+            return new Date(instantMs);
+        }
+
+        function convertTsToDate() {
+            const val = document.getElementById('tsInput').value.trim();
+            if (!val) { document.getElementById('tsToDateResult').textContent = 'Enter a timestamp'; return; }
+            const unit = document.getElementById('tsUnit').value;
+            const outTz = document.getElementById('tsOutTz').value;
+            let num = Number(val);
+            if (isNaN(num)) { document.getElementById('tsToDateResult').textContent = 'Invalid number'; return; }
+
+            let ms;
+            if (unit === 's') ms = num * 1000;
+            else if (unit === 'ms') ms = num;
+            else { if (val.length <= 10) ms = num * 1000; else ms = num; }
+
+            const date = new Date(ms);
+            const local = date.toString();
+            const tzFmt = formatInTimeZone(date, outTz);
+            document.getElementById('tsToDateResult').innerHTML = `\n                <strong>ISO (UTC):</strong> ${date.toISOString()}<br>\n                <strong>Local:</strong> ${local}<br>\n                <strong>${outTz}:</strong> ${tzFmt}\n            `;
+        }
+
+        function convertDateToTs() {
+            const dtVal = document.getElementById('dateInput').value;
+            const src = document.getElementById('dateSrcTz').value;
+            const out = document.getElementById('dateToTsResult');
+            let instant;
+            if (!dtVal) {
+                instant = new Date();
+            } else {
+                const comp = parseLocalDatetimeLocal(dtVal);
+                if (!comp) { out.textContent = 'Invalid date/time'; return; }
+                instant = dateTimeInZoneToInstant(comp, src);
+            }
+
+            out.innerHTML = `\n                <strong>ISO (UTC):</strong> ${instant.toISOString()}<br>\n                <strong>Unix (seconds):</strong> ${Math.floor(instant.getTime() / 1000)}<br>\n                <strong>Unix (ms):</strong> ${instant.getTime()}\n            `;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            populateTimeZones([document.getElementById('tsOutTz'), document.getElementById('dateSrcTz')]);
+            document.getElementById('tsToDateBtn').addEventListener('click', convertTsToDate);
+            document.getElementById('dateToTsBtn').addEventListener('click', convertDateToTs);
+            document.getElementById('tsInput').addEventListener('keyup', (e) => { if (e.key === 'Enter') convertTsToDate(); });
+            document.getElementById('dateInput').addEventListener('keyup', (e) => { if (e.key === 'Enter') convertDateToTs(); });
+        });
+    </script>
+</body>
+</html>
