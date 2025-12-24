@@ -18,117 +18,26 @@
 <body>
     <main class="container">
         <hgroup>
-            <h1>DateTime Utilities</h1>
-            <p>Convert between time zones, convert Unix timestamps, and format date/time strings</p>
+            <h1>DateTime Tools</h1>
+            <p>The original DateTime Utilities have been split into focused tools. Select one below.</p>
         </hgroup>
 
-        <section class="panel" id="tz-converter">
-            <h2>Timezone converter 🕒</h2>
-            <label>
-                Date & time (leave empty to use current date/time)
-                <input type="datetime-local" id="dtInput">
-            </label>
+        <div class="panel">
+            <a href="tz-converter.html">🕒 Timezone Converter</a>
+            <p class="small-note">Convert wall times between IANA timezones and inspect DST.</p>
+        </div>
 
-            <div class="tz-flex">
-                <label>
-                    From
-                    <select id="fromTz" class="tz-list"></select>
-                </label>
+        <div class="panel">
+            <a href="unix-timestamp.html">🔁 Unix Timestamp Converter</a>
+            <p class="small-note">Convert Unix timestamps to date/time and vice-versa.</p>
+        </div>
 
-                <label>
-                    To
-                    <select id="toTz" class="tz-list"></select>
-                </label>
+        <div class="panel">
+            <a href="datetime-format-converter.html">🔤 DateTime Format Converter</a>
+            <p class="small-note">Parse date/time strings and reformat using custom patterns.</p>
+        </div>
 
-                <button id="convertTzBtn">Convert</button>
-            </div>
-
-            <div class="result" id="tzResult" aria-live="polite"></div>
-            <p class="small-note">DST detection: If the timezone observes DST, the tool will indicate whether the provided date falls within DST for the selected zone.</p>
-        </section>
-
-        <section class="panel" id="unix-converter">
-            <h2>Unix timestamp ↔ human readable 🔁</h2>
-
-            <fieldset>
-                <legend>Timestamp to date</legend>
-                <label>
-                    Unix timestamp
-                    <input type="number" id="tsInput" placeholder="Seconds (e.g. 1690000000) or milliseconds">
-                </label>
-                <label>
-                    Assume input is
-                    <select id="tsUnit">
-                        <option value="auto">Auto-detect</option>
-                        <option value="s">Seconds</option>
-                        <option value="ms">Milliseconds</option>
-                    </select>
-                </label>
-                <label>
-                    Output timezone
-                    <select id="tsOutTz"></select>
-                </label>
-                <div style="margin-top:0.5rem">
-                    <button id="tsToDateBtn">Convert to Date</button>
-                </div>
-                <div class="result" id="tsToDateResult"></div>
-            </fieldset>
-
-            <fieldset style="margin-top:1rem">
-                <legend>Date to timestamp</legend>
-                <label>
-                    Date & time (leave empty for now)
-                    <input type="datetime-local" id="dateInput">
-                </label>
-                <label>
-                    Source timezone
-                    <select id="dateSrcTz"></select>
-                </label>
-                <div style="margin-top:0.5rem">
-                    <button id="dateToTsBtn">Convert to Unix</button>
-                </div>
-                <div class="result" id="dateToTsResult"></div>
-            </fieldset>
-        </section>
-
-        <section class="panel" id="format-converter">
-            <h2>Format converter 🔤</h2>
-
-            <label>
-                Input date/time string
-                <input type="text" id="formatInputText" placeholder="e.g. 2023-07-15 14:30:00">
-            </label>
-
-            <div class="tz-flex">
-                <label>
-                    Input format
-                    <select id="inputFormat"></select>
-                </label>
-
-                <label>
-                    Output format
-                    <select id="outputFormat"></select>
-                </label>
-
-                <label>
-                    Timezone
-                    <select id="formatTz" class="tz-list"></select>
-                </label>
-
-                <button id="formatConvertBtn">Convert</button>
-            </div>
-
-            <div style="margin-top:0.5rem; display:flex; gap:0.5rem; align-items:center;">
-                <input type="text" id="newFormatInput" placeholder="Custom format (e.g. YYYY-MM-DD HH:mm:ss)">
-                <button id="addFormatBtn">Add format</button>
-            </div>
-
-            <div class="result" id="formatResult"></div>
-            <p class="small-note">Supported tokens: <code>YYYY</code>, <code>MM</code>, <code>DD</code>, <code>HH</code>, <code>mm</code>, <code>ss</code></p>
-        </section>
-
-        <hr>
-        <p class="small-note">Tip: Timezone list is populated from your browser's Intl API. You can also type an IANA timezone (e.g. "America/New_York") into a select to jump to it.</p> 
+        <p style="margin-top:1rem"><a href="index.html">← Back to Tools</a></p>
     </main>
 
     <script>
