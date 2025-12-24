@@ -1,0 +1,17 @@
+[
+  {
+    "label": "example_seconds",
+    "value": 1690000000,
+    "notes": "Seconds since epoch; expected ISO: 2023-07-22T04:26:40.000Z (verify in your environment)"
+  },
+  {
+    "label": "example_milliseconds",
+    "value": 1690000000000,
+    "notes": "Milliseconds since epoch; expected ISO: 2023-07-22T04:26:40.000Z (verify in your environment)"
+  },
+  {
+    "label": "unix_epoch",
+    "value": 0,
+    "notes": "Unix epoch => 1970-01-01T00:00:00.000Z"
+  }
+]
