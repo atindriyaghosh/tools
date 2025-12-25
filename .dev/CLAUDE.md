@@ -517,9 +517,10 @@ Before considering a tool complete:
 
 ### Date/Time Tools
 - **Timezone Converter** (timezone-converter.html)
-  - Converts dates/times between IANA timezones
-  - Displays DST information
-  - IANA timezone support with auto-detection
+  - Converts dates and times between IANA timezones
+  - Supports both 12-hour (AM/PM) and 24-hour time formats with automatic conversion
+  - Displays result in target timezone, UTC, and DST information
+  - Responsive 2-column grid layout (desktop) / 1-column stack (mobile)
 
 - **Unix Timestamp Converter** (unix-timestamp.html)
   - Converts Unix timestamps to human-readable dates
