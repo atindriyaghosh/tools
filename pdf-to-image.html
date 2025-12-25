@@ -19,13 +19,13 @@
         }
 
         .upload-area:hover {
-            border-color: var(--pico-primary);
-            background: var(--pico-primary-background);
+            border-color: #6b8dd6;
+            background: rgba(107, 141, 214, 0.05);
         }
 
         .upload-area.drag-over {
-            border-color: var(--pico-primary);
-            background: var(--pico-primary-background);
+            border-color: #6b8dd6;
+            background: rgba(107, 141, 214, 0.05);
         }
 
         .upload-area p {
@@ -63,12 +63,12 @@
         }
 
         .page-item:hover {
-            border-color: var(--pico-primary);
+            border-color: #6b8dd6;
         }
 
         .page-item.selected {
-            border-color: var(--pico-primary);
-            background: var(--pico-primary-background);
+            border-color: #6b8dd6;
+            background: rgba(107, 141, 214, 0.05);
         }
 
         .page-item canvas {
@@ -112,11 +112,36 @@
             display: block;
         }
 
+        a {
+            color: #6b8dd6;
+        }
+
+        a.back-link {
+            font-weight: bold;
+        }
+
+        button {
+            background-color: #6b8dd6;
+            border-color: #6b8dd6;
+            color: white;
+        }
+
+        button:hover {
+            background-color: #5b7dc6;
+            border-color: #5b7dc6;
+        }
+
+        button:disabled {
+            background-color: #9baee6;
+            border-color: #9baee6;
+            opacity: 0.6;
+        }
 
     </style>
 </head>
 <body>
     <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
         <hgroup>
             <h1>PDF to Image Converter</h1>
             <p>Convert PDF pages to PNG or JPEG images</p>
@@ -151,7 +176,7 @@
         </article>
 
         <article id="status"></article>
-        <p style="margin-top:1rem"><a href="index.html">← Back to Tools</a></p>
+        <p style="margin-top:1rem"><a href="index.html" class="back-link">← Back to Tools</a></p>
     </main>
 
     <script>

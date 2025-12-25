@@ -87,6 +87,37 @@ repo-root/
 - File size: ~10KB CSS, zero JS framework overhead
 - CDN: `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">`
 
+### Color Scheme
+- **Link/accent color**: Soft blue (#6b8dd6)
+- **Button color**: Soft blue (#6b8dd6)
+  - Hover state: Darker soft blue (#5b7dc6)
+  - Disabled state: Light soft blue (#9baee6)
+- Use these colors consistently across all tool pages to match the landing page
+- Override Pico's default colors by adding to your tool's `<style>`:
+  ```css
+  a {
+      color: #6b8dd6;
+  }
+
+  button {
+      background-color: #6b8dd6;
+      border-color: #6b8dd6;
+      color: white;
+  }
+
+  button:hover {
+      background-color: #5b7dc6;
+      border-color: #5b7dc6;
+  }
+
+  button:disabled {
+      background-color: #9baee6;
+      border-color: #9baee6;
+      opacity: 0.6;
+  }
+  ```
+- Consistent with the landing page (index.html) for a unified visual experience
+
 ## Tool Template Structure
 
 Each tool is a single, self-contained HTML file in the root directory:

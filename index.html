@@ -27,7 +27,7 @@
         }
 
         .tool-card:hover {
-            border-color: #6b7280;
+            border-color: #6b8dd6;
             transform: none;
             box-shadow: none;
         }
@@ -77,12 +77,21 @@
             font-weight: 700;
         }
 
-        .section-count {
-            background: var(--pico-muted-border-color);
-            border-radius: 9999px;
-            padding: 0.25rem 0.75rem;
-            font-size: 0.9rem;
+        button {
+            background-color: #6b8dd6;
+            border-color: #6b8dd6;
+            color: white;
+        }
+
+        button:hover {
+            background-color: #5b7dc6;
+            border-color: #5b7dc6;
+        }
+
+        .toc-count {
+            font-size: 0.8rem;
             color: var(--pico-muted-color);
+            margin-left: 0.25rem;
         }
 
         .section {
@@ -104,7 +113,7 @@
 
         .toc-link {
             text-decoration: none;
-            color: #6b7280;
+            color: #6b8dd6;
         }
 
         .toc-link:hover {
@@ -141,17 +150,17 @@
 
         <div class="table-of-contents" id="tableOfContents">
             <strong style="margin-right: 1rem;">Tool Categories:</strong>
-            <a href="#pdf-tools" class="toc-link"><strong>PDF Tools</strong></a>
+            <a href="#pdf-tools" class="toc-link"><strong>PDF Tools <span class="toc-count" data-section="pdf-tools">0</span></strong></a>
             <span class="toc-separator">|</span>
-            <a href="#datetime-tools" class="toc-link"><strong>Date/Time Tools</strong></a>
+            <a href="#datetime-tools" class="toc-link"><strong>Date/Time Tools <span class="toc-count" data-section="datetime-tools">0</span></strong></a>
             <span class="toc-separator">|</span>
-            <a href="#image-tools" class="toc-link"><strong>Image Tools</strong></a>
+            <a href="#image-tools" class="toc-link"><strong>Image Tools <span class="toc-count" data-section="image-tools">0</span></strong></a>
             <span class="toc-separator">|</span>
-            <a href="#text-tools" class="toc-link"><strong>Text Tools</strong></a>
+            <a href="#text-tools" class="toc-link"><strong>Text Tools <span class="toc-count" data-section="text-tools">0</span></strong></a>
             <span class="toc-separator">|</span>
-            <a href="#api-tools" class="toc-link"><strong>API Tools</strong></a>
+            <a href="#api-tools" class="toc-link"><strong>API Tools <span class="toc-count" data-section="api-tools">0</span></strong></a>
             <span class="toc-separator">|</span>
-            <a href="#other-tools" class="toc-link"><strong>Other</strong></a>
+            <a href="#other-tools" class="toc-link"><strong>Other <span class="toc-count" data-section="other-tools">0</span></strong></a>
         </div>
 
         <div class="search-box">
@@ -162,7 +171,6 @@
         <section class="section" id="pdf-tools" data-section="pdf-tools">
             <div class="section-heading">
                 <h2>PDF Tools</h2>
-                <span class="section-count">0</span>
             </div>
             <div class="tool-grid">
                 <a href="pdf-to-image.html" class="tool-card">
@@ -177,7 +185,6 @@
         <section class="section" id="datetime-tools" data-section="datetime-tools">
             <div class="section-heading">
                 <h2>Date/Time Tools</h2>
-                <span class="section-count">0</span>
             </div>
             <div class="tool-grid">
                 <a href="timezone-converter.html" class="tool-card">
@@ -204,7 +211,6 @@
         <section class="section" id="image-tools" data-section="image-tools">
             <div class="section-heading">
                 <h2>Image Tools</h2>
-                <span class="section-count">0</span>
             </div>
             <div class="tool-grid">
             </div>
@@ -214,7 +220,6 @@
         <section class="section" id="text-tools" data-section="text-tools">
             <div class="section-heading">
                 <h2>Text Tools</h2>
-                <span class="section-count">0</span>
             </div>
             <div class="tool-grid">
             </div>
@@ -224,7 +229,6 @@
         <section class="section" id="api-tools" data-section="api-tools">
             <div class="section-heading">
                 <h2>API Tools</h2>
-                <span class="section-count">0</span>
             </div>
             <div class="tool-grid">
             </div>
@@ -234,7 +238,6 @@
         <section class="section" id="other-tools" data-section="other-tools">
             <div class="section-heading">
                 <h2>Other</h2>
-                <span class="section-count">0</span>
             </div>
             <div class="tool-grid">
             </div>
@@ -249,11 +252,13 @@
         function updateSectionCounts() {
             sections.forEach(section => {
                 const toolCards = section.querySelectorAll('.tool-card:not(.hidden)');
-                const countSpan = section.querySelector('.section-count');
-                const count = toolCards.length;
                 const sectionId = section.id;
+                const count = toolCards.length;
 
-                countSpan.textContent = count;
+                const tocCount = tableOfContents.querySelector(`.toc-count[data-section="${sectionId}"]`);
+                if (tocCount) {
+                    tocCount.textContent = count;
+                }
 
                 if (count === 0) {
                     section.classList.add('hidden');

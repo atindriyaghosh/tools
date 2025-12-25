@@ -11,10 +11,16 @@
         .result { margin-top: 1rem; padding:1rem; border:1px solid var(--pico-muted-border-color); border-radius:var(--pico-border-radius); background:var(--pico-card-background-color) }
         .small-note { font-size:0.9rem; color:var(--pico-muted-color) }
         .tz-list { max-height: 260px; overflow:auto; }
+        a { color: #6b8dd6; }
+        a.back-link { font-weight: bold; }
+        button { background-color: #6b8dd6; border-color: #6b8dd6; color: white; }
+        button:hover { background-color: #5b7dc6; border-color: #5b7dc6; }
+        button:disabled { background-color: #9baee6; border-color: #9baee6; opacity: 0.6; }
     </style>
 </head>
 <body>
     <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
         <hgroup>
             <h1>Timezone converter 🕒</h1>
             <p>Convert a date/time from one IANA timezone to another and inspect DST.</p>
@@ -43,7 +49,7 @@
             <div class="result" id="tzResult" aria-live="polite"></div>
             <p class="small-note">DST detection: If the timezone observes DST, the tool will indicate whether the provided date falls within DST for the selected zone.</p>
 
-            <p style="margin-top:1rem"><a href="index.html">← Back to Tools</a></p>
+            <p style="margin-top:1rem"><a href="index.html" class="back-link">← Back to Tools</a></p>
         </section>
     </main>
 
