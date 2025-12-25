@@ -1,32 +1,29 @@
 # Tools
 
-A small collection of web-based utilities.
+A collection of single-file, browser-based utility tools built with vanilla JavaScript and Pico CSS.
 
-## Date/Time Tools 🕒
+## Overview
 
-The original `datetime-utilities.html` was split into focused pages:
+This repository contains standalone HTML tools for common tasks like PDF conversion, date/time manipulation, and more. Each tool is a self-contained HTML file with no build step required.
 
-- **`timezone-converter.html`** — Convert a wall time between IANA timezones and inspect DST information. 🕒
-- **`unix-timestamp.html`** — Convert Unix timestamps to human-readable dates and convert dates to Unix timestamps (seconds/ms). 🔁
-- **`datetime-format-converter.html`** — Parse and reformat date/time strings using built-in or custom patterns (tokens: `YYYY`, `MM`, `DD`, `HH`, `mm`, `ss`). 🔤
+**Browse all tools at [atindriyaghosh.com](https://atindriyaghosh.com)**
 
-Each page is self-contained (HTML + JS). If you prefer, common helper functions can be extracted into a shared script (e.g., `datetime-common.js`) to reduce duplication.
+## Tech Stack
 
-## Serving locally
+- **Styling**: [Pico CSS](https://picocss.com/) via CDN
+- **JavaScript**: Vanilla JS only, no frameworks
+- **Deployment**: GitHub Pages
 
-To preview the tools locally, run:
+## Local Development
+
+To preview the tools locally:
 
 ```bash
 python3 -m http.server 8000 --bind 127.0.0.1
 ```
 
-Then open `http://127.0.0.1:8000/` in your browser and click the tool you want.
+Then open `http://127.0.0.1:8000/` in your browser.
 
-## Notes
+## Contributing
 
-- The UI uses Pico CSS from the CDN.
-- The timezone list is populated from the browser's `Intl` APIs when available.
-
----
-
-(If you want, I can extract shared functions into `datetime-common.js` and update each page to import it.)
+Tool specifications are maintained in `.dev/specs/`. See `.dev/CLAUDE.md` for development guidelines.
