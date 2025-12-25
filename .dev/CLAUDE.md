@@ -159,6 +159,10 @@ Every tool must have:
 4. **Loading states**: Inform users during processing
 5. **Semantic HTML**: Use `<main>`, `<article>`, `<hgroup>`, etc.
 6. **Accessibility**: Proper labels, ARIA attributes where needed
+7. **Tool Name Format**:
+   - Use Title Case (e.g., "Timezone Converter", "Unix Timestamp Converter")
+   - No icons or emojis in tool names
+   - Keep tool names clear and descriptive
 
 ## Common Patterns
 
@@ -387,6 +391,7 @@ Before considering a tool complete:
 - **Timezone Converter** (timezone-converter.html)
   - Converts dates/times between IANA timezones
   - Displays DST information
+  - IANA timezone support with auto-detection
 
 - **Unix Timestamp Converter** (unix-timestamp.html)
   - Converts Unix timestamps to human-readable dates
@@ -397,6 +402,7 @@ Before considering a tool complete:
   - Parses and reformats date/time strings
   - Supports standard formats (ISO, RFC2822) and custom patterns
   - Token-based formatting (YYYY, MM, DD, HH, mm, ss)
+  - Custom format support with timezone awareness
 
 ## Working with Claude Code
 
