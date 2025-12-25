@@ -92,6 +92,7 @@ repo-root/
 - **Button color**: Soft blue (#6b8dd6)
   - Hover state: Darker soft blue (#5b7dc6)
   - Disabled state: Light soft blue (#9baee6)
+- **Badge/Count badges**: White text on soft blue background (#6b8dd6)
 - Use these colors consistently across all tool pages to match the landing page
 - Override Pico's default colors by adding to your tool's `<style>`:
   ```css
@@ -118,6 +119,28 @@ repo-root/
   ```
 - Consistent with the landing page (index.html) for a unified visual experience
 
+### Tool Count Badges (Landing Page)
+Tool counts on the landing page's table of contents are displayed as circular badges:
+```css
+.toc-count {
+    font-size: 0.75rem;
+    color: white;
+    background-color: #6b8dd6;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    margin-left: 0.35rem;
+    font-weight: 600;
+}
+```
+- Creates a perfect circle with soft blue background
+- White text with bold weight for readability
+- Positioned inline next to category names
+- Automatically updates when tools are filtered by search
+
 ## Tool Template Structure
 
 Each tool is a single, self-contained HTML file in the root directory:
@@ -140,11 +163,35 @@ Every tool must have:
 ## Common Patterns
 
 ### Back Navigation
+Include at both the top and bottom of each tool page:
 ```html
-<nav>
-    <a href="index.html">← Back to Tools</a>
-</nav>
+<p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
 ```
+
+Back links are styled with the `.back-link` class:
+```css
+a.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: bold;
+    padding: 0.4rem 0.6rem;
+    border-radius: var(--pico-border-radius);
+    transition: all 0.2s;
+    color: #6b8dd6;
+}
+
+a.back-link:hover {
+    background-color: rgba(107, 141, 214, 0.1);
+    color: #5b7dc6;
+}
+```
+
+Features:
+- Bold text with soft blue color (#6b8dd6)
+- Subtle background color on hover
+- Rounded corners matching Pico CSS design
+- Smooth transitions for better UX
 
 ### File Upload with Validation
 ```javascript
@@ -255,6 +302,9 @@ The index.html uses a compact, space-efficient layout:
 - Links are anchor-based (e.g., `#pdf-tools`) for quick navigation
 - Empty categories auto-hide when they contain no tools
 - Single line, small font size (0.85rem)
+- **Tool counts**: Displayed as circular badges with soft blue background (#6b8dd6), white text
+  - Example: `Date/Time Tools [3]` where `[3]` appears as a small circle badge
+  - Automatically updated as tools are filtered
 
 ### Search Box
 - Compact search input below TOC

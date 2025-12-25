@@ -12,7 +12,20 @@
         .small-note { font-size:0.9rem; color:var(--pico-muted-color) }
         .tz-list { max-height: 260px; overflow:auto; }
         a { color: #6b8dd6; }
-        a.back-link { font-weight: bold; }
+        a.back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-weight: bold;
+            padding: 0.4rem 0.6rem;
+            border-radius: var(--pico-border-radius);
+            transition: all 0.2s;
+            color: #6b8dd6;
+        }
+        a.back-link:hover {
+            background-color: rgba(107, 141, 214, 0.1);
+            color: #5b7dc6;
+        }
         button { background-color: #6b8dd6; border-color: #6b8dd6; color: white; }
         button:hover { background-color: #5b7dc6; border-color: #5b7dc6; }
         button:disabled { background-color: #9baee6; border-color: #9baee6; opacity: 0.6; }
