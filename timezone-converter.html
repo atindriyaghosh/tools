@@ -7,10 +7,39 @@
     <link rel="shortcut icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <style>
-        .tz-flex { display:flex; gap:1rem; align-items:center; flex-wrap:wrap }
-        .result { margin-top: 1rem; padding:1rem; border:1px solid var(--pico-muted-border-color); border-radius:var(--pico-border-radius); background:var(--pico-card-background-color) }
-        .small-note { font-size:0.9rem; color:var(--pico-muted-color) }
+        .tz-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .tz-grid label {
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+        }
+        .tz-grid label > span {
+            font-weight: bold;
+            color: #6b8dd6;
+            margin-bottom: 0.35rem;
+            font-size: 0.95rem;
+        }
+        .tz-grid label input,
+        .tz-grid label select {
+            margin-top: 0;
+            padding: 0.5rem;
+        }
+        .tz-grid-button {
+            grid-column: 1 / -1;
+            width: fit-content;
+        }
+        @media (max-width: 768px) {
+            .tz-grid {
+                grid-template-columns: 1fr;
+            }
+        }
         .tz-list { max-height: 260px; overflow:auto; }
+        .result { margin-top: 1rem; padding:1rem; border:1px solid var(--pico-muted-border-color); border-radius:var(--pico-border-radius); background:var(--pico-card-background-color) }
         a { color: #6b8dd6; }
         a.back-link {
             display: inline-flex;
@@ -26,6 +55,33 @@
             background-color: rgba(107, 141, 214, 0.1);
             color: #5b7dc6;
         }
+        .time-format-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--pico-muted-border-color);
+        }
+        .time-format-tab {
+            flex: 1;
+            padding: 0.4rem 0.8rem;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: var(--pico-muted-color);
+            font-weight: normal;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .time-format-tab:hover {
+            background-color: var(--pico-card-background-color);
+        }
+        .time-format-tab.active {
+            color: #6b8dd6;
+            border-bottom-color: #6b8dd6;
+            font-weight: bold;
+        }
         button { background-color: #6b8dd6; border-color: #6b8dd6; color: white; }
         button:hover { background-color: #5b7dc6; border-color: #5b7dc6; }
         button:disabled { background-color: #9baee6; border-color: #9baee6; opacity: 0.6; }
@@ -36,31 +92,40 @@
         <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
         <hgroup>
             <h1>Timezone Converter</h1>
-            <p>Convert a date/time from one IANA timezone to another and inspect DST.</p>
+            <p>Convert a date and time between timezones. View the result in your target timezone, UTC, and DST information.</p>
         </hgroup>
 
         <section class="panel" id="tz-converter">
-            <label>
-                Date & time (leave empty to use current date/time)
-                <input type="datetime-local" id="dtInput">
-            </label>
+            <div class="time-format-tabs">
+                <button type="button" class="time-format-tab active" data-format="24">24-hour</button>
+                <button type="button" class="time-format-tab" data-format="12">12-hour</button>
+            </div>
 
-            <div class="tz-flex">
+            <div class="tz-grid">
                 <label>
-                    From
+                    <span>Date (default: current date)</span>
+                    <input type="date" id="dateInput">
+                </label>
+
+                <label>
+                    <span>Time</span>
+                    <input type="text" id="timeInput" placeholder="HH:MM">
+                </label>
+
+                <label>
+                    <span>Input Timezone</span>
                     <select id="fromTz" class="tz-list"></select>
                 </label>
 
                 <label>
-                    To
+                    <span>Output Timezone</span>
                     <select id="toTz" class="tz-list"></select>
                 </label>
 
-                <button id="convertTzBtn">Convert</button>
+                <button id="convertTzBtn" class="tz-grid-button">Convert</button>
             </div>
 
             <div class="result" id="tzResult" aria-live="polite"></div>
-            <p class="small-note">DST detection: If the timezone observes DST, the tool will indicate whether the provided date falls within DST for the selected zone.</p>
 
             <p style="margin-top:1rem"><a href="index.html" class="back-link">← Back to Tools</a></p>
         </section>
@@ -149,40 +214,196 @@
             return new Date(instantMs);
         }
 
+        function parseTimeInZone(year, month, day, hour, minute, timeZone) {
+            // Start with the input as a UTC time
+            let utcDate = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+
+            // Check what time this UTC instant shows in the target timezone
+            const formatter = new Intl.DateTimeFormat('en-US', {
+                timeZone,
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+
+            const parts = formatter.formatToParts(utcDate);
+            const partsObj = {};
+            parts.forEach(p => {
+                if (p.type !== 'literal') partsObj[p.type] = p.value;
+            });
+
+            const showsHour = parseInt(partsObj.hour);
+            const showsMinute = parseInt(partsObj.minute);
+            const showsDay = parseInt(partsObj.day);
+
+            // Calculate offset: difference between input and what UTC shows
+            const hourDiff = hour - showsHour;
+            const minuteDiff = minute - showsMinute;
+            const dayDiff = day - showsDay;
+
+            // Adjust UTC date by the offset
+            const totalMinuteDiff = hourDiff * 60 + minuteDiff + dayDiff * 24 * 60;
+            return new Date(utcDate.getTime() + totalMinuteDiff * 60000);
+        }
+
+        function parseTimeInput(timeVal, format) {
+            if (!timeVal || timeVal.trim() === '') return null;
+
+            const timeFormat = format || '24';
+
+            if (timeFormat === '12') {
+                // Parse 12-hour format: "3:30 PM" or "3:30PM"
+                const match = timeVal.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)$/i);
+                if (!match) return null;
+
+                let hour = parseInt(match[1]);
+                const minute = parseInt(match[2]);
+                const period = match[3].toUpperCase();
+
+                // Convert to 24-hour format
+                if (period === 'AM' && hour === 12) hour = 0;
+                if (period === 'PM' && hour !== 12) hour += 12;
+
+                return { hour, minute };
+            } else {
+                // Parse 24-hour format: "15:30"
+                const match = timeVal.trim().match(/^(\d{1,2}):(\d{2})$/);
+                if (!match) return null;
+
+                const hour = parseInt(match[1]);
+                const minute = parseInt(match[2]);
+
+                if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+
+                return { hour, minute };
+            }
+        }
+
         function convertTimezone() {
-            const dtVal = document.getElementById('dtInput').value;
+            const dateVal = document.getElementById('dateInput').value;
+            const timeVal = document.getElementById('timeInput').value;
+            const timeFormat = document.querySelector('.time-format-tab.active').getAttribute('data-format');
             const from = document.getElementById('fromTz').value;
             const to = document.getElementById('toTz').value;
             const result = document.getElementById('tzResult');
 
+            // Get current date/time if inputs are empty
             const now = new Date();
-            let instant;
-            if (!dtVal) {
-                instant = now;
+            let year, month, day, hour, minute;
+
+            if (!dateVal) {
+                year = now.getFullYear();
+                month = now.getMonth() + 1;
+                day = now.getDate();
             } else {
-                const comp = parseLocalDatetimeLocal(dtVal);
-                if (!comp) { result.textContent = 'Invalid date/time'; return; }
-                instant = dateTimeInZoneToInstant(comp, from);
+                const [y, m, d] = dateVal.split('-').map(Number);
+                year = y;
+                month = m;
+                day = d;
             }
 
+            if (!timeVal) {
+                hour = now.getHours();
+                minute = now.getMinutes();
+            } else {
+                const parsed = parseTimeInput(timeVal, timeFormat);
+                if (!parsed) {
+                    result.textContent = 'Invalid time format';
+                    return;
+                }
+                hour = parsed.hour;
+                minute = parsed.minute;
+            }
+
+            // Parse the input date/time as being in the input timezone
+            const instant = parseTimeInZone(year, month, day, hour, minute, from);
+
+            // Format the timestamps
             const srcFmt = formatInTimeZone(instant, from);
             const dstFmt = formatInTimeZone(instant, to);
+            const utcStr = instant.toISOString();
 
+            // Get DST info for output timezone
             const dstInfo = getDSTInfo(instant, to);
+            const dstStatus = dstInfo.usesDST ? (dstInfo.inDST ? 'Yes (currently in DST)' : 'Yes (not currently in DST)') : 'No';
+
             result.innerHTML = `
-                <strong>Source (${from}):</strong> ${srcFmt}<br>
-                <strong>Target (${to}):</strong> ${dstFmt}<br>
-                <strong>UTC:</strong> ${instant.toISOString()}<br>
-                <strong>Target offset:</strong> ${dstInfo.offsetMin} minutes<br>
-                <strong>Uses DST:</strong> ${dstInfo.usesDST ? 'Yes' : 'No'}<br>
-                <strong>In DST on that date:</strong> ${dstInfo.inDST ? 'Yes' : 'No'}
+                <strong>Input Timestamp (${from}):</strong> ${srcFmt}<br>
+                <strong>Output Timestamp (${to}):</strong> ${dstFmt}<br>
+                <strong>UTC Timestamp:</strong> ${utcStr}<br>
+                <strong>Daylight Saving Time:</strong> ${dstStatus}
             `;
         }
 
+        function formatTimeValue(hours, minutes, format) {
+            const paddedHours = String(hours).padStart(2, '0');
+            const paddedMinutes = String(minutes).padStart(2, '0');
+
+            if (format === '12') {
+                const period = hours >= 12 ? 'PM' : 'AM';
+                const displayHours = hours === 0 ? 12 : hours > 12 ? hours - 12 : hours;
+                return `${displayHours}:${paddedMinutes} ${period}`;
+            } else {
+                return `${paddedHours}:${paddedMinutes}`;
+            }
+        }
+
+        function updateTimeInputPlaceholder(format) {
+            const timeInput = document.getElementById('timeInput');
+            if (format === '12') {
+                timeInput.placeholder = 'h:MM AM/PM';
+            } else {
+                timeInput.placeholder = 'HH:MM';
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = now.getHours();
+            const minutes = now.getMinutes();
+
+            document.getElementById('dateInput').value = `${year}-${month}-${day}`;
+            document.getElementById('timeInput').value = formatTimeValue(hours, minutes, '24');
+
+            updateTimeInputPlaceholder('24');
+
+            // Add listeners for time format tabs
+            document.querySelectorAll('.time-format-tab').forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const currentValue = document.getElementById('timeInput').value;
+                    const newFormat = tab.getAttribute('data-format');
+                    const currentFormat = document.querySelector('.time-format-tab.active').getAttribute('data-format');
+
+                    if (newFormat === currentFormat) return;
+
+                    // Update active tab
+                    document.querySelectorAll('.time-format-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    updateTimeInputPlaceholder(newFormat);
+
+                    // Convert displayed time to new format if it has a value
+                    if (currentValue) {
+                        const parsed = parseTimeInput(currentValue, currentFormat);
+                        if (parsed) {
+                            document.getElementById('timeInput').value = formatTimeValue(parsed.hour, parsed.minute, newFormat);
+                        } else {
+                            document.getElementById('timeInput').value = '';
+                        }
+                    }
+                });
+            });
+
             populateTimeZones([document.getElementById('fromTz'), document.getElementById('toTz')]);
             document.getElementById('convertTzBtn').addEventListener('click', convertTimezone);
-            document.getElementById('dtInput').addEventListener('keyup', (e) => { if (e.key === 'Enter') convertTimezone(); });
         });
     </script>
 </body>
