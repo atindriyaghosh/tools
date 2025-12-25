@@ -9,12 +9,31 @@
     <style>
         .result { margin-top: 1rem; padding:1rem; border:1px solid var(--pico-muted-border-color); border-radius:var(--pico-border-radius); background:var(--pico-card-background-color) }
         .tz-list { max-height: 260px; overflow:auto; }
+        a { color: #6b8dd6; }
+        a.back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-weight: bold;
+            padding: 0.4rem 0.6rem;
+            border-radius: var(--pico-border-radius);
+            transition: all 0.2s;
+            color: #6b8dd6;
+        }
+        a.back-link:hover {
+            background-color: rgba(107, 141, 214, 0.1);
+            color: #5b7dc6;
+        }
+        button { background-color: #6b8dd6; border-color: #6b8dd6; color: white; }
+        button:hover { background-color: #5b7dc6; border-color: #5b7dc6; }
+        button:disabled { background-color: #9baee6; border-color: #9baee6; opacity: 0.6; }
     </style>
 </head>
 <body>
     <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
         <hgroup>
-            <h1>Unix timestamp ↔ human readable 🔁</h1>
+            <h1>Unix Timestamp Converter</h1>
             <p>Convert Unix timestamps to dates and dates to Unix timestamps in a chosen timezone.</p>
         </hgroup>
 
@@ -59,7 +78,7 @@
                 <div class="result" id="dateToTsResult"></div>
             </fieldset>
 
-            <p style="margin-top:1rem"><a href="index.html">← Back to Tools</a></p>
+            <p style="margin-top:1rem"><a href="index.html" class="back-link">← Back to Tools</a></p>
         </section>
     </main>
 

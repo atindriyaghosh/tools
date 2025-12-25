@@ -9,47 +9,58 @@
     <style>
         .tool-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1.5rem;
-            margin-top: 2rem;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.5rem;
+            margin-top: 0.5rem;
         }
 
         .tool-card {
             border: 1px solid var(--pico-muted-border-color);
             border-radius: var(--pico-border-radius);
-            padding: 1.5rem;
+            padding: 0.5rem;
             transition: all 0.2s;
             background: var(--pico-card-background-color);
             text-decoration: none;
             color: inherit;
-            display: block;
+            display: flex;
+            flex-direction: column;
         }
 
         .tool-card:hover {
-            border-color: var(--pico-primary);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: #6b8dd6;
+            transform: none;
+            box-shadow: none;
         }
 
         .tool-card h3 {
-            margin-bottom: 0.5rem;
-            color: var(--pico-primary);
+            margin-bottom: 0.15rem;
+            color: inherit;
+            font-size: 0.9rem;
+            font-weight: 600;
         }
 
         .tool-card p {
             margin: 0;
             color: var(--pico-muted-color);
-            font-size: 0.9rem;
+            font-size: 0.75rem;
+            line-height: 1.3;
         }
 
         .tool-icon {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-            display: block;
+            display: none;
         }
 
         .search-box {
-            margin-bottom: 2rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .search-box input {
+            padding: 0.4rem 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .search-box input::placeholder {
+            font-style: italic;
         }
 
         .tool-card.hidden {
@@ -60,28 +71,85 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            margin-top: 2rem;
-            margin-bottom: 1rem;
+            margin-top: 0.75rem;
+            margin-bottom: 0.4rem;
         }
 
         .section-heading h2 {
             margin: 0;
+            font-size: 0.95rem;
+            font-weight: 700;
         }
 
-        .section-count {
-            background: var(--pico-muted-border-color);
-            border-radius: 9999px;
-            padding: 0.25rem 0.75rem;
-            font-size: 0.9rem;
-            color: var(--pico-muted-color);
+        button {
+            background-color: #6b8dd6;
+            border-color: #6b8dd6;
+            color: white;
+        }
+
+        button:hover {
+            background-color: #5b7dc6;
+            border-color: #5b7dc6;
+        }
+
+        .toc-count {
+            font-size: 0.75rem;
+            color: white;
+            background-color: #6b8dd6;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.5rem;
+            height: 1.5rem;
+            margin-left: 0.35rem;
+            font-weight: 600;
         }
 
         .section {
-            margin-bottom: 3rem;
+            margin-bottom: 1rem;
         }
 
         .section.hidden {
             display: none;
+        }
+
+        .table-of-contents {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+            align-items: center;
+        }
+
+        .toc-link {
+            text-decoration: none;
+            color: #6b8dd6;
+        }
+
+        .toc-link:hover {
+            text-decoration: underline;
+        }
+
+        .toc-separator {
+            color: var(--pico-muted-border-color);
+        }
+
+        .toc-separator.hidden {
+            display: none;
+        }
+
+        .toc-link.hidden {
+            display: none;
+        }
+
+        .toc-link.hidden + .toc-separator {
+            display: none;
+        }
+
+        .section-heading h2 {
+            font-size: 1.25rem;
         }
     </style>
 </head>
@@ -92,15 +160,29 @@
             <p>A collection of web-based utilities for everyday tasks</p>
         </hgroup>
 
+        <div class="table-of-contents" id="tableOfContents">
+            <strong style="margin-right: 1rem;">Tool Categories:</strong>
+            <a href="#pdf-tools" class="toc-link"><strong>PDF Tools <span class="toc-count" data-section="pdf-tools">0</span></strong></a>
+            <span class="toc-separator">|</span>
+            <a href="#datetime-tools" class="toc-link"><strong>Date/Time Tools <span class="toc-count" data-section="datetime-tools">0</span></strong></a>
+            <span class="toc-separator">|</span>
+            <a href="#image-tools" class="toc-link"><strong>Image Tools <span class="toc-count" data-section="image-tools">0</span></strong></a>
+            <span class="toc-separator">|</span>
+            <a href="#text-tools" class="toc-link"><strong>Text Tools <span class="toc-count" data-section="text-tools">0</span></strong></a>
+            <span class="toc-separator">|</span>
+            <a href="#api-tools" class="toc-link"><strong>API Tools <span class="toc-count" data-section="api-tools">0</span></strong></a>
+            <span class="toc-separator">|</span>
+            <a href="#other-tools" class="toc-link"><strong>Other <span class="toc-count" data-section="other-tools">0</span></strong></a>
+        </div>
+
         <div class="search-box">
             <input type="search" id="searchInput" placeholder="Search tools..." aria-label="Search tools">
         </div>
 
         <!-- PDF Tools -->
-        <section class="section" data-section="pdf-tools">
+        <section class="section" id="pdf-tools" data-section="pdf-tools">
             <div class="section-heading">
-                <h2>📄 PDF Tools</h2>
-                <span class="section-count">0</span>
+                <h2>PDF Tools</h2>
             </div>
             <div class="tool-grid">
                 <a href="pdf-to-image.html" class="tool-card">
@@ -112,10 +194,9 @@
         </section>
 
         <!-- Date/Time Tools -->
-        <section class="section" data-section="datetime-tools">
+        <section class="section" id="datetime-tools" data-section="datetime-tools">
             <div class="section-heading">
-                <h2>🕒 Date/Time Tools</h2>
-                <span class="section-count">0</span>
+                <h2>Date/Time Tools</h2>
             </div>
             <div class="tool-grid">
                 <a href="timezone-converter.html" class="tool-card">
@@ -139,40 +220,36 @@
         </section>
 
         <!-- Image Tools -->
-        <section class="section" data-section="image-tools">
+        <section class="section" id="image-tools" data-section="image-tools">
             <div class="section-heading">
-                <h2>🖼️ Image Tools</h2>
-                <span class="section-count">0</span>
+                <h2>Image Tools</h2>
             </div>
             <div class="tool-grid">
             </div>
         </section>
 
         <!-- Text Tools -->
-        <section class="section" data-section="text-tools">
+        <section class="section" id="text-tools" data-section="text-tools">
             <div class="section-heading">
-                <h2>📝 Text Tools</h2>
-                <span class="section-count">0</span>
+                <h2>Text Tools</h2>
             </div>
             <div class="tool-grid">
             </div>
         </section>
 
         <!-- API Tools -->
-        <section class="section" data-section="api-tools">
+        <section class="section" id="api-tools" data-section="api-tools">
             <div class="section-heading">
-                <h2>🔌 API Tools</h2>
-                <span class="section-count">0</span>
+                <h2>API Tools</h2>
             </div>
             <div class="tool-grid">
             </div>
         </section>
 
         <!-- Other -->
-        <section class="section" data-section="other-tools">
+        <section class="section" id="other-tools" data-section="other-tools">
             <div class="section-heading">
-                <h2>⚙️ Other</h2>
-                <span class="section-count">0</span>
+                <h2>Other</h2>
             </div>
             <div class="tool-grid">
             </div>
@@ -182,19 +259,40 @@
     <script>
         const searchInput = document.getElementById('searchInput');
         const sections = document.querySelectorAll('.section');
+        const tableOfContents = document.getElementById('tableOfContents');
 
         function updateSectionCounts() {
             sections.forEach(section => {
                 const toolCards = section.querySelectorAll('.tool-card:not(.hidden)');
-                const countSpan = section.querySelector('.section-count');
+                const sectionId = section.id;
                 const count = toolCards.length;
 
-                countSpan.textContent = count;
+                const tocCount = tableOfContents.querySelector(`.toc-count[data-section="${sectionId}"]`);
+                if (tocCount) {
+                    tocCount.textContent = count;
+                }
 
                 if (count === 0) {
                     section.classList.add('hidden');
+                    const tocLink = tableOfContents.querySelector(`a[href="#${sectionId}"]`);
+                    if (tocLink) tocLink.classList.add('hidden');
                 } else {
                     section.classList.remove('hidden');
+                    const tocLink = tableOfContents.querySelector(`a[href="#${sectionId}"]`);
+                    if (tocLink) tocLink.classList.remove('hidden');
+                }
+            });
+
+            // Hide trailing separators after hidden links
+            const tocLinks = tableOfContents.querySelectorAll('.toc-link');
+            tocLinks.forEach((link, index) => {
+                const nextSibling = link.nextElementSibling;
+                if (nextSibling && nextSibling.classList.contains('toc-separator')) {
+                    if (link.classList.contains('hidden') || (index === tocLinks.length - 1) || tocLinks[index + 1].classList.contains('hidden')) {
+                        nextSibling.classList.add('hidden');
+                    } else {
+                        nextSibling.classList.remove('hidden');
+                    }
                 }
             });
         }
