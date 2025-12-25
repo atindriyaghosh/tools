@@ -55,6 +55,34 @@
         .tool-card.hidden {
             display: none;
         }
+
+        .section-heading {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .section-heading h2 {
+            margin: 0;
+        }
+
+        .section-count {
+            background: var(--pico-muted-border-color);
+            border-radius: 9999px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.9rem;
+            color: var(--pico-muted-color);
+        }
+
+        .section {
+            margin-bottom: 3rem;
+        }
+
+        .section.hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -68,52 +96,128 @@
             <input type="search" id="searchInput" placeholder="Search tools..." aria-label="Search tools">
         </div>
 
-        <div class="tool-grid">
-            <a href="pdf-to-image.html" class="tool-card">
-                <span class="tool-icon">📄→🖼️</span>
-                <h3>PDF to Image Converter</h3>
-                <p>Convert PDF pages to PNG or JPEG images. Select specific pages and download them individually.</p>
-            </a>
+        <!-- PDF Tools -->
+        <section class="section" data-section="pdf-tools">
+            <div class="section-heading">
+                <h2>📄 PDF Tools</h2>
+                <span class="section-count">0</span>
+            </div>
+            <div class="tool-grid">
+                <a href="pdf-to-image.html" class="tool-card">
+                    <span class="tool-icon">📄→🖼️</span>
+                    <h3>PDF to Image Converter</h3>
+                    <p>Convert PDF pages to PNG or JPEG images. Select specific pages and download them individually.</p>
+                </a>
+            </div>
+        </section>
 
-            <a href="timezone-converter.html" class="tool-card">
-                <span class="tool-icon">🕒</span>
-                <h3>Timezone Converter</h3>
-                <p>Convert a date/time between IANA timezones and inspect DST information.</p>
-            </a>
+        <!-- Date/Time Tools -->
+        <section class="section" data-section="datetime-tools">
+            <div class="section-heading">
+                <h2>🕒 Date/Time Tools</h2>
+                <span class="section-count">0</span>
+            </div>
+            <div class="tool-grid">
+                <a href="timezone-converter.html" class="tool-card">
+                    <span class="tool-icon">🕒</span>
+                    <h3>Timezone Converter</h3>
+                    <p>Convert a date/time between IANA timezones and inspect DST information.</p>
+                </a>
 
-            <a href="unix-timestamp.html" class="tool-card">
-                <span class="tool-icon">🔁</span>
-                <h3>Unix Timestamp Converter</h3>
-                <p>Convert Unix timestamps to human-readable dates and convert dates to Unix timestamps.</p>
-            </a>
+                <a href="unix-timestamp.html" class="tool-card">
+                    <span class="tool-icon">🔁</span>
+                    <h3>Unix Timestamp Converter</h3>
+                    <p>Convert Unix timestamps to human-readable dates and convert dates to Unix timestamps.</p>
+                </a>
 
-            <a href="datetime-format-converter.html" class="tool-card">
-                <span class="tool-icon">🔤</span>
-                <h3>DateTime Format Converter</h3>
-                <p>Parse and reformat date/time strings using custom or standard formats.</p>
-            </a>
+                <a href="datetime-format-converter.html" class="tool-card">
+                    <span class="tool-icon">🔤</span>
+                    <h3>DateTime Format Converter</h3>
+                    <p>Parse and reformat date/time strings using custom or standard formats.</p>
+                </a>
+            </div>
+        </section>
 
-            <!-- Future tools will go here -->
-        </div>
+        <!-- Image Tools -->
+        <section class="section" data-section="image-tools">
+            <div class="section-heading">
+                <h2>🖼️ Image Tools</h2>
+                <span class="section-count">0</span>
+            </div>
+            <div class="tool-grid">
+            </div>
+        </section>
+
+        <!-- Text Tools -->
+        <section class="section" data-section="text-tools">
+            <div class="section-heading">
+                <h2>📝 Text Tools</h2>
+                <span class="section-count">0</span>
+            </div>
+            <div class="tool-grid">
+            </div>
+        </section>
+
+        <!-- API Tools -->
+        <section class="section" data-section="api-tools">
+            <div class="section-heading">
+                <h2>🔌 API Tools</h2>
+                <span class="section-count">0</span>
+            </div>
+            <div class="tool-grid">
+            </div>
+        </section>
+
+        <!-- Other -->
+        <section class="section" data-section="other-tools">
+            <div class="section-heading">
+                <h2>⚙️ Other</h2>
+                <span class="section-count">0</span>
+            </div>
+            <div class="tool-grid">
+            </div>
+        </section>
     </main>
 
     <script>
         const searchInput = document.getElementById('searchInput');
-        const toolCards = document.querySelectorAll('.tool-card');
+        const sections = document.querySelectorAll('.section');
+
+        function updateSectionCounts() {
+            sections.forEach(section => {
+                const toolCards = section.querySelectorAll('.tool-card:not(.hidden)');
+                const countSpan = section.querySelector('.section-count');
+                const count = toolCards.length;
+
+                countSpan.textContent = count;
+
+                if (count === 0) {
+                    section.classList.add('hidden');
+                } else {
+                    section.classList.remove('hidden');
+                }
+            });
+        }
+
+        // Initial count on page load
+        updateSectionCounts();
 
         searchInput.addEventListener('input', (e) => {
             const searchTerm = e.target.value.toLowerCase();
-            
+            const toolCards = document.querySelectorAll('.tool-card');
+
             toolCards.forEach(card => {
                 const title = card.querySelector('h3').textContent.toLowerCase();
                 const description = card.querySelector('p').textContent.toLowerCase();
-                
+
                 if (title.includes(searchTerm) || description.includes(searchTerm)) {
                     card.classList.remove('hidden');
                 } else {
                     card.classList.add('hidden');
                 }
             });
+
+            updateSectionCounts();
         });
     </script>
 </body>
