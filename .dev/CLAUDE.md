@@ -136,10 +136,44 @@ Tool counts on the landing page's table of contents are displayed as circular ba
     font-weight: 600;
 }
 ```
-- Creates a perfect circle with soft blue background
-- White text with bold weight for readability
-- Positioned inline next to category names
+- Creates a perfect circle with soft blue background (#6b8dd6)
+- White text (color: white) with bold weight (600) for readability
+- Positioned inline next to category names with 0.35rem margin
 - Automatically updates when tools are filtered by search
+- Used to provide quick visual feedback on number of tools per category
+
+### Visual Design Consistency Guidelines
+To maintain visual consistency across all pages:
+
+1. **Spacing & Layout**:
+   - Tool cards: 0.5rem padding, 0.5rem gap
+   - Search box: 0.4rem 0.75rem padding
+   - Section headers: 0.75rem top margin, 0.4rem bottom margin
+   - Back links: 0.4rem 0.6rem padding
+
+2. **Typography**:
+   - Section titles: 1.25rem, bold (font-weight: 700)
+   - Card titles: 0.9rem, bold (font-weight: 600)
+   - Card descriptions: 0.75rem, muted color, line-height 1.3
+   - TOC/search: 0.85rem
+   - Placeholder text: italic
+
+3. **Colors** (all pages):
+   - Primary accent: #6b8dd6 (soft blue) for links, buttons, badges
+   - Hover: #5b7dc6 (darker soft blue)
+   - Disabled: #9baee6 (light soft blue) with 0.6 opacity
+   - Backgrounds: inherit from Pico CSS defaults (light backgrounds)
+
+4. **Interactions**:
+   - All transitions: 0.2s duration
+   - Hover effects: subtle background changes, color adjustments
+   - No aggressive animations or visual effects
+   - Back links: inline-flex layout for proper icon/text alignment
+
+5. **Responsive Design**:
+   - Grid uses auto-fill with minmax(200px, 1fr)
+   - Flex layouts wrap on smaller screens
+   - All padding/spacing scales proportionally
 
 ## Tool Template Structure
 
@@ -161,8 +195,12 @@ Every tool must have:
 6. **Accessibility**: Proper labels, ARIA attributes where needed
 7. **Tool Name Format**:
    - Use Title Case (e.g., "Timezone Converter", "Unix Timestamp Converter")
-   - No icons or emojis in tool names
+   - No icons or emojis in tool names or page titles
    - Keep tool names clear and descriptive
+   - Consistent naming across:
+     - HTML `<title>` tag
+     - Page `<h1>` heading
+     - Landing page tool card title
 
 ## Common Patterns
 
@@ -305,30 +343,72 @@ The index.html uses a compact, space-efficient layout:
 - "Tool Categories:" label followed by bold category links separated by "|" dividers
 - Links are anchor-based (e.g., `#pdf-tools`) for quick navigation
 - Empty categories auto-hide when they contain no tools
-- Single line, small font size (0.85rem)
-- **Tool counts**: Displayed as circular badges with soft blue background (#6b8dd6), white text
-  - Example: `Date/Time Tools [3]` where `[3]` appears as a small circle badge
-  - Automatically updated as tools are filtered
+- **Styling**:
+  - Display: flex with wrap
+  - Gap: 0.75rem between items
+  - Font size: 0.85rem
+  - Margin bottom: 0.75rem
+  - Line height: centered vertically with align-items: center
+  - Link color: soft blue (#6b8dd6)
+  - Link hover: underline text-decoration
+- **Tool counts**: Displayed as circular badges
+  - Background: soft blue (#6b8dd6)
+  - Text color: white
+  - Font size: 0.75rem (bold weight 600)
+  - Width/height: 1.5rem (perfect circle)
+  - Display: inline-flex with centered content
+  - Margin left: 0.35rem for spacing from category name
+  - Auto-updates as tools are filtered
 
 ### Search Box
 - Compact search input below TOC
-- Reduced padding (0.4rem 0.75rem) and font size (0.85rem)
+- **Styling**:
+  - Padding: 0.4rem 0.75rem
+  - Font size: 0.85rem
+  - Margin bottom: 0.75rem
+  - Placeholder text: **italics** for visual distinction
 - Real-time filtering across all visible tools
+- Updates section visibility and tool counts dynamically
 
 ### Tool Sections
 - Organized by category (PDF Tools, Date/Time Tools, Image Tools, Text Tools, API Tools, Other)
-- Each section header shows the category name and tool count badge
-- Section automatically hides if it has 0 tools
-- Sections display after search results update
+- **Section header styling**:
+  - Font size: 1.25rem
+  - Font weight: 700 (bold)
+  - Margin top: 0.75rem
+  - Margin bottom: 0.4rem
+  - Display: flex with gap and align-items
+- Empty sections automatically hide if they have 0 tools
+- Section visibility updates dynamically with search results
+- TOC links and separators hide/show based on section visibility
 
 ### Tool Grid Layout
 - **Grid**: `repeat(auto-fill, minmax(200px, 1fr))` - auto-fills columns responsively
 - **Gap**: 0.5rem between items
-- **Card padding**: 0.5rem (compact spacing)
-- **Font sizes**: 0.9rem for title, 0.75rem for description
-- **Styling**: Border (1px solid), rounded corners, light background
-- **Hover effect**: Background changes to primary color, title highlights in blue
-- **Icons**: Hidden (not displayed)
+- **Margin top**: 0.5rem
+- **Tool Card Styling**:
+  - Padding: 0.5rem (compact spacing)
+  - Border: 1px solid (muted border color)
+  - Border radius: var(--pico-border-radius)
+  - Background: var(--pico-card-background-color)
+  - Display: flex, flex-direction: column
+  - Transition: all 0.2s
+  - Text decoration: none
+  - Color: inherit
+  - **Title (h3)**:
+    - Font size: 0.9rem
+    - Font weight: 600
+    - Margin bottom: 0.15rem
+    - Color: inherit
+  - **Description (p)**:
+    - Font size: 0.75rem
+    - Color: muted color
+    - Line height: 1.3
+    - Margin: 0
+- **Hover effect**:
+  - Border color changes to soft blue (#6b8dd6)
+  - Subtle visual feedback
+- **Icons**: Hidden (not displayed in cards)
 
 ### Tool Card Format
 ```html
@@ -343,6 +423,43 @@ The index.html uses a compact, space-efficient layout:
 - Updates section visibility (hides sections with no matching tools)
 - Updates tool counts dynamically
 - Manages TOC link and separator visibility based on filtered results
+
+## Tool Page Visual Design
+
+All individual tool pages (pdf-to-image.html, timezone-converter.html, etc.) follow consistent styling:
+
+### Page Layout
+- Main container uses `.container` class from Pico CSS
+- Header section with `<hgroup>` for title and subtitle
+- Tool content wrapped in semantic HTML (`<section>`, `<article>`, `<fieldset>`)
+
+### Back Navigation
+- Positioned at the top (before h1) and bottom of every tool page
+- **Styling** (`.back-link` class):
+  - Display: inline-flex
+  - Align items: center
+  - Gap: 0.35rem (space between arrow and text)
+  - Font weight: bold
+  - Padding: 0.4rem 0.6rem
+  - Border radius: var(--pico-border-radius)
+  - Color: soft blue (#6b8dd6)
+  - Transition: all 0.2s
+  - **Hover state**:
+    - Background: rgba(107, 141, 214, 0.1) (subtle light blue background)
+    - Color: darker soft blue (#5b7dc6)
+
+### Tool Page Color Scheme
+- Link color: soft blue (#6b8dd6)
+- Button color: soft blue (#6b8dd6)
+  - Hover: darker soft blue (#5b7dc6)
+  - Disabled: light soft blue (#9baee6) with 0.6 opacity
+- Consistent with landing page for unified visual experience
+
+### Tool-Specific Styling
+- Each tool may have additional custom styles for its specific UI
+- Use consistent spacing, colors, and transitions
+- Leverage Pico CSS variables where possible
+- Apply custom colors directly to elements (not via CSS variables that Pico doesn't support)
 
 ## Code Style Preferences
 
@@ -368,7 +485,7 @@ Before considering a tool complete:
 - [ ] Spec document exists in `.dev/specs/` directory (or create from code)
 - [ ] Tool does ONE thing well
 - [ ] Tool file is in root directory (not subdirectory)
-- [ ] Back navigation to index.html present
+- [ ] Back navigation to index.html present (top and bottom)
 - [ ] File size limits displayed and enforced
 - [ ] Error messages are clear and helpful
 - [ ] Loading states inform user during processing
@@ -378,6 +495,17 @@ Before considering a tool complete:
 - [ ] Tested with edge cases from spec
 - [ ] localStorage usage (if any) is documented in code
 - [ ] Spec updated if code was modified directly
+
+### Visual Design Checklist
+- [ ] Tool name uses Title Case (no icons/emojis)
+- [ ] Consistent color scheme: soft blue (#6b8dd6) for links/buttons
+- [ ] Back links styled with `.back-link` class (padding, border-radius, hover effects)
+- [ ] All buttons use soft blue color scheme with proper hover/disabled states
+- [ ] Spacing and padding match guidelines (0.4rem-1rem range)
+- [ ] Typography follows font size guidelines (0.75rem-1.25rem range)
+- [ ] Transitions set to 0.2s for all interactive elements
+- [ ] Page title matches landing page tool card title exactly
+- [ ] No icons/emojis in page headings or tool names
 
 ## Current Tools
 
