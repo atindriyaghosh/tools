@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'none';
+                   script-src 'self' 'unsafe-inline';
+                   style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline';
+                   img-src 'self' data: blob:;
+                   connect-src 'none';">
+    <title>Date Calculator</title>
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="common-styles.css">
+    <style>
+        .calc-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--pico-muted-border-color);
+        }
+        .calc-tab {
+            flex: 1;
+            padding: 0.4rem 0.8rem;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: var(--pico-muted-color);
+            font-weight: normal;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .calc-tab:hover {
+            background-color: var(--pico-card-background-color);
+        }
+        .calc-tab.active {
+            color: #6b8dd6;
+            border-bottom-color: #6b8dd6;
+            font-weight: bold;
+        }
+        .calc-grid {
+            display: grid;
+            gap: 0.35rem;
+            margin-bottom: 0.75rem;
+            align-items: center;
+        }
+        #differenceMode .calc-grid {
+            grid-template-columns: auto auto auto auto;
+        }
+        #additionMode .calc-grid {
+            grid-template-columns: auto auto 65px auto auto;
+        }
+        .calc-grid label {
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            gap: 0.15rem;
+            height: 100%;
+        }
+        .calc-grid label > span {
+            font-weight: 600;
+            color: #6b8dd6;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            line-height: 1;
+            min-height: 0.85rem;
+        }
+        .calc-grid label input,
+        .calc-grid label select {
+            margin: 0;
+            padding: 0.35rem 0.45rem;
+            font-size: 0.9rem;
+            height: 2.15rem;
+            box-sizing: border-box;
+        }
+        #additionMode .calc-grid label:nth-child(3) input {
+            width: 100%;
+            padding: 0.35rem 0.35rem;
+        }
+        .calc-grid label input[type="checkbox"] {
+            width: 1.1rem;
+            height: 1.1rem;
+            margin: 0;
+            margin-right: 0.5rem;
+            padding: 0;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+        .calc-grid label[style*="flex-direction: row"] {
+            flex-direction: row;
+            align-items: center;
+            gap: 0.4rem;
+            height: 2.15rem;
+            padding-top: 0.85rem;
+        }
+        .calc-grid label[style*="flex-direction: row"] > span {
+            margin: 0;
+            min-height: auto;
+            font-size: 0.9rem;
+            font-weight: normal;
+            text-transform: none;
+        }
+        .calc-button {
+            padding: 0.35rem 0.75rem;
+            font-size: 0.9rem;
+            height: 2.15rem;
+            margin: 0;
+            align-self: start;
+            margin-top: 1rem;
+        }
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+        .result-item {
+            padding: 0.4rem 0.6rem;
+            background: var(--pico-card-background-color);
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+        }
+        .result-label {
+            font-weight: 600;
+            color: #6b8dd6;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            display: block;
+            margin-bottom: 0.15rem;
+            line-height: 1.2;
+        }
+        .result-value {
+            font-size: 0.85rem;
+            word-break: break-word;
+            font-weight: 500;
+            line-height: 1.3;
+        }
+        @media (max-width: 1024px) {
+            #differenceMode .calc-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            #additionMode .calc-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+            .result-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 800px) {
+            #differenceMode .calc-grid,
+            #additionMode .calc-grid {
+                grid-template-columns: 1fr;
+                align-items: stretch;
+            }
+            .calc-grid label {
+                height: auto;
+            }
+            .calc-grid label[style*="flex-direction: row"] {
+                height: auto;
+            }
+            .calc-grid label input,
+            .calc-grid label select {
+                height: auto;
+            }
+            #additionMode .calc-grid label:nth-child(3) input {
+                width: 100%;
+                padding: 0.35rem 0.45rem;
+            }
+            .calc-button {
+                height: auto;
+                align-self: auto;
+                margin-top: 0;
+            }
+            .result-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
+        <hgroup>
+            <h1>Date Calculator</h1>
+            <p>Calculate differences between dates or add/subtract time periods. All processing happens locally in your browser.</p>
+        </hgroup>
+
+        <section class="panel">
+            <!-- Mode Tabs -->
+            <div class="calc-tabs">
+                <button type="button" class="calc-tab active" data-mode="difference">Date Difference</button>
+                <button type="button" class="calc-tab" data-mode="addition">Add/Subtract Time</button>
+            </div>
+
+            <!-- Mode 1: Date Difference -->
+            <article id="differenceMode">
+                <div class="calc-grid">
+                    <label>
+                        <span>Start</span>
+                        <input type="date" id="startDate">
+                    </label>
+
+                    <label>
+                        <span>End</span>
+                        <input type="date" id="endDate">
+                    </label>
+
+                    <label style="flex-direction: row; align-items: center; gap: 0.3rem;">
+                        <input type="checkbox" id="includeEndDate">
+                        <span>Include end</span>
+                    </label>
+
+                    <button class="calc-button" id="calculateDiffBtn">Calculate</button>
+                </div>
+
+                <div id="diffResult" class="result" style="display: none;"></div>
+            </article>
+
+            <!-- Mode 2: Add/Subtract Time -->
+            <article id="additionMode" style="display: none;">
+                <div class="calc-grid">
+                    <label>
+                        <span>Date</span>
+                        <input type="date" id="baseDate">
+                    </label>
+
+                    <label>
+                        <span>Op</span>
+                        <select id="operation">
+                            <option value="add">Add</option>
+                            <option value="subtract">Sub</option>
+                        </select>
+                    </label>
+
+                    <label>
+                        <span>Amt</span>
+                        <input type="number" id="amount" min="0" value="1">
+                    </label>
+
+                    <label>
+                        <span>Unit</span>
+                        <select id="unit">
+                            <option value="days">Days</option>
+                            <option value="weeks">Weeks</option>
+                            <option value="months">Months</option>
+                            <option value="years">Years</option>
+                        </select>
+                    </label>
+
+                    <button class="calc-button" id="calculateAddBtn">Calculate</button>
+                </div>
+
+                <div id="addResult" class="result" style="display: none;"></div>
+            </article>
+
+            <article id="status"></article>
+
+            <p style="margin-top: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
+        </section>
+    </main>
+
+    <script>
+        // Initialize with today's date
+        function initializeDates() {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            document.getElementById('startDate').valueAsDate = today;
+            document.getElementById('endDate').valueAsDate = tomorrow;
+            document.getElementById('baseDate').valueAsDate = today;
+        }
+
+        // Tab switching
+        document.querySelectorAll('.calc-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const mode = e.target.dataset.mode;
+
+                // Update tab active state
+                document.querySelectorAll('.calc-tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+
+                // Show/hide modes
+                document.getElementById('differenceMode').style.display = mode === 'difference' ? 'block' : 'none';
+                document.getElementById('additionMode').style.display = mode === 'addition' ? 'block' : 'none';
+
+                // Clear results
+                document.getElementById('diffResult').style.display = 'none';
+                document.getElementById('addResult').style.display = 'none';
+                document.getElementById('status').textContent = '';
+            });
+        });
+
+        // Calculate date difference
+        document.getElementById('calculateDiffBtn').addEventListener('click', () => {
+            const startStr = document.getElementById('startDate').value;
+            const endStr = document.getElementById('endDate').value;
+            const includeEnd = document.getElementById('includeEndDate').checked;
+
+            if (!startStr || !endStr) {
+                showStatus('Please select both start and end dates', true);
+                return;
+            }
+
+            try {
+                const startDate = new Date(startStr + 'T00:00:00Z');
+                const endDate = new Date(endStr + 'T00:00:00Z');
+
+                if (startDate > endDate) {
+                    showStatus('End date must be after start date', true);
+                    return;
+                }
+
+                // Calculate total days
+                let totalDays = Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24));
+                if (includeEnd) totalDays += 1;
+
+                // Calculate weeks and remaining days
+                const weeks = Math.floor(totalDays / 7);
+                const remainingDaysFromWeeks = totalDays % 7;
+
+                // Calculate months and days (calendar-based)
+                const monthsDiff = getMonthDifference(startDate, endDate);
+                const daysInCurrentMonth = getDaysRemainingInMonth(startDate, monthsDiff);
+
+                // Calculate years, months, days
+                let years = 0, months = monthsDiff;
+                while (months >= 12) {
+                    years++;
+                    months -= 12;
+                }
+
+                const daysComponent = includeEnd ? remainingDaysFromWeeks + 1 : remainingDaysFromWeeks;
+
+                // Calculate hours and minutes
+                const totalHours = totalDays * 24;
+                const totalMinutes = totalDays * 24 * 60;
+
+                // Format result
+                const results = [
+                    { label: 'Total Days', value: totalDays.toLocaleString() },
+                    { label: 'Total Weeks', value: (totalDays / 7).toFixed(2) },
+                    { label: 'Breakdown: Weeks + Days', value: `${weeks} weeks, ${remainingDaysFromWeeks} days` },
+                    { label: 'Breakdown: Years, Months + Days', value: `${years} year${years !== 1 ? 's' : ''}, ${months} month${months !== 1 ? 's' : ''}, ${daysComponent} day${daysComponent !== 1 ? 's' : ''}` },
+                    { label: 'Total Hours', value: totalHours.toLocaleString() },
+                    { label: 'Total Minutes', value: totalMinutes.toLocaleString() }
+                ];
+
+                displayResults(results, 'diffResult');
+            } catch (err) {
+                showStatus('Error calculating difference: ' + err.message, true);
+            }
+        });
+
+        // Calculate add/subtract
+        document.getElementById('calculateAddBtn').addEventListener('click', () => {
+            const baseDateStr = document.getElementById('baseDate').value;
+            const operation = document.getElementById('operation').value;
+            const amount = parseInt(document.getElementById('amount').value);
+            const unit = document.getElementById('unit').value;
+
+            if (!baseDateStr) {
+                showStatus('Please select a start date', true);
+                return;
+            }
+
+            if (amount < 0) {
+                showStatus('Amount must be 0 or greater', true);
+                return;
+            }
+
+            try {
+                const baseDate = new Date(baseDateStr + 'T00:00:00Z');
+                const resultDate = new Date(baseDate);
+                const sign = operation === 'add' ? 1 : -1;
+
+                // Perform calculation
+                switch(unit) {
+                    case 'days':
+                        resultDate.setDate(resultDate.getDate() + (sign * amount));
+                        break;
+                    case 'weeks':
+                        resultDate.setDate(resultDate.getDate() + (sign * amount * 7));
+                        break;
+                    case 'months':
+                        resultDate.setMonth(resultDate.getMonth() + (sign * amount));
+                        break;
+                    case 'years':
+                        resultDate.setFullYear(resultDate.getFullYear() + (sign * amount));
+                        break;
+                }
+
+                // Calculate difference from today
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const daysFromToday = Math.floor((resultDate - today) / (1000 * 60 * 60 * 24));
+
+                const results = [
+                    { label: 'Result Date', value: formatDateNicely(resultDate) },
+                    { label: 'ISO Format', value: resultDate.toISOString().split('T')[0] },
+                    { label: 'Days from today', value: formatDaysFromToday(daysFromToday) }
+                ];
+
+                displayResults(results, 'addResult');
+            } catch (err) {
+                showStatus('Error calculating result: ' + err.message, true);
+            }
+        });
+
+        // Helper: Calculate month difference
+        function getMonthDifference(start, end) {
+            let months = (end.getUTCFullYear() - start.getUTCFullYear()) * 12;
+            months += end.getUTCMonth() - start.getUTCMonth();
+            if (end.getUTCDate() < start.getUTCDate()) {
+                months--;
+            }
+            return Math.max(0, months);
+        }
+
+        // Helper: Get days remaining in month
+        function getDaysRemainingInMonth(date, monthsDiff) {
+            const temp = new Date(date);
+            temp.setUTCMonth(temp.getUTCMonth() + monthsDiff);
+            const lastDay = new Date(temp.getUTCFullYear(), temp.getUTCMonth() + 1, 0).getUTCDate();
+            return lastDay - date.getUTCDate();
+        }
+
+        // Helper: Format date nicely
+        function formatDateNicely(date) {
+            const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+            const dayName = days[date.getUTCDay()];
+            const monthName = months[date.getUTCMonth()];
+            const day = date.getUTCDate();
+            const year = date.getUTCFullYear();
+
+            return `${dayName}, ${monthName} ${day}, ${year}`;
+        }
+
+        // Helper: Format days from today
+        function formatDaysFromToday(days) {
+            if (days === 0) return 'Today';
+            if (days === 1) return 'Tomorrow';
+            if (days === -1) return 'Yesterday';
+            if (days > 0) return `in ${days} days`;
+            return `${Math.abs(days)} days ago`;
+        }
+
+        // Helper: Display results
+        function displayResults(results, elementId) {
+            const resultDiv = document.getElementById(elementId);
+            resultDiv.innerHTML = results.map(r => `
+                <div class="result-item">
+                    <div class="result-label">${r.label}</div>
+                    <div class="result-value">${r.value}</div>
+                </div>
+            `).join('');
+            resultDiv.style.display = 'block';
+            document.getElementById('status').textContent = '';
+        }
+
+        // Helper: Show status message
+        function showStatus(message, isError) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'visible';
+            if (isError) status.setAttribute('aria-invalid', 'true');
+            else status.removeAttribute('aria-invalid');
+            document.getElementById('diffResult').style.display = 'none';
+            document.getElementById('addResult').style.display = 'none';
+        }
+
+        // Initialize
+        initializeDates();
+    </script>
+</body>
+</html>
