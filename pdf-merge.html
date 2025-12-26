@@ -485,16 +485,29 @@
                     });
                 }
 
+                // Prompt user for filename
+                const filename = prompt('Enter filename for merged PDF:', 'merged.pdf');
+
+                if (filename === null) {
+                    // User clicked Cancel
+                    showStatus('Merge cancelled', false);
+                    mergeBtn.disabled = false;
+                    return;
+                }
+
+                // Ensure filename ends with .pdf
+                const finalFilename = filename.endsWith('.pdf') ? filename : filename + '.pdf';
+
                 const pdfBytes = await mergedPdf.save();
                 const blob = new Blob([pdfBytes], { type: 'application/pdf' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'merged.pdf';
+                a.download = finalFilename;
                 a.click();
                 URL.revokeObjectURL(url);
 
-                showStatus(`✓ Successfully merged ${pdfs.length} PDF(s)`, false);
+                showStatus(`✓ Successfully merged ${pdfs.length} PDF(s) as ${finalFilename}`, false);
                 mergeBtn.disabled = false;
             } catch (error) {
                 showStatus(`Error merging PDFs: ${error.message}`, true);
