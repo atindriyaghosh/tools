@@ -24,6 +24,16 @@ python3 -m http.server 8000 --bind 127.0.0.1
 
 Then open `http://127.0.0.1:8000/` in your browser.
 
-## Contributing
+## Current Tools
 
-Tool specifications are maintained in `.dev/specs/`. See `.dev/CLAUDE.md` for development guidelines.
+### PDF Tools
+- **PDF to Image Converter** - Converts PDF pages to PNG or JPEG images with page selection
+
+### Date/Time Tools
+- **Timezone Converter** - Converts dates and times between timezones with DST information
+- **Unix Timestamp Converter** - Converts between Unix timestamps and human-readable dates
+- **DateTime Format Converter** - Parses and reformats date/time strings with custom patterns
+
+## Development
+
+See `.dev/CLAUDE.md` for development workflow and guidelines.
