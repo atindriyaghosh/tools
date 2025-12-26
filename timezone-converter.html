@@ -6,6 +6,7 @@
     <title>Timezone Converter</title>
     <link rel="shortcut icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="common-styles.css">
     <style>
         .tz-grid {
             display: grid;
@@ -38,23 +39,6 @@
                 grid-template-columns: 1fr;
             }
         }
-        .tz-list { max-height: 260px; overflow:auto; }
-        .result { margin-top: 1rem; padding:1rem; border:1px solid var(--pico-muted-border-color); border-radius:var(--pico-border-radius); background:var(--pico-card-background-color) }
-        a { color: #6b8dd6; }
-        a.back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.35rem;
-            font-weight: bold;
-            padding: 0.4rem 0.6rem;
-            border-radius: var(--pico-border-radius);
-            transition: all 0.2s;
-            color: #6b8dd6;
-        }
-        a.back-link:hover {
-            background-color: rgba(107, 141, 214, 0.1);
-            color: #5b7dc6;
-        }
         .time-format-tabs {
             display: flex;
             gap: 0;
@@ -82,9 +66,6 @@
             border-bottom-color: #6b8dd6;
             font-weight: bold;
         }
-        button { background-color: #6b8dd6; border-color: #6b8dd6; color: white; }
-        button:hover { background-color: #5b7dc6; border-color: #5b7dc6; }
-        button:disabled { background-color: #9baee6; border-color: #9baee6; opacity: 0.6; }
     </style>
 </head>
 <body>
