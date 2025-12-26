@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'none';
+                   script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline';
+                   style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline';
+                   img-src 'self' data: blob:;
+                   connect-src 'none';">
+    <title>Extract Text from PDF</title>
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="common-styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        .upload-area {
+            border: 2px dashed var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            padding: 1rem 1.25rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 1rem;
+        }
+
+        .upload-area:hover {
+            border-color: #6b8dd6;
+            background: rgba(107, 141, 214, 0.05);
+        }
+
+        .upload-area.drag-over {
+            border-color: #6b8dd6;
+            background: rgba(107, 141, 214, 0.05);
+        }
+
+        .upload-area p {
+            margin: 0;
+        }
+
+        .upload-area p:first-child {
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .upload-area p:last-child {
+            font-size: 0.8rem;
+            color: var(--pico-muted-color);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        #controls {
+            display: none;
+        }
+
+        #controls.visible {
+            display: block;
+        }
+
+        #resultArea {
+            display: none;
+        }
+
+        #resultArea.visible {
+            display: block;
+        }
+
+        #extractedText {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .button-row button {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .char-info {
+            font-size: 0.875rem;
+            color: var(--pico-muted-color);
+            margin-top: 0.5rem;
+        }
+
+        #status {
+            display: none;
+        }
+
+        #status.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
+        <hgroup>
+            <h1>Extract Text from PDF</h1>
+            <p>Extract all text content from a PDF file. Export as plain text or markdown with preserved structure.</p>
+        </hgroup>
+
+        <div class="upload-area" id="uploadArea">
+            <p>📄 Drop PDF here or click to upload</p>
+            <p>Maximum file size: 50 MB</p>
+            <input type="file" id="fileInput" accept=".pdf">
+        </div>
+
+        <article id="controls">
+            <label>
+                Output Format
+                <select id="formatSelect">
+                    <option value="plain">Plain Text</option>
+                    <option value="markdown">Markdown</option>
+                </select>
+            </label>
+
+            <button id="extractBtn" disabled>Extract Text</button>
+        </article>
+
+        <article id="resultArea">
+            <div class="button-row">
+                <button id="copyBtn">Copy to Clipboard</button>
+                <button id="downloadTxtBtn">Download as .txt</button>
+                <button id="downloadMdBtn">Download as .md</button>
+            </div>
+
+            <textarea id="extractedText" rows="20" readonly></textarea>
+
+            <div class="char-info">
+                Total characters: <span id="charCount">0</span> | Total words: <span id="wordCount">0</span>
+            </div>
+        </article>
+
+        <article id="status"></article>
+
+        <p style="margin-top:1rem"><a href="index.html" class="back-link">← Back to Tools</a></p>
+    </main>
+
+    <script>
+        // Set up PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const controls = document.getElementById('controls');
+        const formatSelect = document.getElementById('formatSelect');
+        const extractBtn = document.getElementById('extractBtn');
+        const resultArea = document.getElementById('resultArea');
+        const extractedText = document.getElementById('extractedText');
+        const copyBtn = document.getElementById('copyBtn');
+        const downloadTxtBtn = document.getElementById('downloadTxtBtn');
+        const downloadMdBtn = document.getElementById('downloadMdBtn');
+        const charCount = document.getElementById('charCount');
+        const wordCount = document.getElementById('wordCount');
+        const status = document.getElementById('status');
+
+        let pdfDoc = null;
+        let currentFileName = '';
+
+        // Upload area interactions
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type === 'application/pdf') {
+                handleFile(file);
+            } else if (file) {
+                showStatus('Please upload a PDF file', true);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+
+        async function handleFile(file) {
+            const maxSize = 50 * 1024 * 1024; // 50 MB
+
+            if (file.size > maxSize) {
+                showStatus(`File too large: ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum allowed: 50 MB`, true);
+                return;
+            }
+
+            currentFileName = file.name.replace(/\.pdf$/i, '');
+            showStatus('Loading PDF...', false);
+            resultArea.classList.remove('visible');
+            extractBtn.disabled = true;
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                pdfDoc = await pdfjsLib.getDocument(arrayBuffer).promise;
+
+                showStatus(`PDF loaded: ${pdfDoc.numPages} pages. Ready to extract.`, false);
+                controls.classList.add('visible');
+                extractBtn.disabled = false;
+            } catch (error) {
+                showStatus(`Error loading PDF: ${error.message}`, true);
+            }
+        }
+
+        extractBtn.addEventListener('click', async () => {
+            if (!pdfDoc) return;
+
+            const format = formatSelect.value;
+            extractBtn.disabled = true;
+            showStatus(`Extracting text from ${pdfDoc.numPages} page(s)...`, false);
+
+            try {
+                let fullText = '';
+
+                for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+                    const page = await pdfDoc.getPage(pageNum);
+                    const textContent = await page.getTextContent();
+
+                    if (format === 'markdown') {
+                        fullText += extractPageAsMarkdown(textContent, pageNum, pdfDoc.numPages);
+                    } else {
+                        fullText += extractPageAsPlainText(textContent);
+                    }
+
+                    showStatus(`Extracting: ${pageNum} of ${pdfDoc.numPages}...`, false);
+                }
+
+                displayExtractedText(fullText);
+                extractBtn.disabled = false;
+                showStatus(`✓ Successfully extracted text from ${pdfDoc.numPages} page(s)`, false);
+            } catch (error) {
+                showStatus(`Error extracting text: ${error.message}`, true);
+                extractBtn.disabled = false;
+            }
+        });
+
+        function extractPageAsPlainText(textContent) {
+            let text = '';
+            let lastY = null;
+
+            // Sort items by position
+            const sortedItems = textContent.items.sort((a, b) => {
+                const yDiff = b.transform[5] - a.transform[5];
+                if (Math.abs(yDiff) > 2) return yDiff;
+                return a.transform[4] - b.transform[4];
+            });
+
+            sortedItems.forEach(item => {
+                const currentY = item.transform[5];
+
+                if (lastY !== null && Math.abs(currentY - lastY) > 5) {
+                    text += '\n';
+                }
+
+                text += item.str + ' ';
+                lastY = currentY;
+            });
+
+            return text.trim() + '\n\n';
+        }
+
+        function extractPageAsMarkdown(textContent, pageNum, totalPages) {
+            let text = `# Page ${pageNum}\n\n`;
+            let lastY = null;
+            let currentParagraph = '';
+
+            const sortedItems = textContent.items.sort((a, b) => {
+                const yDiff = b.transform[5] - a.transform[5];
+                if (Math.abs(yDiff) > 2) return yDiff;
+                return a.transform[4] - b.transform[4];
+            });
+
+            sortedItems.forEach((item, index) => {
+                const currentY = item.transform[5];
+                const itemHeight = item.height || 0;
+
+                if (lastY !== null && Math.abs(currentY - lastY) > 10) {
+                    // Line break detected
+                    if (currentParagraph.trim()) {
+                        // Try to detect if line is a heading (larger font)
+                        if (itemHeight > 12) {
+                            text += `## ${currentParagraph.trim()}\n\n`;
+                        } else {
+                            text += `${currentParagraph.trim()}\n`;
+                        }
+                        currentParagraph = '';
+                    }
+                }
+
+                currentParagraph += item.str + ' ';
+                lastY = currentY;
+            });
+
+            if (currentParagraph.trim()) {
+                text += `${currentParagraph.trim()}\n`;
+            }
+
+            text += '\n---\n\n';
+            return text;
+        }
+
+        function displayExtractedText(text) {
+            extractedText.value = text;
+            resultArea.classList.add('visible');
+
+            // Update character and word counts
+            const chars = text.length;
+            const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
+
+            charCount.textContent = chars.toLocaleString();
+            wordCount.textContent = words.toLocaleString();
+        }
+
+        copyBtn.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(extractedText.value);
+                showStatus('✓ Copied to clipboard', false);
+                setTimeout(() => {
+                    status.classList.remove('visible');
+                }, 2000);
+            } catch (err) {
+                showStatus('Error copying to clipboard', true);
+            }
+        });
+
+        downloadTxtBtn.addEventListener('click', () => {
+            const blob = new Blob([extractedText.value], { type: 'text/plain' });
+            downloadFile(blob, `${currentFileName}.txt`);
+        });
+
+        downloadMdBtn.addEventListener('click', () => {
+            const blob = new Blob([extractedText.value], { type: 'text/markdown' });
+            downloadFile(blob, `${currentFileName}.md`);
+        });
+
+        function downloadFile(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function showStatus(message, isError) {
+            status.textContent = message;
+            status.className = 'visible';
+            if (isError) {
+                status.setAttribute('aria-invalid', 'true');
+            } else {
+                status.removeAttribute('aria-invalid');
+            }
+        }
+    </script>
+</body>
+</html>
