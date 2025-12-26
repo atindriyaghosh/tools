@@ -12,11 +12,14 @@ This repository contains standalone HTML tools for common tasks like PDF convers
 
 ### PDF Tools
 - **PDF to Image Converter** - Converts PDF pages to PNG or JPEG images with page selection
+- **Merge PDFs** - Combines multiple PDF files into a single document with drag-and-drop reordering
+- **Extract Text from PDF** - Extracts text content from PDFs with plain text or markdown output
 
 ### Date/Time Tools
 - **Timezone Converter** - Converts dates and times between timezones with DST information
 - **Unix Timestamp Converter** - Converts between Unix timestamps and human-readable dates
 - **DateTime Format Converter** - Parses and reformats date/time strings with custom patterns
+- **Date Calculator** - Calculates differences between dates or adds/subtracts time periods from a date
 
 ## Tech Stack
 
