@@ -52,7 +52,7 @@
         .upload-area {
             border: 2px dashed var(--pico-muted-border-color);
             border-radius: var(--pico-border-radius);
-            padding: 3rem;
+            padding: 1rem 1.25rem;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
@@ -70,8 +70,12 @@
             margin: 0;
         }
         .upload-area p:first-child {
-            font-size: 1.25rem;
-            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+        }
+        .upload-area p:last-child {
+            font-size: 0.8rem;
+            color: var(--pico-muted-color);
         }
         input[type="file"] {
             display: none;
