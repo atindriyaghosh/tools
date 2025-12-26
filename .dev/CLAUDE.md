@@ -4,46 +4,21 @@ A collection of single-file, browser-based utility tools built with vanilla Java
 
 ## Development Workflow
 
-### Phase 1: Brainstorming (Claude.ai Chat)
-1. Discuss tool idea and requirements in Claude.ai web/app
-2. Work through UX decisions and edge cases
-3. Generate a spec document using the tool spec template (available in .dev/ directory)
-4. Review and refine the spec
-
-### Phase 2: Specification (Manual)
-1. Copy the spec from Claude.ai chat
-2. Save to `.dev/specs/tool-name-spec.md` in this repo
-3. Commit the spec to version control
-4. The spec serves as the contract between design and implementation
-
-### Phase 3: Implementation (Claude Code)
+### Building a New Tool
 1. Start Claude Code in this repo: `claude`
-2. Reference the spec: "Build tool-name.html based on .dev/specs/tool-name-spec.md"
-3. Test locally, iterate as needed
-4. Claude Code will follow both the spec and these guidelines
+2. Create a new HTML file in root directory (e.g., `tool-name.html`)
+3. Follow the patterns documented in this file (structure, styling, patterns)
+4. Test locally, iterate as needed
+5. Add tool card to appropriate category in index.html
+6. Commit and push to GitHub
+7. Tool automatically deploys via GitHub Pages
 
-### Phase 4: Integration
-1. Add tool card to appropriate category in index.html
-2. Commit and push to GitHub
-3. Tool automatically deploys via GitHub Pages
-
-### Working with Existing Code (No Spec)
-
-If a tool HTML file exists without a corresponding spec:
-1. **Generate spec from code**: Ask Claude Code to "Create a spec in .dev/specs/ for tool-name.html by analyzing the existing implementation"
-2. Claude Code will examine the code and document: purpose, features, UI layout, libraries used, edge cases handled
-3. Review and refine the generated spec
-4. Commit the spec for future reference
-
-### Keeping Specs in Sync
-
-If you make direct changes to a tool HTML file:
-1. **Update the spec**: Ask Claude Code to "Update .dev/specs/tool-name-spec.md to reflect the changes in tool-name.html"
-2. Claude Code will analyze the changes and update the spec accordingly
-3. Commit both the code and updated spec together
-4. This keeps documentation in sync with implementation
-
-The spec should always reflect the current state of the tool, whether you're building new or modifying existing.
+### Updating Existing Tools
+1. Start Claude Code in this repo: `claude`
+2. Read the existing implementation
+3. Make incremental changes preserving working functionality
+4. Test locally
+5. Commit and push to GitHub
 
 ## Tech Stack
 
@@ -93,31 +68,9 @@ repo-root/
   - Hover state: Darker soft blue (#5b7dc6)
   - Disabled state: Light soft blue (#9baee6)
 - **Badge/Count badges**: White text on soft blue background (#6b8dd6)
-- Use these colors consistently across all tool pages to match the landing page
-- Override Pico's default colors by adding to your tool's `<style>`:
-  ```css
-  a {
-      color: #6b8dd6;
-  }
-
-  button {
-      background-color: #6b8dd6;
-      border-color: #6b8dd6;
-      color: white;
-  }
-
-  button:hover {
-      background-color: #5b7dc6;
-      border-color: #5b7dc6;
-  }
-
-  button:disabled {
-      background-color: #9baee6;
-      border-color: #9baee6;
-      opacity: 0.6;
-  }
-  ```
+- All common color styling is included in `common-styles.css` and automatically applied to all pages
 - Consistent with the landing page (index.html) for a unified visual experience
+- No need to add color overrides to individual tool pages - the common stylesheet handles all standard styling
 
 ### Tool Count Badges (Landing Page)
 Tool counts on the landing page's table of contents are displayed as circular badges:
@@ -179,10 +132,16 @@ To maintain visual consistency across all pages:
 
 Each tool is a single, self-contained HTML file in the root directory:
 - External libraries via CDN only (https://cdnjs.cloudflare.com)
-- All CSS inline in `<style>` tags
+- **Always reference `common-styles.css`** for standard styling (links, buttons, results, back-links)
+- Tool-specific CSS only in inline `<style>` tags (custom layouts, unique colors, etc.)
 - All JS inline in `<script>` tags
 - localStorage/sessionStorage allowed when appropriate
 - Plain vanilla JavaScript - no frameworks
+
+### CSS Structure for Tools
+1. **Pico CSS**: `<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">`
+2. **Common styles**: `<link rel="stylesheet" href="common-styles.css">` (buttons, links, back-links, result boxes, timezone lists)
+3. **Tool-specific styles**: Inline `<style>` tags for custom layouts and unique styling
 
 ## Standard Features to Include
 
@@ -210,30 +169,12 @@ Include at both the top and bottom of each tool page:
 <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
 ```
 
-Back links are styled with the `.back-link` class:
-```css
-a.back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-weight: bold;
-    padding: 0.4rem 0.6rem;
-    border-radius: var(--pico-border-radius);
-    transition: all 0.2s;
-    color: #6b8dd6;
-}
-
-a.back-link:hover {
-    background-color: rgba(107, 141, 214, 0.1);
-    color: #5b7dc6;
-}
-```
-
-Features:
+The `.back-link` class is automatically styled by `common-styles.css` with:
 - Bold text with soft blue color (#6b8dd6)
 - Subtle background color on hover
 - Rounded corners matching Pico CSS design
-- Smooth transitions for better UX
+- Smooth 0.2s transitions for better UX
+- No additional CSS needed
 
 ### File Upload with Validation
 ```javascript
@@ -482,9 +423,9 @@ All individual tool pages (pdf-to-image.html, timezone-converter.html, etc.) fol
 ## Quality Checklist
 
 Before considering a tool complete:
-- [ ] Spec document exists in `.dev/specs/` directory (or create from code)
 - [ ] Tool does ONE thing well
 - [ ] Tool file is in root directory (not subdirectory)
+- [ ] common-styles.css is referenced (for buttons, links, back-links, result boxes)
 - [ ] Back navigation to index.html present (top and bottom)
 - [ ] File size limits displayed and enforced
 - [ ] Error messages are clear and helpful
@@ -492,9 +433,7 @@ Before considering a tool complete:
 - [ ] Follows Pico CSS styling conventions
 - [ ] Works on mobile (responsive)
 - [ ] Tool card added to index.html in correct category
-- [ ] Tested with edge cases from spec
 - [ ] localStorage usage (if any) is documented in code
-- [ ] Spec updated if code was modified directly
 
 ### Visual Design Checklist
 - [ ] Tool name uses Title Case (no icons/emojis)
@@ -536,30 +475,18 @@ Before considering a tool complete:
 ## Working with Claude Code
 
 ### When building a new tool:
-1. Always reference the spec file in `.dev/specs/`
-2. Create the tool HTML file in the root directory
-3. Follow the patterns documented above
-4. Ask clarifying questions if the spec is unclear
-5. Test edge cases mentioned in the spec
-6. Update this file when adding new tools to the "Current Tools" section
+1. Create the tool HTML file in the root directory (e.g., `tool-name.html`)
+2. Reference `common-styles.css` for standard styling
+3. Follow the patterns documented in this file
+4. Structure: Pico CSS → common-styles.css → tool-specific styles
+5. Update the "Current Tools" section in this file when adding new tools
 
 ### When iterating on existing tools:
 1. Read the current implementation first
 2. Understand the existing patterns
-3. Make incremental changes
-4. Preserve working functionality
-5. Update the spec in `.dev/specs/` to match any changes
-
-### When working with code that has no spec:
-1. Generate a spec by analyzing the existing code
-2. Save it to `.dev/specs/tool-name-spec.md`
-3. Use the spec for future modifications
-
-### Keeping specs synchronized:
-- If you modify code directly, update the spec to match
-- If you modify the spec, update the code to match
-- Commit both together to keep them in sync
-- The spec is documentation, not just a build artifact
+3. Make incremental changes preserving working functionality
+4. Ensure `common-styles.css` is referenced (no duplicate styling)
+5. Test locally before committing
 
 ## Notes
 
