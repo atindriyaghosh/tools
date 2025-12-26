@@ -203,7 +203,7 @@
         <div id="pasteMode" class="input-mode active">
             <label>
                 Markdown Content
-                <textarea id="mdInput" placeholder="# My Document&#10;&#10;Enter your **markdown** here..."></textarea>
+                <textarea id="mdInput" placeholder="# Main Heading&#10;&#10;## Sub Heading&#10;&#10;### Sub Sub Heading&#10;&#10;This is **bold** text, this is *italic* text, and this is ***bold italic***.&#10;&#10;---&#10;&#10;**Bullet Points:**&#10;- First item&#10;- Second item&#10;- Third item&#10;&#10;**Numbered List:**&#10;1. First step&#10;2. Second step&#10;3. Third step&#10;&#10;| Column 1 | Column 2 |&#10;|----------|----------|&#10;| Data 1   | Data 2   |&#10;| Data 3   | Data 4   |"></textarea>
             </label>
         </div>
 
@@ -331,10 +331,20 @@
         });
 
         themeSelect.addEventListener('change', updatePreview);
+        tocCheckbox.addEventListener('change', updatePreview);
 
         function updatePreview() {
             const markdown = mdInput.value;
-            const html = marked.parse(markdown);
+            let html = marked.parse(markdown);
+
+            // Add TOC if requested
+            if (tocCheckbox.checked) {
+                const tocResult = generateTableOfContents(html);
+                if (tocResult) {
+                    html = tocResult.toc + tocResult.updatedHtml;
+                }
+            }
+
             preview.innerHTML = html;
 
             // Update preview theme
@@ -360,9 +370,9 @@
 
                 // Add TOC if requested
                 if (tocCheckbox.checked) {
-                    const toc = generateTableOfContents(html);
-                    if (toc) {
-                        html = toc + html;
+                    const tocResult = generateTableOfContents(html);
+                    if (tocResult) {
+                        html = tocResult.toc + tocResult.updatedHtml;
                     }
                 }
 
@@ -407,20 +417,23 @@
 
             if (headings.length === 0) return null;
 
-            let toc = '<h2>Table of Contents</h2><ul>';
+            let toc = '<h2>Table of Contents</h2><ul style="list-style-type: none; padding: 0;">';
 
             headings.forEach((heading, index) => {
                 const level = parseInt(heading.tagName[1]);
                 const id = `heading-${index}`;
                 heading.id = id;
 
-                const indent = (level - 1) * 20;
+                const margin = (level - 1) * 20;
                 const title = heading.textContent;
-                toc += `<li style="margin-left: ${indent}px"><a href="#${id}">${title}</a></li>`;
+                toc += `<li style="margin-left: ${margin}px; margin-bottom: 0.5em;"><a href="#${id}">${title}</a></li>`;
             });
 
             toc += '</ul><hr style="margin: 2em 0;">';
-            return toc;
+
+            // Update original HTML with IDs
+            const updatedHtml = tempDiv.innerHTML;
+            return { toc, updatedHtml };
         }
 
         function wrapWithTheme(html, theme) {
