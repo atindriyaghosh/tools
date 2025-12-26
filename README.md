@@ -27,6 +27,13 @@ This repository contains standalone HTML tools for common tasks like PDF convers
 - **JavaScript**: Vanilla JS only, no frameworks
 - **Deployment**: GitHub Pages
 
+## Libraries Used
+
+- **[Pico CSS v2](https://picocss.com/)** - Minimal CSS framework
+- **[PDF.js v3.11.174](https://mozilla.github.io/pdf.js/)** - PDF rendering
+- **[pdf-lib v1.17.1](https://pdf-lib.js.org/)** - PDF manipulation
+- **[Sortable.js v1.15.0](https://sortablejs.github.io/Sortable/)** - Drag-and-drop reordering
+
 ## Local Development
 
 To preview the tools locally:
