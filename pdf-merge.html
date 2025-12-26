@@ -162,12 +162,17 @@
             white-space: nowrap;
             transition: all 0.2s;
             width: 100%;
+            outline: none;
         }
 
         .pdf-item-remove:hover {
             background: #ff6b6b;
             color: white;
             border-color: #ff6b6b;
+        }
+
+        .pdf-item-remove:focus {
+            outline: none;
         }
 
         .file-size-info {
@@ -405,7 +410,9 @@
             removeBtn.className = 'pdf-item-remove';
             removeBtn.textContent = 'Remove';
             removeBtn.addEventListener('click', () => {
-                pdfs.splice(index, 1);
+                // Find current position of this item in the list
+                const itemIndex = Array.from(pdfList.children).indexOf(item);
+                pdfs.splice(itemIndex, 1);
                 item.remove();
                 updateUI();
             });
