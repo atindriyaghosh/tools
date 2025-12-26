@@ -7,6 +7,7 @@ The index.html layout consists of:
 - **Search box**: Real-time tool filtering by title and description
 - **Tool sections**: Organized by category, each with a grid of tool cards
 - **Tool cards**: Link, title, and brief description
+- **Footer**: Copyright notice and GitHub repository link (auto-updated year during build)
 
 ## Tool Categories
 
