@@ -163,10 +163,9 @@
             transition: background 0.2s, color 0.2s, border-color 0.2s;
             width: 100%;
             outline: none;
-            border: none;
         }
 
-        .pdf-item-remove:hover {
+        .pdf-item-remove.is-hovered {
             background: #ff6b6b;
             color: white;
             border-color: #ff6b6b;
@@ -175,9 +174,6 @@
         .pdf-item-remove:focus,
         .pdf-item-remove:active {
             outline: none;
-            background: #f0f0f0;
-            color: #666;
-            border-color: #ddd;
         }
 
         .file-size-info {
@@ -414,6 +410,12 @@
             const removeBtn = document.createElement('button');
             removeBtn.className = 'pdf-item-remove';
             removeBtn.textContent = 'Remove';
+            removeBtn.addEventListener('mouseenter', (e) => {
+                removeBtn.classList.add('is-hovered');
+            });
+            removeBtn.addEventListener('mouseleave', (e) => {
+                removeBtn.classList.remove('is-hovered');
+            });
             removeBtn.addEventListener('click', () => {
                 // Find current position of this item in the list
                 const itemIndex = Array.from(pdfList.children).indexOf(item);
