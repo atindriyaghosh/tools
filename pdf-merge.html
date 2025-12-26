@@ -330,12 +330,13 @@
 
                 try {
                     const arrayBuffer = await file.arrayBuffer();
-                    const pdfDoc = await pdfjsLib.getDocument(arrayBuffer).promise;
+                    const pdfData = new Uint8Array(arrayBuffer);
+                    const pdfDoc = await pdfjsLib.getDocument(pdfData).promise;
 
                     // Generate thumbnail from first page
                     const thumbnail = await generateThumbnail(pdfDoc);
 
-                    pdfs.push({ file, arrayBuffer, thumbnail });
+                    pdfs.push({ file, pdfData, thumbnail });
                     addPdfItem(pdfs.length - 1);
                     updateUI();
 
@@ -477,7 +478,7 @@
                 for (let i = 0; i < pdfs.length; i++) {
                     showStatus(`Merging: ${i + 1} of ${pdfs.length}...`, false);
 
-                    const pdf = await PDFDocument.load(pdfs[i].arrayBuffer);
+                    const pdf = await PDFDocument.load(pdfs[i].pdfData);
                     const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
 
                     copiedPages.forEach((page) => {
