@@ -330,13 +330,16 @@
 
                 try {
                     const arrayBuffer = await file.arrayBuffer();
-                    const pdfData = new Uint8Array(arrayBuffer);
-                    const pdfDoc = await pdfjsLib.getDocument(pdfData).promise;
+                    // Create a copy as Uint8Array for thumbnail generation
+                    const pdfDataForThumbnail = new Uint8Array(arrayBuffer).slice();
+                    const pdfDoc = await pdfjsLib.getDocument(pdfDataForThumbnail).promise;
 
                     // Generate thumbnail from first page
                     const thumbnail = await generateThumbnail(pdfDoc);
 
-                    pdfs.push({ file, pdfData, thumbnail });
+                    // Store another copy for merging (independent from thumbnail processing)
+                    const pdfDataForMerge = new Uint8Array(arrayBuffer).slice();
+                    pdfs.push({ file, pdfData: pdfDataForMerge, thumbnail });
                     addPdfItem(pdfs.length - 1);
                     updateUI();
 
