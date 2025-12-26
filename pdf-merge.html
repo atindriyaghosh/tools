@@ -160,9 +160,10 @@
             border-radius: 3px;
             font-size: 0.75rem;
             white-space: nowrap;
-            transition: all 0.2s;
+            transition: background 0.2s, color 0.2s, border-color 0.2s;
             width: 100%;
             outline: none;
+            border: none;
         }
 
         .pdf-item-remove:hover {
@@ -171,8 +172,12 @@
             border-color: #ff6b6b;
         }
 
-        .pdf-item-remove:focus {
+        .pdf-item-remove:focus,
+        .pdf-item-remove:active {
             outline: none;
+            background: #f0f0f0;
+            color: #666;
+            border-color: #ddd;
         }
 
         .file-size-info {
