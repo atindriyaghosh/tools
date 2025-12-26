@@ -53,7 +53,7 @@ Use `common-styles.css` for all standard styling (buttons, links, back-links, re
 
 ## Key Constraints
 
-- **No build pipeline** - direct push to GitHub
+- **Automated deployment** - GitHub Actions builds and deploys on push to main
 - **Single file per tool** - self-contained in root
 - **Performance first** - lightweight, fast loading
 - **No frameworks** - vanilla JavaScript only
@@ -61,7 +61,8 @@ Use `common-styles.css` for all standard styling (buttons, links, back-links, re
 
 ## Notes
 
-- Deployed to GitHub Pages
+- Deployed to GitHub Pages via GitHub Actions workflow
+- Build process selectively copies only production files (excludes `.claude/`, `.github/`, `.dev/`, etc.)
 - All client-side, no backend
 - Current tools listed in `/README.md`
 - Development files in `.dev/` (not web-accessible)
