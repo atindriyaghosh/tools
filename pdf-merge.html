@@ -94,6 +94,11 @@
             cursor: grabbing;
         }
 
+        .pdf-item:hover {
+            border-color: #6b8dd6;
+            background: rgba(107, 141, 214, 0.02);
+        }
+
         .pdf-item.sortable-ghost {
             opacity: 0.5;
             background: rgba(107, 141, 214, 0.1);
@@ -159,7 +164,8 @@
             width: 100%;
         }
 
-        .pdf-item-remove:hover {
+        .pdf-item-remove:hover,
+        .pdf-item-remove.hover-active {
             background: #ff6b6b;
             color: white;
             border-color: #ff6b6b;
@@ -399,6 +405,12 @@
             const removeBtn = document.createElement('button');
             removeBtn.className = 'pdf-item-remove';
             removeBtn.textContent = 'Remove';
+            removeBtn.addEventListener('mouseenter', () => {
+                removeBtn.classList.add('hover-active');
+            });
+            removeBtn.addEventListener('mouseleave', () => {
+                removeBtn.classList.remove('hover-active');
+            });
             removeBtn.addEventListener('click', () => {
                 pdfs.splice(index, 1);
                 item.remove();
@@ -441,13 +453,16 @@
             }
             if (pdfs.length > 1) {
                 sortable = Sortable.create(pdfList, {
-                    animation: 150,
+                    animation: 200,
+                    animationEasing: 'cubic-bezier(1, 0, 0, 1)',
                     ghostClass: 'sortable-ghost',
-                    forceFallback: true,
                     fallbackClass: 'sortable-fallback',
-                    fallbackOnBody: true,
-                    invertSwap: true,
-                    invertedSwapThreshold: 0.5,
+                    fallbackOnBody: false,
+                    delay: 200,
+                    delayOnTouchOnly: true,
+                    touchStartThreshold: 0,
+                    invertSwap: false,
+                    swapThreshold: 0.65,
                     onEnd: (evt) => {
                         const newPdfs = [];
                         document.querySelectorAll('.pdf-item').forEach(item => {
