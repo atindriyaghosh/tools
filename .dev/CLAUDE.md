@@ -1,22 +1,17 @@
 # Development Guidelines
 
-## Workflow
+## Implementation Workflow
 
-### Building a New Tool
-1. **Ask clarifying questions** about requirements, UX, and implementation approach
-2. **Ensure clarity** before writing code - understand exactly what needs to be built
-3. Only proceed when convinced of the requirements
-4. Create HTML file in root: `tool-name.html`
-5. Reference `.dev/TOOL_TEMPLATE.md` for structure
-6. Reference `common-styles.css` for styling
-7. Test locally, add to index.html, commit and push
-
-### Updating Existing Tools
-1. **Ask questions** if requirements are unclear
-2. Read the existing implementation first
-3. Discuss approach before making changes
-4. Make incremental changes preserving functionality
-5. Test locally before committing
+1. **Branch**: Create feature branch from main synced with remote
+   - `git checkout main && git pull && git checkout -b feature/description`
+2. **Clarify**: Ask questions about requirements/approach until you're convinced of what to build
+3. **Implement**: Code changes (new tool, feature, fix, or enhancement)
+   - New tool: Reference `.dev/TOOL_TEMPLATE.md` and `common-styles.css`
+   - Existing: Read current code first, make incremental changes
+4. **Test**: Verify locally before committing
+5. **Commit**: Push to feature branch
+6. **PR**: Open pull request to main for review
+7. **Merge**: After review, merge to main and deploy
 
 ## Documentation
 
