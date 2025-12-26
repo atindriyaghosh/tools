@@ -44,7 +44,6 @@ files_to_copy=(
   "CNAME"
   ".nojekyll"
   "favicon.png"
-  "LICENSE"
 )
 
 for file in "${files_to_copy[@]}"; do
