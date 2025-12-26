@@ -11,8 +11,9 @@
    - Existing: Read current code first, make incremental changes
 4. **Test**: Verify locally before committing
 5. **Commit**: Push to feature branch
-6. **PR**: Open pull request to main for review
-7. **Merge**: After review, merge to main and deploy
+6. **Push**: Push to remote
+7. **PR**: Open pull request to main for review (manual)
+8. **Merge**: After review, merge to main and deploy (manual)
 
 ## Branch Naming Conventions
 
