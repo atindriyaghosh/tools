@@ -5,20 +5,23 @@ A collection of single-file, browser-based utility tools built with vanilla Java
 ## Development Workflow
 
 ### Building a New Tool
-1. Start Claude Code in this repo: `claude`
-2. Create a new HTML file in root directory (e.g., `tool-name.html`)
-3. Follow the patterns documented in this file (structure, styling, patterns)
-4. Test locally, iterate as needed
-5. Add tool card to appropriate category in index.html
-6. Commit and push to GitHub
-7. Tool automatically deploys via GitHub Pages
+1. **Ask clarifying questions** about requirements, UX, and implementation approach
+2. **Ensure clarity** before writing code - understand exactly what needs to be built
+3. Only proceed to implementation when convinced of the requirements
+4. Create a new HTML file in root directory (e.g., `tool-name.html`)
+5. Follow the patterns documented in this file (structure, styling, patterns)
+6. Test locally, iterate as needed
+7. Add tool card to appropriate category in index.html
+8. Commit and push to GitHub
+9. Tool automatically deploys via GitHub Pages
 
 ### Updating Existing Tools
-1. Start Claude Code in this repo: `claude`
-2. Read the existing implementation
-3. Make incremental changes preserving working functionality
-4. Test locally
-5. Commit and push to GitHub
+1. **Ask questions** if requirements are unclear
+2. Read the existing implementation first
+3. Discuss approach and proposed changes before making modifications
+4. Make incremental changes preserving working functionality
+5. Test locally
+6. Commit and push to GitHub
 
 ## Tech Stack
 
@@ -31,28 +34,10 @@ A collection of single-file, browser-based utility tools built with vanilla Java
 
 ## File Structure
 
-```
-repo-root/
-├── .dev/                    # Development files (auto-excluded by GitHub Pages)
-│   ├── CLAUDE.md            # This file - project context
-│   ├── specs/
-│   │   ├── tool-name-spec.md
-│   │   └── SPEC_TEMPLATE.md
-│   └── .gitignore           # Ignore any local dev files if needed
-├── index.html               # Landing page with categorized tools
-├── pdf-to-image.html        # Individual tools (in root for GH Pages)
-├── image-converter.html     # Individual tools (in root for GH Pages)
-├── .nojekyll                # Optional: disables Jekyll processing
-└── README.md
-```
-
-**Important**: All development/documentation files go in `.dev/`. Tool HTML files stay in root for clean URLs on GitHub Pages (e.g., `https://yourdomain.com/pdf-to-image.html`).
-
-**Why `.dev/` is not web-accessible:**
-- GitHub Pages automatically excludes directories starting with `.` (dot)
-- This includes `.dev/`, `.github/`, and any dotfiles
-- The files are in git and accessible to Claude Code, but not via the web URL
-- `.nojekyll` disables Jekyll processing (prevents issues with underscored folders/files)
+- **Root directory**: Tool HTML files only (e.g., `tool-name.html`)
+- **`.dev/` directory**: Development files (CLAUDE.md, specs, etc.) - not web-accessible
+- **`common-styles.css`**: Shared styling in root, referenced by all tools
+- `.dev/` is auto-excluded by GitHub Pages (directories starting with `.` are hidden from web)
 
 ## Design System: Pico CSS
 
@@ -71,29 +56,6 @@ repo-root/
 - All common color styling is included in `common-styles.css` and automatically applied to all pages
 - Consistent with the landing page (index.html) for a unified visual experience
 - No need to add color overrides to individual tool pages - the common stylesheet handles all standard styling
-
-### Tool Count Badges (Landing Page)
-Tool counts on the landing page's table of contents are displayed as circular badges:
-```css
-.toc-count {
-    font-size: 0.75rem;
-    color: white;
-    background-color: #6b8dd6;
-    border-radius: 50%;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.5rem;
-    height: 1.5rem;
-    margin-left: 0.35rem;
-    font-weight: 600;
-}
-```
-- Creates a perfect circle with soft blue background (#6b8dd6)
-- White text (color: white) with bold weight (600) for readability
-- Positioned inline next to category names with 0.35rem margin
-- Automatically updates when tools are filtered by search
-- Used to provide quick visual feedback on number of tools per category
 
 ### Visual Design Consistency Guidelines
 To maintain visual consistency across all pages:
@@ -164,67 +126,28 @@ Every tool must have:
 ## Common Patterns
 
 ### Back Navigation
-Include at both the top and bottom of each tool page:
+Include at top and bottom of each tool page (styled automatically by `common-styles.css`):
 ```html
 <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
 ```
 
-The `.back-link` class is automatically styled by `common-styles.css` with:
-- Bold text with soft blue color (#6b8dd6)
-- Subtle background color on hover
-- Rounded corners matching Pico CSS design
-- Smooth 0.2s transitions for better UX
-- No additional CSS needed
-
 ### File Upload with Validation
+Validate file size before processing:
 ```javascript
-async function handleFile(file) {
-    const maxSize = 50 * 1024 * 1024; // 50 MB
-    
-    if (file.size > maxSize) {
-        showStatus(`File too large: ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum: 50 MB`, true);
-        return;
-    }
-    
-    // Process file...
+if (file.size > 50 * 1024 * 1024) {
+    showStatus('File too large: maximum 50 MB', true);
+    return;
 }
 ```
 
 ### Status Messages
+Display messages with error state:
 ```javascript
 function showStatus(message, isError) {
     status.textContent = message;
     status.className = 'visible';
-    if (isError) {
-        status.setAttribute('aria-invalid', 'true');
-    } else {
-        status.removeAttribute('aria-invalid');
-    }
+    if (isError) status.setAttribute('aria-invalid', 'true');
 }
-```
-
-### Drag and Drop Upload
-```javascript
-uploadArea.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    uploadArea.classList.add('drag-over');
-});
-
-uploadArea.addEventListener('drop', (e) => {
-    e.preventDefault();
-    uploadArea.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file) handleFile(file);
-});
-```
-
-### Using localStorage for Preferences
-```javascript
-// Save user preference
-localStorage.setItem('preferredFormat', 'png');
-
-// Retrieve preference
-const format = localStorage.getItem('preferredFormat') || 'png';
 ```
 
 ## Browser APIs for Common Tasks
@@ -274,133 +197,22 @@ Organize tools into these categories on the landing page:
 
 ## Landing Page Structure
 
-The index.html uses a compact, space-efficient layout:
+The index.html layout consists of:
+- **Header**: "Tools" title with subtitle
+- **Table of Contents**: Category links with tool count badges (auto-hide empty categories)
+- **Search box**: Real-time tool filtering by title and description
+- **Tool sections**: Organized by category, each with a grid of tool cards
+- **Tool cards**: Link, title, and brief description (see Visual Design Consistency for styling details)
 
-### Header Section
-- Page title: "Tools"
-- Subtitle: "A collection of web-based utilities for everyday tasks"
+## Tool Page Structure
 
-### Table of Contents
-- "Tool Categories:" label followed by bold category links separated by "|" dividers
-- Links are anchor-based (e.g., `#pdf-tools`) for quick navigation
-- Empty categories auto-hide when they contain no tools
-- **Styling**:
-  - Display: flex with wrap
-  - Gap: 0.75rem between items
-  - Font size: 0.85rem
-  - Margin bottom: 0.75rem
-  - Line height: centered vertically with align-items: center
-  - Link color: soft blue (#6b8dd6)
-  - Link hover: underline text-decoration
-- **Tool counts**: Displayed as circular badges
-  - Background: soft blue (#6b8dd6)
-  - Text color: white
-  - Font size: 0.75rem (bold weight 600)
-  - Width/height: 1.5rem (perfect circle)
-  - Display: inline-flex with centered content
-  - Margin left: 0.35rem for spacing from category name
-  - Auto-updates as tools are filtered
-
-### Search Box
-- Compact search input below TOC
-- **Styling**:
-  - Padding: 0.4rem 0.75rem
-  - Font size: 0.85rem
-  - Margin bottom: 0.75rem
-  - Placeholder text: **italics** for visual distinction
-- Real-time filtering across all visible tools
-- Updates section visibility and tool counts dynamically
-
-### Tool Sections
-- Organized by category (PDF Tools, Date/Time Tools, Image Tools, Text Tools, API Tools, Other)
-- **Section header styling**:
-  - Font size: 1.25rem
-  - Font weight: 700 (bold)
-  - Margin top: 0.75rem
-  - Margin bottom: 0.4rem
-  - Display: flex with gap and align-items
-- Empty sections automatically hide if they have 0 tools
-- Section visibility updates dynamically with search results
-- TOC links and separators hide/show based on section visibility
-
-### Tool Grid Layout
-- **Grid**: `repeat(auto-fill, minmax(200px, 1fr))` - auto-fills columns responsively
-- **Gap**: 0.5rem between items
-- **Margin top**: 0.5rem
-- **Tool Card Styling**:
-  - Padding: 0.5rem (compact spacing)
-  - Border: 1px solid (muted border color)
-  - Border radius: var(--pico-border-radius)
-  - Background: var(--pico-card-background-color)
-  - Display: flex, flex-direction: column
-  - Transition: all 0.2s
-  - Text decoration: none
-  - Color: inherit
-  - **Title (h3)**:
-    - Font size: 0.9rem
-    - Font weight: 600
-    - Margin bottom: 0.15rem
-    - Color: inherit
-  - **Description (p)**:
-    - Font size: 0.75rem
-    - Color: muted color
-    - Line height: 1.3
-    - Margin: 0
-- **Hover effect**:
-  - Border color changes to soft blue (#6b8dd6)
-  - Subtle visual feedback
-- **Icons**: Hidden (not displayed in cards)
-
-### Tool Card Format
-```html
-<a href="tool-name.html" class="tool-card">
-    <h3>Tool Name</h3>
-    <p>Brief description of what the tool does.</p>
-</a>
-```
-
-### Search Functionality
-- Filters tools by title and description
-- Updates section visibility (hides sections with no matching tools)
-- Updates tool counts dynamically
-- Manages TOC link and separator visibility based on filtered results
-
-## Tool Page Visual Design
-
-All individual tool pages (pdf-to-image.html, timezone-converter.html, etc.) follow consistent styling:
-
-### Page Layout
-- Main container uses `.container` class from Pico CSS
-- Header section with `<hgroup>` for title and subtitle
-- Tool content wrapped in semantic HTML (`<section>`, `<article>`, `<fieldset>`)
-
-### Back Navigation
-- Positioned at the top (before h1) and bottom of every tool page
-- **Styling** (`.back-link` class):
-  - Display: inline-flex
-  - Align items: center
-  - Gap: 0.35rem (space between arrow and text)
-  - Font weight: bold
-  - Padding: 0.4rem 0.6rem
-  - Border radius: var(--pico-border-radius)
-  - Color: soft blue (#6b8dd6)
-  - Transition: all 0.2s
-  - **Hover state**:
-    - Background: rgba(107, 141, 214, 0.1) (subtle light blue background)
-    - Color: darker soft blue (#5b7dc6)
-
-### Tool Page Color Scheme
-- Link color: soft blue (#6b8dd6)
-- Button color: soft blue (#6b8dd6)
-  - Hover: darker soft blue (#5b7dc6)
-  - Disabled: light soft blue (#9baee6) with 0.6 opacity
-- Consistent with landing page for unified visual experience
-
-### Tool-Specific Styling
-- Each tool may have additional custom styles for its specific UI
-- Use consistent spacing, colors, and transitions
-- Leverage Pico CSS variables where possible
-- Apply custom colors directly to elements (not via CSS variables that Pico doesn't support)
+All tool pages follow this structure:
+- Use `.container` class from Pico CSS for main container
+- Include `<hgroup>` with title and subtitle
+- Use semantic HTML: `<section>`, `<article>`, `<fieldset>`, `<main>`
+- Include back navigation at top and bottom (see Common Patterns)
+- Tool-specific styling goes in inline `<style>` tags (layout, unique interactions, etc.)
+- Reference `common-styles.css` for all standard colors and component styling
 
 ## Code Style Preferences
 
