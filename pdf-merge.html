@@ -173,6 +173,21 @@
             outline: none;
         }
 
+        /* Ensure button styling is preserved during drag */
+        .pdf-item.sortable-fallback .pdf-item-remove,
+        .pdf-item.sortable-ghost .pdf-item-remove {
+            background: #f0f0f0;
+            color: #666;
+            border-color: #ddd;
+        }
+
+        .pdf-item.sortable-fallback .pdf-item-remove.is-hovered,
+        .pdf-item.sortable-ghost .pdf-item-remove.is-hovered {
+            background: #ff6b6b;
+            color: white;
+            border-color: #ff6b6b;
+        }
+
         .file-size-info {
             padding: 0.75rem;
             background: var(--pico-card-background-color);
