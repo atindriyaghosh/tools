@@ -369,19 +369,28 @@
                 // Wrap in styled container
                 const styledHtml = wrapWithTheme(html, theme);
 
-                // Generate PDF
+                // Generate PDF - element must be in DOM for html2canvas to render
                 const element = document.createElement('div');
                 element.innerHTML = styledHtml;
+                element.style.position = 'absolute';
+                element.style.left = '-9999px';
+                element.style.width = '210mm';
+                element.style.padding = '10mm';
+                element.style.backgroundColor = 'white';
+                document.body.appendChild(element);
 
                 const opt = {
-                    margin: 10,
+                    margin: 0,
                     filename: `${currentFileName}.pdf`,
                     image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2, useCORS: true },
+                    html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 };
 
                 await html2pdf().set(opt).from(element).save();
+
+                // Clean up
+                document.body.removeChild(element);
 
                 showStatus(`✓ PDF generated: ${currentFileName}.pdf`, false);
                 generateBtn.disabled = false;
