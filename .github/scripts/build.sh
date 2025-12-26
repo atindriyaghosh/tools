@@ -26,10 +26,15 @@ echo "  Created _site/"
 echo ""
 echo "Step 2: Copying HTML files..."
 html_count=0
+current_year=$(date +%Y)
 for file in "$REPO_ROOT"/*.html; do
   if [ -f "$file" ]; then
     filename=$(basename "$file")
     cp "$file" "$SITE_DIR/$filename"
+    # Update copyright year in index.html
+    if [ "$filename" = "index.html" ]; then
+      sed -i "s/© [0-9]\{4\} atindriyaghosh/© $current_year atindriyaghosh/g" "$SITE_DIR/$filename"
+    fi
     echo "  ✓ $filename"
     ((++html_count))
   fi
