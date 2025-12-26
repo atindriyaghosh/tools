@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'none';
+                   script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline';
+                   style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline';
+                   img-src 'self' data: blob:;
+                   connect-src 'none';">
+    <title>Markdown to PDF</title>
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="common-styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+    <style>
+        .input-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--pico-muted-border-color);
+        }
+        .input-tab {
+            flex: 1;
+            padding: 0.4rem 0.8rem;
+            text-align: center;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: var(--pico-muted-color);
+            font-weight: normal;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .input-tab:hover {
+            background-color: var(--pico-card-background-color);
+        }
+        .input-tab.active {
+            color: #6b8dd6;
+            border-bottom-color: #6b8dd6;
+            font-weight: bold;
+        }
+        .input-mode {
+            display: none;
+        }
+        .input-mode.active {
+            display: block;
+        }
+        .upload-area {
+            border: 2px dashed var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 1rem;
+        }
+        .upload-area:hover {
+            border-color: #6b8dd6;
+            background: rgba(107, 141, 214, 0.05);
+        }
+        .upload-area.drag-over {
+            border-color: #6b8dd6;
+            background: rgba(107, 141, 214, 0.05);
+        }
+        .upload-area p {
+            margin: 0;
+        }
+        .upload-area p:first-child {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        textarea {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+        #mdInput {
+            min-height: 300px;
+        }
+        .preview-section {
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            padding: 2rem;
+            background: var(--pico-card-background-color);
+            margin: 2rem 0 1rem 0;
+        }
+        .preview-section h3 {
+            margin-top: 0;
+            color: #6b8dd6;
+        }
+        #preview {
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        .github-theme #preview {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+        }
+        .github-theme #preview h1 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+            font-size: 1.8em;
+        }
+        .github-theme #preview h2 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+            font-size: 1.5em;
+        }
+        .github-theme #preview h3 {
+            font-size: 1.25em;
+        }
+        .github-theme #preview code {
+            background: #f6f8fa;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        }
+        .github-theme #preview pre {
+            background: #f6f8fa;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow: auto;
+        }
+        .github-theme #preview pre code {
+            background: none;
+            padding: 0;
+        }
+        .github-theme #preview blockquote {
+            border-left: 0.25em solid #dfe2e5;
+            color: #6a737d;
+            padding: 0 1em;
+            margin-left: 0;
+        }
+        .github-theme #preview table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        .github-theme #preview table th,
+        .github-theme #preview table td {
+            border: 1px solid #dfe2e5;
+            padding: 6px 13px;
+        }
+        .github-theme #preview table tr:nth-child(2n) {
+            background: #f6f8fa;
+        }
+        .minimal-theme #preview {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            color: #333;
+        }
+        .minimal-theme #preview h1,
+        .minimal-theme #preview h2,
+        .minimal-theme #preview h3 {
+            color: #333;
+            margin-top: 1.5em;
+        }
+        .minimal-theme #preview code {
+            background: #f4f4f4;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+        }
+        .serif-theme #preview {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            color: #444;
+        }
+        .serif-theme #preview h1,
+        .serif-theme #preview h2,
+        .serif-theme #preview h3 {
+            color: #222;
+            margin-top: 1.5em;
+        }
+        #status {
+            display: none;
+        }
+        #status.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
+        <hgroup>
+            <h1>Markdown to PDF</h1>
+            <p>Convert markdown text to PDF with GitHub-style formatting and customizable themes. Live preview included.</p>
+        </hgroup>
+
+        <div class="input-tabs">
+            <button type="button" class="input-tab active" data-mode="paste">Paste Text</button>
+            <button type="button" class="input-tab" data-mode="upload">Upload File</button>
+        </div>
+
+        <!-- Paste Mode -->
+        <div id="pasteMode" class="input-mode active">
+            <label>
+                Markdown Content
+                <textarea id="mdInput" placeholder="# My Document&#10;&#10;Enter your **markdown** here..."></textarea>
+            </label>
+        </div>
+
+        <!-- Upload Mode -->
+        <div id="uploadMode" class="input-mode">
+            <div class="upload-area" id="uploadArea">
+                <p>📝 Drop .md file here or click to upload</p>
+                <input type="file" id="fileInput" accept=".md,.markdown,.txt">
+            </div>
+        </div>
+
+        <article style="margin-top: 1.5rem;">
+            <details open>
+                <summary>PDF Options</summary>
+                <label>
+                    <span>Theme</span>
+                    <select id="themeSelect">
+                        <option value="github">GitHub Style (Recommended)</option>
+                        <option value="minimal">Minimal</option>
+                        <option value="serif">Serif (Classic)</option>
+                    </select>
+                </label>
+
+                <label>
+                    <input type="checkbox" id="tocCheckbox">
+                    Include Table of Contents
+                </label>
+            </details>
+        </article>
+
+        <!-- Live Preview -->
+        <article id="previewSection" class="github-theme">
+            <h3>Preview (GitHub Style)</h3>
+            <div id="preview"></div>
+        </article>
+
+        <button id="generateBtn" style="margin-top: 1rem;">Generate PDF</button>
+
+        <article id="status"></article>
+
+        <p style="margin-top: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
+    </main>
+
+    <script>
+        // Configure marked
+        marked.setOptions({
+            gfm: true,
+            breaks: true,
+            headerIds: true
+        });
+
+        const mdInput = document.getElementById('mdInput');
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const themeSelect = document.getElementById('themeSelect');
+        const tocCheckbox = document.getElementById('tocCheckbox');
+        const generateBtn = document.getElementById('generateBtn');
+        const preview = document.getElementById('preview');
+        const previewSection = document.getElementById('previewSection');
+        const status = document.getElementById('status');
+
+        let previewTimeout;
+        let currentFileName = 'document';
+
+        // Tab switching
+        document.querySelectorAll('.input-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const mode = e.target.dataset.mode;
+
+                document.querySelectorAll('.input-tab').forEach(t => t.classList.remove('active'));
+                e.target.classList.add('active');
+
+                document.querySelectorAll('.input-mode').forEach(m => m.classList.remove('active'));
+                document.getElementById(mode + 'Mode').classList.add('active');
+            });
+        });
+
+        // Upload area
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file && (file.type === 'text/markdown' || file.type === 'text/plain' || file.name.endsWith('.md'))) {
+                handleFile(file);
+            } else if (file) {
+                showStatus('Please upload a .md or .txt file', true);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+
+        async function handleFile(file) {
+            try {
+                const text = await file.text();
+                mdInput.value = text;
+                currentFileName = file.name.replace(/\.(md|markdown|txt)$/i, '');
+                updatePreview();
+                showStatus(`✓ Loaded: ${file.name}`, false);
+                setTimeout(() => status.classList.remove('visible'), 2000);
+            } catch (err) {
+                showStatus(`Error loading file: ${err.message}`, true);
+            }
+        }
+
+        // Live preview with debounce
+        mdInput.addEventListener('input', () => {
+            clearTimeout(previewTimeout);
+            previewTimeout = setTimeout(updatePreview, 250);
+        });
+
+        themeSelect.addEventListener('change', updatePreview);
+
+        function updatePreview() {
+            const markdown = mdInput.value;
+            const html = marked.parse(markdown);
+            preview.innerHTML = html;
+
+            // Update preview theme
+            const theme = themeSelect.value;
+            previewSection.className = `${theme}-theme`;
+            previewSection.querySelector('h3').textContent = `Preview (${theme.charAt(0).toUpperCase() + theme.slice(1)} Theme)`;
+        }
+
+        generateBtn.addEventListener('click', async () => {
+            const markdown = mdInput.value;
+
+            if (!markdown.trim()) {
+                showStatus('Please enter some markdown content', true);
+                return;
+            }
+
+            generateBtn.disabled = true;
+            showStatus('Generating PDF...', false);
+
+            try {
+                let html = marked.parse(markdown);
+                const theme = themeSelect.value;
+
+                // Add TOC if requested
+                if (tocCheckbox.checked) {
+                    const toc = generateTableOfContents(html);
+                    if (toc) {
+                        html = toc + html;
+                    }
+                }
+
+                // Wrap in styled container
+                const styledHtml = wrapWithTheme(html, theme);
+
+                // Generate PDF
+                const element = document.createElement('div');
+                element.innerHTML = styledHtml;
+
+                const opt = {
+                    margin: 10,
+                    filename: `${currentFileName}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+
+                await html2pdf().set(opt).from(element).save();
+
+                showStatus(`✓ PDF generated: ${currentFileName}.pdf`, false);
+                generateBtn.disabled = false;
+            } catch (error) {
+                showStatus(`Error generating PDF: ${error.message}`, true);
+                generateBtn.disabled = false;
+            }
+        });
+
+        function generateTableOfContents(html) {
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = html;
+            const headings = tempDiv.querySelectorAll('h1, h2, h3');
+
+            if (headings.length === 0) return null;
+
+            let toc = '<h2>Table of Contents</h2><ul>';
+
+            headings.forEach((heading, index) => {
+                const level = parseInt(heading.tagName[1]);
+                const id = `heading-${index}`;
+                heading.id = id;
+
+                const indent = (level - 1) * 20;
+                const title = heading.textContent;
+                toc += `<li style="margin-left: ${indent}px"><a href="#${id}">${title}</a></li>`;
+            });
+
+            toc += '</ul><hr style="margin: 2em 0;">';
+            return toc;
+        }
+
+        function wrapWithTheme(html, theme) {
+            let css = '';
+
+            if (theme === 'github') {
+                css = `
+                    <style>
+                        body {
+                            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+                            line-height: 1.6;
+                            color: #24292e;
+                        }
+                        h1, h2 {
+                            border-bottom: 1px solid #eaecef;
+                            padding-bottom: 0.3em;
+                        }
+                        h1 { font-size: 1.8em; }
+                        h2 { font-size: 1.5em; }
+                        h3 { font-size: 1.25em; }
+                        code {
+                            background: #f6f8fa;
+                            padding: 0.2em 0.4em;
+                            border-radius: 3px;
+                            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                        }
+                        pre {
+                            background: #f6f8fa;
+                            padding: 1rem;
+                            border-radius: 6px;
+                            overflow: auto;
+                        }
+                        pre code {
+                            background: none;
+                            padding: 0;
+                        }
+                        blockquote {
+                            border-left: 0.25em solid #dfe2e5;
+                            color: #6a737d;
+                            padding: 0 1em;
+                            margin-left: 0;
+                        }
+                        table {
+                            border-collapse: collapse;
+                            width: 100%;
+                        }
+                        table th, table td {
+                            border: 1px solid #dfe2e5;
+                            padding: 6px 13px;
+                        }
+                        table tr:nth-child(2n) {
+                            background: #f6f8fa;
+                        }
+                    </style>
+                `;
+            } else if (theme === 'minimal') {
+                css = `
+                    <style>
+                        body {
+                            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+                            line-height: 1.6;
+                            color: #333;
+                            padding: 2rem;
+                        }
+                        h1, h2, h3 {
+                            color: #000;
+                            margin-top: 1.5em;
+                        }
+                        code {
+                            background: #f4f4f4;
+                            padding: 0.2em 0.4em;
+                            border-radius: 3px;
+                        }
+                        pre {
+                            background: #f4f4f4;
+                            padding: 1rem;
+                            overflow: auto;
+                        }
+                        pre code {
+                            background: none;
+                            padding: 0;
+                        }
+                    </style>
+                `;
+            } else if (theme === 'serif') {
+                css = `
+                    <style>
+                        body {
+                            font-family: 'Georgia', 'Times New Roman', serif;
+                            line-height: 1.8;
+                            color: #444;
+                            padding: 2rem;
+                        }
+                        h1, h2, h3 {
+                            color: #222;
+                            margin-top: 1.5em;
+                            font-weight: bold;
+                        }
+                        code {
+                            font-family: 'Monaco', 'Menlo', monospace;
+                            background: #f5f5f5;
+                            padding: 0.2em 0.4em;
+                        }
+                        pre {
+                            background: #f5f5f5;
+                            padding: 1rem;
+                            overflow: auto;
+                        }
+                        pre code {
+                            background: none;
+                            padding: 0;
+                        }
+                    </style>
+                `;
+            }
+
+            return css + html;
+        }
+
+        function showStatus(message, isError) {
+            status.textContent = message;
+            status.className = 'visible';
+            if (isError) {
+                status.setAttribute('aria-invalid', 'true');
+            } else {
+                status.removeAttribute('aria-invalid');
+            }
+        }
+
+        // Initialize preview
+        updatePreview();
+    </script>
+</body>
+</html>
