@@ -2,16 +2,35 @@
 
 ## Implementation Workflow
 
+### Phase 1: Brainstorming
+- **Goal**: Explore ideas, requirements, and design approaches for new tools
+- **How**: Start a conversation with Claude or any other LLM
+- **Output**: Store session outputs in `.brainstorm/` directory
+  - Claude Code can automatically create files in `.brainstorm/`
+  - Otherwise save outputs manually
+- **When complete**: Review brainstorm outputs before proceeding to planning
+
+### Phase 2: Planning
+- **Goal**: Create detailed implementation plan with architecture and decisions
+- **How**: Initiate a Claude Code session after brainstorming is complete
+- **Use**: EnterPlanMode to explore codebase and design approach for approval
+- **Output**: Structured plan covering:
+  - Architecture decisions
+  - Files to create/modify
+  - Implementation steps
+  - Integration points
+
+### Phase 3: Implementation
 1. **Branch**: Create feature branch from main synced with remote
    - Sync: `git checkout main && git pull`
    - Create: `git checkout -b PREFIX/description` (see branch naming below)
-2. **Clarify**: Ask questions about requirements/approach until you're convinced of what to build
+2. **Clarify**: Ask questions about requirements/approach (if not done in planning)
 3. **Implement**: Code changes (new tool, feature, fix, or enhancement)
    - New tool: Reference `.dev/TOOL_TEMPLATE.md` and `common-styles.css`
    - Existing: Read current code first, make incremental changes
 4. **Test**: Verify locally before committing
-5. **Commit**: Push to feature branch
-6. **Push**: Push to remote
+5. **Commit**: Commit to feature branch with clear message
+6. **Push**: Push to remote with `-u` flag for tracking
 7. **PR**: Open pull request to main for review (manual)
 8. **Merge**: After review, merge to main and deploy (manual)
 
