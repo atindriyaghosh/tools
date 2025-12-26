@@ -69,24 +69,28 @@
         }
         .result-grid {
             display: grid;
-            grid-template-columns: 1fr;
-            gap: 0.5rem;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
         }
         .result-item {
-            padding: 0.75rem;
+            padding: 0.5rem 0.75rem;
             background: var(--pico-card-background-color);
             border: 1px solid var(--pico-muted-border-color);
             border-radius: var(--pico-border-radius);
         }
         .result-label {
-            font-weight: bold;
+            font-weight: 600;
             color: #6b8dd6;
-            font-size: 0.9rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            display: block;
+            margin-bottom: 0.2rem;
         }
         .result-value {
-            margin-top: 0.35rem;
-            font-size: 1rem;
+            font-size: 0.9rem;
             word-break: break-word;
+            font-weight: 500;
         }
         @media (max-width: 768px) {
             .calc-grid {
@@ -94,6 +98,9 @@
             }
             .calc-button {
                 grid-column: 1;
+            }
+            .result-grid {
+                grid-template-columns: 1fr;
             }
         }
     </style>
