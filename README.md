@@ -37,6 +37,10 @@ python3 -m http.server 8000 --bind 127.0.0.1
 
 Then open `http://127.0.0.1:8000/` in your browser.
 
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
 ## Development
 
 See `.claude/CLAUDE.md` for development workflow and guidelines.
