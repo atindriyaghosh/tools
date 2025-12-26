@@ -3,7 +3,8 @@
 ## Implementation Workflow
 
 1. **Branch**: Create feature branch from main synced with remote
-   - `git checkout main && git pull && git checkout -b feature/description`
+   - Sync: `git checkout main && git pull`
+   - Create: `git checkout -b PREFIX/description` (see branch naming below)
 2. **Clarify**: Ask questions about requirements/approach until you're convinced of what to build
 3. **Implement**: Code changes (new tool, feature, fix, or enhancement)
    - New tool: Reference `.dev/TOOL_TEMPLATE.md` and `common-styles.css`
@@ -12,6 +13,15 @@
 5. **Commit**: Push to feature branch
 6. **PR**: Open pull request to main for review
 7. **Merge**: After review, merge to main and deploy
+
+## Branch Naming Conventions
+
+Use one of these prefixes:
+- `feature/` - New tools or features (e.g., `feature/markdown-to-html-converter`)
+- `enhance/` - Enhancements to existing tools (e.g., `enhance/timezone-converter-dst`)
+- `fix/` - Bug fixes (e.g., `fix/pdf-converter-memory-leak`)
+- `refactor/` - Code refactoring (e.g., `refactor/common-styles-organization`)
+- `docs/` - Documentation updates (e.g., `docs/update-tool-template`)
 
 ## Documentation
 
