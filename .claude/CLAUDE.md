@@ -3,7 +3,7 @@
 ## Implementation Workflow
 
 ### Phase 1: Brainstorming
-- **Goal**: Explore ideas, requirements, and design approaches for new tools
+- **Goal**: Explore ideas, requirements, and design approaches for new tools. This step is to only identify requirements with very high-level implementation discussions.
 - **How**: Start a conversation with Claude or any other LLM
 - **Output**: Store session outputs in `.brainstorm/` directory
   - Claude Code can automatically create files in `.brainstorm/`
@@ -45,7 +45,7 @@ Use one of these prefixes:
 
 ## Documentation
 
-Quick reference - detailed specs in `.dev/`:
+Quick reference - detailed specs in `.claude/`:
 - `TECH_STACK.md` - Framework, deployment
 - `FILE_STRUCTURE.md` - Directory layout
 - `TOOL_TEMPLATE.md` - HTML structure template
