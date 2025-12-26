@@ -43,10 +43,15 @@
         }
         .calc-grid {
             display: grid;
-            grid-template-columns: auto auto auto auto;
-            gap: 0.5rem;
+            gap: 0.35rem;
             margin-bottom: 0.75rem;
             align-items: center;
+        }
+        #differenceMode .calc-grid {
+            grid-template-columns: auto auto auto auto;
+        }
+        #additionMode .calc-grid {
+            grid-template-columns: auto auto 0.5fr auto auto;
         }
         .calc-grid label {
             display: flex;
@@ -71,6 +76,10 @@
             font-size: 0.9rem;
             height: 2.15rem;
             box-sizing: border-box;
+        }
+        #additionMode .calc-grid label:nth-child(3) input {
+            width: 50px;
+            padding: 0.35rem 0.3rem;
         }
         .calc-grid label input[type="checkbox"] {
             width: 1.1rem;
@@ -130,15 +139,19 @@
             line-height: 1.3;
         }
         @media (max-width: 1024px) {
-            .calc-grid {
+            #differenceMode .calc-grid {
                 grid-template-columns: repeat(2, 1fr);
+            }
+            #additionMode .calc-grid {
+                grid-template-columns: 1fr 1fr 1fr;
             }
             .result-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
         }
-        @media (max-width: 768px) {
-            .calc-grid {
+        @media (max-width: 800px) {
+            #differenceMode .calc-grid,
+            #additionMode .calc-grid {
                 grid-template-columns: 1fr;
                 align-items: stretch;
             }
@@ -151,6 +164,10 @@
             .calc-grid label input,
             .calc-grid label select {
                 height: auto;
+            }
+            #additionMode .calc-grid label:nth-child(3) input {
+                width: 100%;
+                padding: 0.35rem 0.45rem;
             }
             .calc-button {
                 height: auto;
@@ -218,7 +235,7 @@
 
                     <label>
                         <span>Amt</span>
-                        <input type="number" id="amount" min="0" value="1" style="width: 60px;">
+                        <input type="number" id="amount" min="0" value="1">
                     </label>
 
                     <label>
