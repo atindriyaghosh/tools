@@ -164,8 +164,7 @@
             width: 100%;
         }
 
-        .pdf-item-remove:hover,
-        .pdf-item-remove.hover-active {
+        .pdf-item-remove:hover {
             background: #ff6b6b;
             color: white;
             border-color: #ff6b6b;
@@ -405,12 +404,6 @@
             const removeBtn = document.createElement('button');
             removeBtn.className = 'pdf-item-remove';
             removeBtn.textContent = 'Remove';
-            removeBtn.addEventListener('mouseenter', () => {
-                removeBtn.classList.add('hover-active');
-            });
-            removeBtn.addEventListener('mouseleave', () => {
-                removeBtn.classList.remove('hover-active');
-            });
             removeBtn.addEventListener('click', () => {
                 pdfs.splice(index, 1);
                 item.remove();
