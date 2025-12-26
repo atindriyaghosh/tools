@@ -2,25 +2,17 @@
 
 ## Implementation Workflow
 
-### Phase 1: Brainstorming
-- **Goal**: Explore ideas, requirements, and design approaches for new tools. This step is to only identify requirements with very high-level implementation discussions.
-- **How**: Start a conversation with Claude or any other LLM
-- **Output**: Store session outputs in `.brainstorm/` directory
-  - Claude Code can automatically create files in `.brainstorm/`
-  - Otherwise save outputs manually
-- **When complete**: Review brainstorm outputs before proceeding to planning
-
-### Phase 2: Planning
+### Phase 1: Planning
 - **Goal**: Create detailed implementation plan with architecture and decisions
-- **How**: Initiate a Claude Code session after brainstorming is complete
-- **Use**: EnterPlanMode to explore codebase and design approach for approval
+- **How**: Initiate a Claude Code session with EnterPlanMode to explore codebase and design approach for approval
+- **Brainstorming context**: If a brainstorming document is available, provide it to establish requirements and design rationale
 - **Output**: Structured plan covering:
   - Architecture decisions
   - Files to create/modify
   - Implementation steps
   - Integration points
 
-### Phase 3: Implementation
+### Phase 2: Implementation
 1. **Branch**: Create feature branch from main synced with remote
    - Sync: `git checkout main && git pull`
    - Create: `git checkout -b PREFIX/description` (see branch naming below)
