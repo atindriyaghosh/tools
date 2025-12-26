@@ -41,10 +41,10 @@ echo ""
 echo "Step 3: Copying production assets..."
 files_to_copy=(
   "common-styles.css"
-  "README.md"
   "CNAME"
   ".nojekyll"
   "favicon.png"
+  "LICENSE"
 )
 
 for file in "${files_to_copy[@]}"; do
