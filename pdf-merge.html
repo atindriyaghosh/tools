@@ -469,16 +469,10 @@
             }
             if (pdfs.length > 1) {
                 sortable = Sortable.create(pdfList, {
-                    animation: 200,
-                    animationEasing: 'cubic-bezier(1, 0, 0, 1)',
+                    animation: 150,
                     ghostClass: 'sortable-ghost',
                     fallbackClass: 'sortable-fallback',
-                    fallbackOnBody: false,
-                    delay: 200,
-                    delayOnTouchOnly: true,
-                    touchStartThreshold: 0,
-                    invertSwap: false,
-                    swapThreshold: 0.65,
+                    forceFallback: true,
                     onEnd: (evt) => {
                         const newPdfs = [];
                         document.querySelectorAll('.pdf-item').forEach(item => {
