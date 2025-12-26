@@ -31,7 +31,7 @@ for file in "$REPO_ROOT"/*.html; do
     filename=$(basename "$file")
     cp "$file" "$SITE_DIR/$filename"
     echo "  ✓ $filename"
-    ((html_count++))
+    ((++html_count))
   fi
 done
 echo "  Total: $html_count HTML files"
