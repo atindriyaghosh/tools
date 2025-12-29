@@ -18,11 +18,11 @@
         .upload-area {
             border: 2px dashed var(--pico-muted-border-color);
             border-radius: var(--pico-border-radius);
-            padding: 1rem 1.25rem;
+            padding: 0.75rem 1rem;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
-            margin-bottom: 1rem;
+            margin-bottom: 0.75rem;
         }
 
         .upload-area:hover {
@@ -118,6 +118,8 @@
             <input type="file" id="fileInput" accept=".pdf">
         </div>
 
+        <article id="status"></article>
+
         <article id="controls">
             <label>
                 Output Format
@@ -143,8 +145,6 @@
                 Total characters: <span id="charCount">0</span> | Total words: <span id="wordCount">0</span>
             </div>
         </article>
-
-        <article id="status"></article>
 
         <p style="margin-top:1rem"><a href="index.html" class="back-link">← Back to Tools</a></p>
     </main>
