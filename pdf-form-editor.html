@@ -44,6 +44,7 @@
             gap: 0.5rem;
             margin-bottom: 1rem;
             flex-wrap: wrap;
+            align-items: center;
         }
 
         .toolbar button {
@@ -81,6 +82,11 @@
         }
 
         .fields-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             pointer-events: none;
         }
 
@@ -93,7 +99,7 @@
             align-items: center;
             justify-content: center;
             cursor: move;
-            transition: border-color 0.2s;
+            transition: all 0.2s;
             pointer-events: auto;
         }
 
@@ -104,7 +110,9 @@
 
         .field-overlay.selected {
             border-color: #4a6fa5;
+            border-width: 3px;
             background: rgba(107, 141, 214, 0.15);
+            box-shadow: 0 0 0 1px rgba(107, 141, 214, 0.3);
         }
 
         .field-overlay input,
@@ -139,6 +147,7 @@
             display: none;
             align-items: center;
             justify-content: center;
+            z-index: 1000;
         }
 
         .field-overlay.selected .field-delete-btn {
@@ -159,6 +168,40 @@
 
         .field-overlay.resizable.selected::after {
             display: block;
+        }
+
+        #status {
+            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: var(--pico-border-radius);
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        #status[aria-invalid="true"] {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        #status.visible {
+            display: block;
+        }
+
+        .lasso-rect {
+            position: absolute;
+            border: 2px dashed #6b8dd6;
+            background: rgba(107, 141, 214, 0.1);
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .snap-guide {
+            position: absolute;
+            pointer-events: none;
+            z-index: 998;
         }
 
         .instructions {
@@ -182,40 +225,6 @@
         .instructions li {
             margin-bottom: 0.25rem;
         }
-
-        #status {
-            display: none;
-            margin-top: 1rem;
-            padding: 1rem;
-            border-radius: var(--pico-border-radius);
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-
-        #status[aria-invalid="true"] {
-            background: #f8d7da;
-            border-color: #f5c6cb;
-            color: #721c24;
-        }
-
-        #status.visible {
-            display: block;
-        }
-
-        .field-type-group {
-            margin-bottom: 1rem;
-        }
-
-        .field-type-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: bold;
-        }
-
-        .field-type-group input {
-            width: 100%;
-        }
     </style>
 </head>
 <body>
@@ -238,12 +247,13 @@
             <div class="instructions">
                 <h3>How to use:</h3>
                 <ol>
-                    <li><strong>Optional:</strong> Click "Auto-Detect Boxes" to automatically detect form fields</li>
-                    <li>Or manually click a field type button and click on the PDF to place fields</li>
-                    <li>Drag to reposition, drag corner to resize (text fields)</li>
-                    <li>Click the field to select and delete with the X button</li>
-                    <li>Fill in your values</li>
-                    <li>Download when done</li>
+                    <li>Click a field type button, then click and drag on the PDF to create a field</li>
+                    <li>Shift+click to select multiple fields</li>
+                    <li>Drag to move, use corner handle to resize text fields</li>
+                    <li>Use alignment tools to arrange multiple selected fields</li>
+                    <li>Copy/paste fields with Cmd/Ctrl+C and Cmd/Ctrl+V</li>
+                    <li>Undo with Cmd/Ctrl+Z, Redo with Cmd/Ctrl+Shift+Z</li>
+                    <li>Download your filled PDF when ready</li>
                 </ol>
             </div>
 
@@ -252,8 +262,20 @@
                 <button id="addCheckboxBtn" data-type="checkbox">+ Checkbox</button>
                 <button id="addRadioBtn" data-type="radio">+ Radio Button</button>
                 <button id="addDropdownBtn" data-type="dropdown">+ Dropdown</button>
-                <button id="detectBoxesBtn" style="background-color: #6c757d; border-color: #6c757d;">🔍 Auto-Detect Boxes</button>
-                <button id="clearFieldsBtn" style="background-color: #dc3545; border-color: #dc3545;">Clear All Fields</button>
+                <span style="flex: 0 0 1px; background: #ccc; height: 24px; margin: 0 0.25rem;"></span>
+
+                <!-- Alignment toolbar (shown when 2+ fields selected) -->
+                <div id="alignmentTools" style="display: none; display: flex; gap: 0.5rem;">
+                    <button id="alignLeftBtn" title="Align left edges">⇤ Left</button>
+                    <button id="alignRightBtn" title="Align right edges">Right ⇥</button>
+                    <button id="alignTopBtn" title="Align top edges">⇧ Top</button>
+                    <button id="alignBottomBtn" title="Align bottom edges">Bottom ⇩</button>
+                    <button id="distributeHBtn" title="Distribute horizontally">↔ Dist H</button>
+                    <button id="distributeVBtn" title="Distribute vertically">↕ Dist V</button>
+                </div>
+
+                <span style="flex: 0 0 1px; background: #ccc; height: 24px; margin: 0 0.25rem;"></span>
+                <button id="clearFieldsBtn" style="background-color: #dc3545; border-color: #dc3545;">Clear All</button>
                 <button id="downloadBtn" style="background-color: #28a745; border-color: #28a745;">Download PDF</button>
             </div>
 
@@ -267,34 +289,46 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-    <script async id="opencvScript" src="https://cdn.jsdelivr.net/npm/opencv.js@1.2.1/opencv.js"></script>
     <script>
         // Setup PDF.js worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        // State
-        let pdfDoc = null;
-        let originalPdfBytes = null;
-        let fields = [];
-        let activeTool = null;
-        let isPlacingField = false;
-        let currentPageNum = 0;
         const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
         const PDF_SCALE = 1.5; // Scale factor for rendering PDFs
-        const pageScales = {}; // Store scale factors for each page
 
-        // Detection configuration
-        const DETECTION_CONFIG = {
-            MIN_BOX_SIZE: 3,            // Minimum box dimension in pixels (at 1.5x scale)
-            MAX_BOX_SIZE: 200,          // Maximum box dimension for character boxes
-            MIN_ASPECT_RATIO: 0.2,      // Prevent very elongated rectangles
-            MAX_ASPECT_RATIO: 5.0,
-            CANNY_LOW: 30,              // Edge detection threshold (lower = more edges detected)
-            CANNY_HIGH: 100,
-            GAUSSIAN_KERNEL: 3          // Blur kernel size (smaller = less blur)
+        // ==================== GLOBAL STATE ====================
+
+        let state = {
+            pdf: {
+                doc: null,
+                fileName: '',
+                bytes: null
+            },
+            pages: [],
+            currentPage: 0,
+            mode: 'edit', // 'edit' or 'fill'
+            activeTool: null, // 'text', 'checkbox', 'radio', 'signature'
+            selectedFieldIds: [],
+            dragState: null,
+            settings: {
+                snapToGrid: true,
+                gridSize: 5,
+                showGrid: false,
+                snapToFields: true,
+                snapThreshold: 5
+            },
+            history: {
+                past: [],
+                future: []
+            }
         };
-        let isDetecting = false; // Track detection state
-        let opencvReady = false; // Track if OpenCV is loaded
+
+        let clipboard = null;
+        let lastAction = null;
+        let renderQueued = false;
+
+        // Field index for O(1) lookup
+        const fieldIndex = new Map();
 
         // DOM elements
         const uploadArea = document.getElementById('uploadArea');
@@ -307,11 +341,110 @@
         const addCheckboxBtn = document.getElementById('addCheckboxBtn');
         const addRadioBtn = document.getElementById('addRadioBtn');
         const addDropdownBtn = document.getElementById('addDropdownBtn');
-        const detectBoxesBtn = document.getElementById('detectBoxesBtn');
         const clearFieldsBtn = document.getElementById('clearFieldsBtn');
         const downloadBtn = document.getElementById('downloadBtn');
 
-        // File upload handlers
+        // ==================== UTILITIES ====================
+
+        function generateFieldId() {
+            if (window.crypto && crypto.randomUUID) {
+                return crypto.randomUUID();
+            }
+            return 'field-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function findFieldById(fieldId) {
+            return fieldIndex.get(fieldId);
+        }
+
+        function rebuildFieldIndex() {
+            fieldIndex.clear();
+            for (const page of state.pages) {
+                for (const field of page.fields) {
+                    fieldIndex.set(field.id, field);
+                }
+            }
+        }
+
+        function saveToHistory() {
+            if (lastAction === 'select') return;
+
+            const snapshot = {
+                pages: JSON.parse(JSON.stringify(state.pages)),
+                selectedFieldIds: [...state.selectedFieldIds]
+            };
+
+            state.history.past.push(snapshot);
+            state.history.future = [];
+
+            if (state.history.past.length > 50) {
+                state.history.past.shift();
+            }
+        }
+
+        function undo() {
+            if (state.history.past.length === 0) return;
+
+            const current = {
+                pages: JSON.parse(JSON.stringify(state.pages)),
+                selectedFieldIds: [...state.selectedFieldIds]
+            };
+
+            state.history.future.push(current);
+            const previous = state.history.past.pop();
+
+            state.pages = previous.pages;
+            state.selectedFieldIds = previous.selectedFieldIds;
+            rebuildFieldIndex();
+
+            render();
+            showStatus('Undo', false);
+        }
+
+        function redo() {
+            if (state.history.future.length === 0) return;
+
+            const current = {
+                pages: JSON.parse(JSON.stringify(state.pages)),
+                selectedFieldIds: [...state.selectedFieldIds]
+            };
+
+            state.history.past.push(current);
+            const next = state.history.future.pop();
+
+            state.pages = next.pages;
+            state.selectedFieldIds = next.selectedFieldIds;
+            rebuildFieldIndex();
+
+            render();
+            showStatus('Redo', false);
+        }
+
+        function render() {
+            if (renderQueued) return;
+            renderQueued = true;
+
+            requestAnimationFrame(() => {
+                if (state.pdf.doc) {
+                    renderFieldOverlays();
+                    updateAlignmentToolbar();
+                }
+                renderQueued = false;
+            });
+        }
+
+        function showStatus(message, isError) {
+            status.textContent = message;
+            status.className = 'visible';
+            if (isError) {
+                status.setAttribute('aria-invalid', 'true');
+            } else {
+                status.removeAttribute('aria-invalid');
+            }
+        }
+
+        // ==================== FILE UPLOAD ====================
+
         uploadArea.addEventListener('click', () => fileInput.click());
 
         uploadArea.addEventListener('dragover', (e) => {
@@ -356,10 +489,45 @@
             try {
                 showStatus('Loading PDF...', false);
                 const arrayBuffer = await file.arrayBuffer();
-                originalPdfBytes = new Uint8Array(arrayBuffer);
-                pdfDoc = await pdfjsLib.getDocument(originalPdfBytes).promise;
 
-                fields = [];
+                // Follow PATTERNS.md PDF Byte Handling guidance
+                // Create initial Uint8Array from the ArrayBuffer
+                const initialView = new Uint8Array(arrayBuffer);
+
+                // Create first copy for pdf.js using .set() method (CORRECT approach from PATTERNS.md)
+                const pdfJsBytes = new Uint8Array(initialView.length);
+                pdfJsBytes.set(initialView);
+
+                // Create second independent copy for storage using .set() method
+                const storedBytes = new Uint8Array(initialView.length);
+                storedBytes.set(initialView);
+
+                const pdfDoc = await pdfjsLib.getDocument(pdfJsBytes).promise;
+
+                // Initialize state (store bytes copy for later download)
+                state.pdf.doc = pdfDoc;
+                state.pdf.fileName = file.name;
+                state.pdf.bytes = storedBytes;  // Store completely independent copy
+                state.pages = [];
+                state.currentPage = 0;
+                state.selectedFieldIds = [];
+                state.history.past = [];
+                state.history.future = [];
+
+                // Create page entries
+                for (let i = 1; i <= pdfDoc.numPages; i++) {
+                    const page = await pdfDoc.getPage(i);
+                    const viewport = page.getViewport({ scale: PDF_SCALE });
+                    state.pages.push({
+                        num: i,
+                        width: viewport.width,
+                        height: viewport.height,
+                        scale: PDF_SCALE,
+                        fields: []
+                    });
+                }
+
+                rebuildFieldIndex();
                 await renderPDFPages();
 
                 uploadSection.style.display = 'none';
@@ -367,37 +535,38 @@
                 showStatus(`PDF loaded: ${pdfDoc.numPages} page(s)`, false);
             } catch (error) {
                 showStatus(`Error loading PDF: ${error.message}`, true);
-                pdfDoc = null;
+                state.pdf.doc = null;
             }
         }
 
         async function renderPDFPages() {
             pdfContainer.innerHTML = '';
-            const numPages = pdfDoc.numPages;
 
-            for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-                const page = await pdfDoc.getPage(pageNum);
-                const viewport = page.getViewport({ scale: PDF_SCALE });
-                pageScales[pageNum - 1] = PDF_SCALE;
+            for (let i = 0; i < state.pages.length; i++) {
+                const pageNum = i + 1;
+                const pageDef = state.pages[i];
+                const page = await state.pdf.doc.getPage(pageNum);
 
                 const canvas = document.createElement('canvas');
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
+                canvas.width = pageDef.width;
+                canvas.height = pageDef.height;
 
                 const context = canvas.getContext('2d');
                 await page.render({
                     canvasContext: context,
-                    viewport: viewport
+                    viewport: page.getViewport({ scale: pageDef.scale })
                 }).promise;
 
                 const wrapper = document.createElement('div');
                 wrapper.className = 'pdf-page-wrapper';
                 wrapper.setAttribute('data-page', pageNum);
-                wrapper.style.width = (viewport.width) + 'px';
+                wrapper.style.width = pageDef.width + 'px';
+                wrapper.style.position = 'relative';
 
                 canvas.className = 'pdf-page-canvas';
                 canvas.setAttribute('data-page', pageNum);
                 canvas.addEventListener('click', (e) => handleCanvasClick(e, pageNum));
+                canvas.addEventListener('mousedown', (e) => handleCanvasMouseDown(e, pageNum));
 
                 const fieldsContainer = document.createElement('div');
                 fieldsContainer.style.position = 'absolute';
@@ -416,152 +585,327 @@
             renderFieldOverlays();
         }
 
+        // ==================== FIELD CREATION & INTERACTION ====================
+
         function handleCanvasClick(e, pageNum) {
-            if (!activeTool) {
+            // Only handle if not creating a field
+            if (state.activeTool) return;
+
+            lastAction = 'click';
+
+            // If not shift+clicking, deselect all
+            if (!e.shiftKey) {
+                state.selectedFieldIds = [];
+            }
+
+            render();
+        }
+
+        function handleCanvasMouseDown(e, pageNum) {
+            // Handle field creation
+            if (state.activeTool) {
+                handleFieldCreationStart(e, pageNum);
                 return;
             }
 
+            // Handle lasso selection
+            if (!state.activeTool && e.button === 0) {
+                handleLassoStart(e, pageNum);
+            }
+        }
+
+        function handleFieldCreationStart(e, pageNum) {
             const canvas = e.target;
-            const rect = canvas.getBoundingClientRect();
-            const containerRect = canvas.parentElement.getBoundingClientRect();
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const startX = e.clientX - rect.left;
+            const startY = e.clientY - rect.top;
 
-            const x = e.clientX - containerRect.left;
-            const y = e.clientY - containerRect.top;
-
-            if (x < 0 || y < 0 || x > canvas.offsetWidth || y > canvas.offsetHeight) {
-                return;
-            }
-
-            let fieldData = {
-                id: generateFieldId(),
-                type: activeTool,
+            const fieldId = generateFieldId();
+            const newField = {
+                id: fieldId,
+                type: state.activeTool,
                 page: pageNum - 1,
-                x: Math.round(x),
-                y: Math.round(y),
-                width: 100,
-                height: 30,
-                value: ''
+                x: startX,
+                y: startY,
+                width: 0,
+                height: 0,
+                name: `${state.activeTool}_${Date.now()}`,
+                value: state.activeTool === 'checkbox' ? false : '',
+                defaultValue: '',
+                placeholder: ''
             };
 
-            if (activeTool === 'radio') {
+            // Handle special types
+            if (state.activeTool === 'radio') {
                 const groupName = prompt('Enter radio button group name:');
                 if (!groupName) return;
-                fieldData.name = groupName;
-                fieldData.value = 'off';
-            } else if (activeTool === 'dropdown') {
+                newField.name = groupName;
+            } else if (state.activeTool === 'dropdown') {
                 const optionsStr = prompt('Enter options (comma-separated):');
                 if (!optionsStr) return;
-                fieldData.options = optionsStr.split(',').map(o => o.trim());
-                fieldData.value = fieldData.options[0] || '';
-            } else if (activeTool === 'checkbox') {
-                fieldData.value = false;
+                newField.options = optionsStr.split(',').map(o => o.trim());
+                newField.value = newField.options[0] || '';
             }
 
-            fields.push(fieldData);
-            renderFieldOverlays();
-            showStatus(`${activeTool.charAt(0).toUpperCase() + activeTool.slice(1)} field added`, false);
+            state.pages[pageNum - 1].fields.push(newField);
+            fieldIndex.set(fieldId, newField);
+
+            state.dragState = {
+                type: 'drawing',
+                fieldId,
+                startX,
+                startY,
+                pageNum,
+                canvas
+            };
+
+            document.addEventListener('mousemove', handleDrawingMove);
+            document.addEventListener('mouseup', handleDrawingEnd);
+
+            render();
         }
+
+        function handleDrawingMove(e) {
+            if (!state.dragState || state.dragState.type !== 'drawing') return;
+
+            const canvas = state.dragState.canvas;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const currentX = e.clientX - rect.left;
+            const currentY = e.clientY - rect.top;
+
+            const field = findFieldById(state.dragState.fieldId);
+            if (!field) return;
+
+            field.x = Math.min(state.dragState.startX, currentX);
+            field.y = Math.min(state.dragState.startY, currentY);
+            field.width = Math.abs(currentX - state.dragState.startX);
+            field.height = Math.abs(currentY - state.dragState.startY);
+
+            field.width = Math.max(field.width, 20);
+            field.height = Math.max(field.height, 20);
+
+            render();
+        }
+
+        function handleDrawingEnd(e) {
+            if (!state.dragState || state.dragState.type !== 'drawing') return;
+
+            const field = findFieldById(state.dragState.fieldId);
+            if (field && (field.width < 20 || field.height < 20)) {
+                field.width = 100;
+                field.height = 30;
+            }
+
+            saveToHistory();
+            state.dragState = null;
+
+            document.removeEventListener('mousemove', handleDrawingMove);
+            document.removeEventListener('mouseup', handleDrawingEnd);
+
+            render();
+            showStatus(`${state.activeTool} field created`, false);
+        }
+
+        // ==================== LASSO SELECTION ====================
+
+        function handleLassoStart(e, pageNum) {
+            const canvas = e.target;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const startX = e.clientX - rect.left;
+            const startY = e.clientY - rect.top;
+
+            state.dragState = {
+                type: 'lasso',
+                startX,
+                startY,
+                currentX: startX,
+                currentY: startY,
+                pageNum,
+                canvas
+            };
+
+            document.addEventListener('mousemove', handleLassoMove);
+            document.addEventListener('mouseup', handleLassoEnd);
+        }
+
+        function handleLassoMove(e) {
+            if (!state.dragState || state.dragState.type !== 'lasso') return;
+
+            const canvas = state.dragState.canvas;
+            const rect = canvas.parentElement.getBoundingClientRect();
+
+            state.dragState.currentX = e.clientX - rect.left;
+            state.dragState.currentY = e.clientY - rect.top;
+
+            render();
+        }
+
+        function handleLassoEnd(e) {
+            if (!state.dragState || state.dragState.type !== 'lasso') return;
+
+            const lassoX1 = Math.min(state.dragState.startX, state.dragState.currentX);
+            const lassoY1 = Math.min(state.dragState.startY, state.dragState.currentY);
+            const lassoX2 = Math.max(state.dragState.startX, state.dragState.currentX);
+            const lassoY2 = Math.max(state.dragState.startY, state.dragState.currentY);
+
+            const page = state.pages[state.dragState.pageNum - 1];
+            const intersectingIds = page.fields.filter(field => {
+                return !(field.x + field.width < lassoX1 ||
+                         field.x > lassoX2 ||
+                         field.y + field.height < lassoY1 ||
+                         field.y > lassoY2);
+            }).map(f => f.id);
+
+            if (e.shiftKey) {
+                state.selectedFieldIds = [...new Set([...state.selectedFieldIds, ...intersectingIds])];
+            } else {
+                state.selectedFieldIds = intersectingIds;
+            }
+
+            state.dragState = null;
+
+            document.removeEventListener('mousemove', handleLassoMove);
+            document.removeEventListener('mouseup', handleLassoEnd);
+
+            render();
+            lastAction = 'select';
+        }
+
+        // ==================== FIELD RENDERING ====================
 
         function renderFieldOverlays() {
             const fieldsContainers = document.querySelectorAll('.fields-container');
             fieldsContainers.forEach(container => container.innerHTML = '');
 
-            fields.forEach(field => {
-                const pageNum = field.page + 1;
-                const container = document.querySelector(`.fields-container[data-page="${pageNum}"]`);
-                if (!container) return;
+            // Draw lasso if active
+            if (state.dragState && state.dragState.type === 'lasso') {
+                const wrapper = document.querySelector(`.pdf-page-wrapper[data-page="${state.dragState.pageNum}"]`);
+                if (wrapper) {
+                    const x = Math.min(state.dragState.startX, state.dragState.currentX);
+                    const y = Math.min(state.dragState.startY, state.dragState.currentY);
+                    const w = Math.abs(state.dragState.currentX - state.dragState.startX);
+                    const h = Math.abs(state.dragState.currentY - state.dragState.startY);
 
-                const wrapper = document.createElement('div');
-                wrapper.className = 'field-overlay';
-                if (field.type === 'text' || field.type === 'dropdown') {
-                    wrapper.classList.add('resizable');
+                    const lasso = document.createElement('div');
+                    lasso.className = 'lasso-rect';
+                    lasso.style.left = x + 'px';
+                    lasso.style.top = y + 'px';
+                    lasso.style.width = w + 'px';
+                    lasso.style.height = h + 'px';
+                    wrapper.appendChild(lasso);
                 }
-                wrapper.style.left = field.x + 'px';
-                wrapper.style.top = field.y + 'px';
-                wrapper.style.width = field.width + 'px';
-                wrapper.style.height = field.height + 'px';
-                wrapper.setAttribute('data-field-id', field.id);
+            }
 
-                let input;
+            // Draw fields
+            for (const page of state.pages) {
+                const container = document.querySelector(`.fields-container[data-page="${page.num}"]`);
+                if (!container) continue;
 
-                if (field.type === 'text') {
-                    input = document.createElement('input');
-                    input.type = 'text';
-                    input.value = field.value;
-                    if (field.maxLength) {
-                        input.maxLength = field.maxLength;
+                for (const field of page.fields) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'field-overlay';
+                    if (field.type === 'text' || field.type === 'dropdown') {
+                        wrapper.classList.add('resizable');
                     }
-                    input.addEventListener('change', (e) => {
-                        const idx = fields.findIndex(f => f.id === field.id);
-                        if (idx >= 0) fields[idx].value = e.target.value;
+                    if (state.selectedFieldIds.includes(field.id)) {
+                        wrapper.classList.add('selected');
+                    }
+
+                    wrapper.style.left = field.x + 'px';
+                    wrapper.style.top = field.y + 'px';
+                    wrapper.style.width = field.width + 'px';
+                    wrapper.style.height = field.height + 'px';
+                    wrapper.setAttribute('data-field-id', field.id);
+
+                    // Create input
+                    let input;
+                    if (field.type === 'text') {
+                        input = document.createElement('input');
+                        input.type = 'text';
+                        input.value = field.value || '';
+                        input.addEventListener('change', (e) => {
+                            field.value = e.target.value;
+                        });
+                    } else if (field.type === 'checkbox') {
+                        input = document.createElement('input');
+                        input.type = 'checkbox';
+                        input.checked = field.value || false;
+                        input.addEventListener('change', (e) => {
+                            field.value = e.target.checked;
+                        });
+                    } else if (field.type === 'radio') {
+                        input = document.createElement('input');
+                        input.type = 'radio';
+                        input.name = field.name;
+                        input.value = 'on';
+                        input.checked = field.value === 'on';
+                        input.addEventListener('change', (e) => {
+                            field.value = e.target.checked ? 'on' : 'off';
+                        });
+                    } else if (field.type === 'dropdown') {
+                        input = document.createElement('select');
+                        if (field.options) {
+                            field.options.forEach(opt => {
+                                const option = document.createElement('option');
+                                option.value = opt;
+                                option.textContent = opt;
+                                input.appendChild(option);
+                            });
+                        }
+                        input.value = field.value || '';
+                        input.addEventListener('change', (e) => {
+                            field.value = e.target.value;
+                        });
+                    }
+
+                    if (input) wrapper.appendChild(input);
+
+                    // Add delete button
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'field-delete-btn';
+                    deleteBtn.textContent = '×';
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteField(field.id);
                     });
-                    input.addEventListener('input', (e) => {
-                        const idx = fields.findIndex(f => f.id === field.id);
-                        if (idx >= 0) fields[idx].value = e.target.value;
+                    wrapper.appendChild(deleteBtn);
+
+                    // Handle selection
+                    wrapper.addEventListener('click', (e) => {
+                        if (e.target === input) return;
+                        e.stopPropagation();
+                        lastAction = 'select';
+
+                        if (e.shiftKey) {
+                            const idx = state.selectedFieldIds.indexOf(field.id);
+                            if (idx >= 0) {
+                                state.selectedFieldIds.splice(idx, 1);
+                            } else {
+                                state.selectedFieldIds.push(field.id);
+                            }
+                        } else {
+                            state.selectedFieldIds = [field.id];
+                        }
+
+                        render();
                     });
-                } else if (field.type === 'checkbox') {
-                    input = document.createElement('input');
-                    input.type = 'checkbox';
-                    input.checked = field.value;
-                    input.addEventListener('change', (e) => {
-                        const idx = fields.findIndex(f => f.id === field.id);
-                        if (idx >= 0) fields[idx].value = e.target.checked;
-                    });
-                } else if (field.type === 'radio') {
-                    input = document.createElement('input');
-                    input.type = 'radio';
-                    input.name = field.name;
-                    input.value = 'on';
-                    input.checked = field.value === 'on';
-                    input.addEventListener('change', (e) => {
-                        const idx = fields.findIndex(f => f.id === field.id);
-                        if (idx >= 0) fields[idx].value = e.target.checked ? 'on' : 'off';
-                    });
-                } else if (field.type === 'dropdown') {
-                    input = document.createElement('select');
-                    field.options.forEach(option => {
-                        const opt = document.createElement('option');
-                        opt.value = option;
-                        opt.textContent = option;
-                        input.appendChild(opt);
-                    });
-                    input.value = field.value;
-                    input.addEventListener('change', (e) => {
-                        const idx = fields.findIndex(f => f.id === field.id);
-                        if (idx >= 0) fields[idx].value = e.target.value;
-                    });
+
+                    // Handle dragging
+                    makeDraggable(wrapper, field, page.num);
+
+                    // Handle resizing
+                    if (field.type === 'text' || field.type === 'dropdown') {
+                        makeResizable(wrapper, field);
+                    }
+
+                    container.appendChild(wrapper);
                 }
-
-                wrapper.appendChild(input);
-
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'field-delete-btn';
-                deleteBtn.textContent = '×';
-                deleteBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    deleteField(field.id);
-                });
-                wrapper.appendChild(deleteBtn);
-
-                wrapper.addEventListener('click', (e) => {
-                    if (e.target === input) return;
-                    e.stopPropagation();
-                    document.querySelectorAll('.field-overlay.selected').forEach(el => {
-                        el.classList.remove('selected');
-                    });
-                    wrapper.classList.add('selected');
-                });
-
-                makeDraggable(wrapper, field);
-                if (field.type === 'text' || field.type === 'dropdown') {
-                    makeResizable(wrapper, field);
-                }
-
-                container.appendChild(wrapper);
-            });
+            }
         }
 
-        function makeDraggable(element, field) {
+        // ==================== DRAG AND RESIZE ====================
+
+        function makeDraggable(element, field, pageNum) {
             let offsetX = 0;
             let offsetY = 0;
             let isMouseDown = false;
@@ -569,7 +913,6 @@
             element.addEventListener('mousedown', (e) => {
                 if (e.target.classList.contains('field-delete-btn')) return;
                 if (e.target !== element && element.contains(e.target)) {
-                    // Prevent drag when interacting with input
                     if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
                         return;
                     }
@@ -586,17 +929,33 @@
                 const handleMouseMove = (moveEvent) => {
                     if (!isMouseDown) return;
 
-                    const x = moveEvent.clientX - parentRect.left - offsetX;
-                    const y = moveEvent.clientY - parentRect.top - offsetY;
+                    let x = moveEvent.clientX - parentRect.left - offsetX;
+                    let y = moveEvent.clientY - parentRect.top - offsetY;
 
-                    element.style.left = Math.max(0, Math.min(x, parentRect.width - element.offsetWidth)) + 'px';
-                    element.style.top = Math.max(0, Math.min(y, parentRect.height - element.offsetHeight)) + 'px';
+                    // Apply snap-to-grid
+                    const gridSnapped = applySnapToGrid(x, y);
+                    x = gridSnapped.x;
+                    y = gridSnapped.y;
 
-                    const idx = fields.findIndex(f => f.id === field.id);
-                    if (idx >= 0) {
-                        fields[idx].x = parseInt(element.style.left);
-                        fields[idx].y = parseInt(element.style.top);
+                    // Apply snap-to-fields
+                    const fieldSnap = findSnapTargets(field, x, y);
+                    x = fieldSnap.x;
+                    y = fieldSnap.y;
+
+                    // Render snap guides
+                    if (fieldSnap.snapLines.length > 0) {
+                        renderSnapGuides(fieldSnap.snapLines, pageNum);
                     }
+
+                    // Constrain to bounds
+                    x = Math.max(0, Math.min(x, parentRect.width - element.offsetWidth));
+                    y = Math.max(0, Math.min(y, parentRect.height - element.offsetHeight));
+
+                    element.style.left = x + 'px';
+                    element.style.top = y + 'px';
+
+                    field.x = x;
+                    field.y = y;
                 };
 
                 const handleMouseUp = () => {
@@ -604,6 +963,15 @@
                     document.removeEventListener('mousemove', handleMouseMove);
                     document.removeEventListener('mouseup', handleMouseUp);
                     element.style.zIndex = 'auto';
+
+                    // Remove snap guides
+                    const wrapper = document.querySelector(`.pdf-page-wrapper[data-page="${pageNum}"]`);
+                    if (wrapper) {
+                        wrapper.querySelectorAll('.snap-guide').forEach(g => g.remove());
+                    }
+
+                    saveToHistory();
+                    render();
                 };
 
                 document.addEventListener('mousemove', handleMouseMove);
@@ -636,17 +1004,16 @@
                     element.style.width = newWidth + 'px';
                     element.style.height = newHeight + 'px';
 
-                    const idx = fields.findIndex(f => f.id === field.id);
-                    if (idx >= 0) {
-                        fields[idx].width = newWidth;
-                        fields[idx].height = newHeight;
-                    }
+                    field.width = newWidth;
+                    field.height = newHeight;
                 };
 
                 const handleMouseUp = () => {
                     isResizing = false;
                     document.removeEventListener('mousemove', handleMouseMove);
                     document.removeEventListener('mouseup', handleMouseUp);
+                    saveToHistory();
+                    render();
                 };
 
                 document.addEventListener('mousemove', handleMouseMove);
@@ -656,48 +1023,432 @@
             });
         }
 
+        // ==================== FIELD OPERATIONS ====================
+
         function deleteField(fieldId) {
-            fields = fields.filter(f => f.id !== fieldId);
-            renderFieldOverlays();
+            for (const page of state.pages) {
+                page.fields = page.fields.filter(f => f.id !== fieldId);
+            }
+            fieldIndex.delete(fieldId);
+            const idx = state.selectedFieldIds.indexOf(fieldId);
+            if (idx >= 0) state.selectedFieldIds.splice(idx, 1);
+            saveToHistory();
+            render();
             showStatus('Field deleted', false);
         }
 
-        // Button handlers
+        function copySelectedFields() {
+            if (state.selectedFieldIds.length === 0) {
+                showStatus('No fields selected', true);
+                return;
+            }
+            clipboard = state.selectedFieldIds.map(id => {
+                const field = findFieldById(id);
+                return JSON.parse(JSON.stringify(field));
+            });
+            showStatus(`Copied ${clipboard.length} field(s)`, false);
+        }
+
+        function pasteFields() {
+            if (!clipboard || clipboard.length === 0) {
+                showStatus('Nothing to paste', true);
+                return;
+            }
+
+            saveToHistory();
+
+            const newFieldIds = [];
+            const offsetX = 10;
+            const offsetY = 10;
+
+            for (const sourceField of clipboard) {
+                const newField = {
+                    ...JSON.parse(JSON.stringify(sourceField)),
+                    id: generateFieldId(),
+                    x: sourceField.x + offsetX,
+                    y: sourceField.y + offsetY,
+                    name: `${sourceField.name}_copy`
+                };
+
+                state.pages[state.currentPage].fields.push(newField);
+                fieldIndex.set(newField.id, newField);
+                newFieldIds.push(newField.id);
+            }
+
+            state.selectedFieldIds = newFieldIds;
+            render();
+            showStatus(`Pasted ${clipboard.length} field(s)`, false);
+        }
+
+        // ==================== SMART ALIGNMENT ====================
+
+        function applySnapToGrid(x, y) {
+            if (!state.settings.snapToGrid) return { x, y };
+            const gridSize = state.settings.gridSize;
+            return {
+                x: Math.round(x / gridSize) * gridSize,
+                y: Math.round(y / gridSize) * gridSize
+            };
+        }
+
+        function findSnapTargets(field, currentX, currentY) {
+            if (!state.settings.snapToFields) return { x: currentX, y: currentY, snapLines: [] };
+
+            const page = state.pages[field.page];
+            if (!page) return { x: currentX, y: currentY, snapLines: [] };
+
+            const threshold = state.settings.snapThreshold;
+            const snapLines = [];
+            let snappedX = currentX;
+            let snappedY = currentY;
+
+            // Check against all other fields on same page
+            for (const otherField of page.fields) {
+                if (otherField.id === field.id || state.selectedFieldIds.includes(otherField.id)) {
+                    continue;
+                }
+
+                // Left edge
+                if (Math.abs(currentX - otherField.x) < threshold) {
+                    snappedX = otherField.x;
+                    snapLines.push({ type: 'vertical', x: otherField.x, color: '#ff0066' });
+                }
+
+                // Right edge
+                const currentRight = currentX + field.width;
+                const otherRight = otherField.x + otherField.width;
+                if (Math.abs(currentRight - otherRight) < threshold) {
+                    snappedX = otherRight - field.width;
+                    snapLines.push({ type: 'vertical', x: otherRight, color: '#ff0066' });
+                }
+
+                // Top edge
+                if (Math.abs(currentY - otherField.y) < threshold) {
+                    snappedY = otherField.y;
+                    snapLines.push({ type: 'horizontal', y: otherField.y, color: '#ff0066' });
+                }
+
+                // Bottom edge
+                const currentBottom = currentY + field.height;
+                const otherBottom = otherField.y + otherField.height;
+                if (Math.abs(currentBottom - otherBottom) < threshold) {
+                    snappedY = otherBottom - field.height;
+                    snapLines.push({ type: 'horizontal', y: otherBottom, color: '#ff0066' });
+                }
+
+                // Center horizontal
+                const currentCenterX = currentX + field.width / 2;
+                const otherCenterX = otherField.x + otherField.width / 2;
+                if (Math.abs(currentCenterX - otherCenterX) < threshold) {
+                    snappedX = otherCenterX - field.width / 2;
+                    snapLines.push({ type: 'vertical', x: otherCenterX, color: '#ff3366' });
+                }
+
+                // Center vertical
+                const currentCenterY = currentY + field.height / 2;
+                const otherCenterY = otherField.y + otherField.height / 2;
+                if (Math.abs(currentCenterY - otherCenterY) < threshold) {
+                    snappedY = otherCenterY - field.height / 2;
+                    snapLines.push({ type: 'horizontal', y: otherCenterY, color: '#ff3366' });
+                }
+            }
+
+            return { x: snappedX, y: snappedY, snapLines };
+        }
+
+        function renderSnapGuides(snapLines, pageNum) {
+            const wrapper = document.querySelector(`.pdf-page-wrapper[data-page="${pageNum}"]`);
+            if (!wrapper) return;
+
+            wrapper.querySelectorAll('.snap-guide').forEach(g => g.remove());
+
+            for (const line of snapLines) {
+                const guide = document.createElement('div');
+                guide.className = 'snap-guide';
+                guide.style.backgroundColor = line.color;
+
+                if (line.type === 'vertical') {
+                    guide.style.left = line.x + 'px';
+                    guide.style.top = '0';
+                    guide.style.width = '1px';
+                    guide.style.height = '100%';
+                } else {
+                    guide.style.top = line.y + 'px';
+                    guide.style.left = '0';
+                    guide.style.height = '1px';
+                    guide.style.width = '100%';
+                }
+
+                wrapper.appendChild(guide);
+            }
+        }
+
+        // Alignment functions
+        function alignLeft() {
+            if (state.selectedFieldIds.length < 2) {
+                showStatus('Select 2+ fields to align', true);
+                return;
+            }
+
+            saveToHistory();
+
+            const fields = state.selectedFieldIds.map(findFieldById).filter(f => f);
+            if (fields.length === 0) return;
+
+            const minX = Math.min(...fields.map(f => f.x));
+
+            fields.forEach(field => {
+                field.x = minX;
+            });
+
+            render();
+            showStatus(`Aligned ${fields.length} fields to left`, false);
+        }
+
+        function alignRight() {
+            if (state.selectedFieldIds.length < 2) {
+                showStatus('Select 2+ fields to align', true);
+                return;
+            }
+
+            saveToHistory();
+
+            const fields = state.selectedFieldIds.map(findFieldById).filter(f => f);
+            if (fields.length === 0) return;
+
+            const maxRight = Math.max(...fields.map(f => f.x + f.width));
+
+            fields.forEach(field => {
+                field.x = maxRight - field.width;
+            });
+
+            render();
+            showStatus(`Aligned ${fields.length} fields to right`, false);
+        }
+
+        function alignTop() {
+            if (state.selectedFieldIds.length < 2) {
+                showStatus('Select 2+ fields to align', true);
+                return;
+            }
+
+            saveToHistory();
+
+            const fields = state.selectedFieldIds.map(findFieldById).filter(f => f);
+            if (fields.length === 0) return;
+
+            const minY = Math.min(...fields.map(f => f.y));
+
+            fields.forEach(field => {
+                field.y = minY;
+            });
+
+            render();
+            showStatus(`Aligned ${fields.length} fields to top`, false);
+        }
+
+        function alignBottom() {
+            if (state.selectedFieldIds.length < 2) {
+                showStatus('Select 2+ fields to align', true);
+                return;
+            }
+
+            saveToHistory();
+
+            const fields = state.selectedFieldIds.map(findFieldById).filter(f => f);
+            if (fields.length === 0) return;
+
+            const maxBottom = Math.max(...fields.map(f => f.y + f.height));
+
+            fields.forEach(field => {
+                field.y = maxBottom - field.height;
+            });
+
+            render();
+            showStatus(`Aligned ${fields.length} fields to bottom`, false);
+        }
+
+        function distributeHorizontally() {
+            if (state.selectedFieldIds.length < 3) {
+                showStatus('Select 3+ fields to distribute', true);
+                return;
+            }
+
+            saveToHistory();
+
+            const fields = state.selectedFieldIds.map(findFieldById).filter(f => f);
+            if (fields.length < 3) return;
+
+            fields.sort((a, b) => a.x - b.x);
+
+            const first = fields[0];
+            const last = fields[fields.length - 1];
+            const totalSpan = (last.x + last.width) - first.x;
+            const totalFieldWidth = fields.reduce((sum, f) => sum + f.width, 0);
+            const spacing = (totalSpan - totalFieldWidth) / (fields.length - 1);
+
+            let currentX = first.x + first.width + spacing;
+            for (let i = 1; i < fields.length - 1; i++) {
+                fields[i].x = currentX;
+                currentX += fields[i].width + spacing;
+            }
+
+            render();
+            showStatus(`Distributed ${fields.length} fields horizontally`, false);
+        }
+
+        function distributeVertically() {
+            if (state.selectedFieldIds.length < 3) {
+                showStatus('Select 3+ fields to distribute', true);
+                return;
+            }
+
+            saveToHistory();
+
+            const fields = state.selectedFieldIds.map(findFieldById).filter(f => f);
+            if (fields.length < 3) return;
+
+            fields.sort((a, b) => a.y - b.y);
+
+            const first = fields[0];
+            const last = fields[fields.length - 1];
+            const totalSpan = (last.y + last.height) - first.y;
+            const totalFieldHeight = fields.reduce((sum, f) => sum + f.height, 0);
+            const spacing = (totalSpan - totalFieldHeight) / (fields.length - 1);
+
+            let currentY = first.y + first.height + spacing;
+            for (let i = 1; i < fields.length - 1; i++) {
+                fields[i].y = currentY;
+                currentY += fields[i].height + spacing;
+            }
+
+            render();
+            showStatus(`Distributed ${fields.length} fields vertically`, false);
+        }
+
+        function updateAlignmentToolbar() {
+            const alignmentTools = document.getElementById('alignmentTools');
+            if (state.selectedFieldIds.length >= 2) {
+                alignmentTools.style.display = 'flex';
+            } else {
+                alignmentTools.style.display = 'none';
+            }
+        }
+
+        // ==================== BUTTON HANDLERS ====================
+
         [addTextBtn, addCheckboxBtn, addRadioBtn, addDropdownBtn].forEach(btn => {
             btn.addEventListener('click', () => {
                 [addTextBtn, addCheckboxBtn, addRadioBtn, addDropdownBtn].forEach(b => b.classList.remove('active'));
 
-                if (activeTool === btn.dataset.type) {
-                    activeTool = null;
+                if (state.activeTool === btn.dataset.type) {
+                    state.activeTool = null;
                     btn.classList.remove('active');
                     showStatus('Field placement cancelled', false);
                 } else {
-                    activeTool = btn.dataset.type;
+                    state.activeTool = btn.dataset.type;
                     btn.classList.add('active');
-                    showStatus(`Click on the PDF to place a ${activeTool} field`, false);
+                    showStatus(`Click and drag on PDF to create a ${state.activeTool} field`, false);
                 }
             });
         });
 
+        // Alignment button handlers
+        document.getElementById('alignLeftBtn').addEventListener('click', alignLeft);
+        document.getElementById('alignRightBtn').addEventListener('click', alignRight);
+        document.getElementById('alignTopBtn').addEventListener('click', alignTop);
+        document.getElementById('alignBottomBtn').addEventListener('click', alignBottom);
+        document.getElementById('distributeHBtn').addEventListener('click', distributeHorizontally);
+        document.getElementById('distributeVBtn').addEventListener('click', distributeVertically);
+
         clearFieldsBtn.addEventListener('click', () => {
-            if (fields.length === 0) {
+            if (state.pages.every(p => p.fields.length === 0)) {
                 showStatus('No fields to clear', true);
                 return;
             }
 
             if (confirm('Are you sure you want to delete all fields? This cannot be undone.')) {
-                fields = [];
-                renderFieldOverlays();
+                saveToHistory();
+                for (const page of state.pages) {
+                    page.fields = [];
+                }
+                fieldIndex.clear();
+                state.selectedFieldIds = [];
+                render();
                 showStatus('All fields cleared', false);
             }
         });
 
-        detectBoxesBtn.addEventListener('click', detectFormBoxes);
-
         downloadBtn.addEventListener('click', downloadFilledPDF);
 
+        // ==================== KEYBOARD SHORTCUTS ====================
+
+        document.addEventListener('keydown', (e) => {
+            // Check if user is typing in a text input/textarea
+            const isTypingInInput = (e.target.tagName === 'INPUT' && e.target.type === 'text') ||
+                                    e.target.tagName === 'TEXTAREA' ||
+                                    (e.target.tagName === 'SELECT');
+
+            // Check if we're in the PDF editor context (keyboard shortcuts should only work when focused in editor)
+            const isInPDFEditor = isTypingInInput || pdfContainer.contains(e.target);
+
+            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+            const cmdKey = isMac ? e.metaKey : e.ctrlKey;
+
+            // Undo: Cmd/Ctrl+Z (only works in editor, not in text inputs)
+            if (cmdKey && e.key === 'z' && !e.shiftKey && !isTypingInInput && state.pdf.doc) {
+                e.preventDefault();
+                undo();
+            }
+
+            // Redo: Cmd/Ctrl+Shift+Z (only works in editor, not in text inputs)
+            if (cmdKey && e.key === 'z' && e.shiftKey && !isTypingInInput && state.pdf.doc) {
+                e.preventDefault();
+                redo();
+            }
+
+            // Copy: Cmd/Ctrl+C (only for field selection, not in text inputs, and only in PDF editor)
+            if (cmdKey && e.key === 'c' && !isTypingInInput && state.pdf.doc && isInPDFEditor) {
+                e.preventDefault();
+                copySelectedFields();
+            }
+
+            // Paste: Cmd/Ctrl+V (only for field pasting, not in text inputs, and only in PDF editor)
+            if (cmdKey && e.key === 'v' && !isTypingInInput && state.pdf.doc && isInPDFEditor) {
+                e.preventDefault();
+                pasteFields();
+            }
+
+            // Delete: Backspace or Delete (only for field deletion, not in text inputs, and only in PDF editor)
+            if ((e.key === 'Delete' || e.key === 'Backspace') && !isTypingInInput && state.pdf.doc && isInPDFEditor) {
+                e.preventDefault();
+                if (state.selectedFieldIds.length > 0) {
+                    const ids = [...state.selectedFieldIds];
+                    saveToHistory();
+                    ids.forEach(id => deleteField(id));
+                }
+            }
+
+            // Deselect: Escape (always works unless in text input)
+            if (e.key === 'Escape' && !isTypingInInput) {
+                state.selectedFieldIds = [];
+                state.activeTool = null;
+                [addTextBtn, addCheckboxBtn, addRadioBtn, addDropdownBtn].forEach(b => b.classList.remove('active'));
+                render();
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.toolbar') && !e.target.closest('.pdf-page-wrapper')) {
+                state.selectedFieldIds = [];
+                render();
+            }
+        });
+
+        // ==================== PDF EXPORT ====================
+
         async function downloadFilledPDF() {
-            if (!originalPdfBytes) {
+            if (!state.pdf.bytes || !state.pdf.doc) {
                 showStatus('No PDF loaded', true);
                 return;
             }
@@ -706,64 +1457,75 @@
                 showStatus('Preparing PDF for download...', false);
                 downloadBtn.disabled = true;
 
-                const pdfData = await PDFLib.PDFDocument.load(originalPdfBytes);
+                // Follow PATTERNS.md PDF Byte Handling guidance
+                // Create a fresh independent copy using .set() method (CORRECT approach)
+                let pdfBytes;
+                if (state.pdf.bytes instanceof Uint8Array) {
+                    // Create empty Uint8Array and copy data into it using .set()
+                    // This prevents detached ArrayBuffer issues when PDFLib processes the bytes
+                    pdfBytes = new Uint8Array(state.pdf.bytes.length);
+                    pdfBytes.set(state.pdf.bytes);
+                } else {
+                    // Fallback for raw ArrayBuffer
+                    pdfBytes = new Uint8Array(state.pdf.bytes);
+                }
+
+                const pdfData = await PDFLib.PDFDocument.load(pdfBytes);
                 const pages = pdfData.getPages();
 
-                for (const field of fields) {
-                    if (field.page >= pages.length) continue;
+                for (const page of state.pages) {
+                    if (page.num - 1 >= pages.length) continue;
 
-                    const page = pages[field.page];
-                    const pageHeight = page.getHeight();
-                    const scale = pageScales[field.page] || PDF_SCALE;
+                    const pdfPage = pages[page.num - 1];
+                    const pageHeight = pdfPage.getHeight();
 
-                    // Convert canvas coordinates to PDF coordinates
-                    // Canvas coords are scaled, so divide by scale factor
-                    const pdfX = field.x / scale;
-                    const pdfY = pageHeight - (field.y / scale) - (field.height / scale);
-                    const pdfHeight = field.height / scale;
+                    for (const field of page.fields) {
+                        const pdfX = field.x / page.scale;
+                        const pdfY = pageHeight - (field.y / page.scale) - (field.height / page.scale);
+                        const pdfHeight = field.height / page.scale;
+                        const fontSize = Math.max(8, Math.min(pdfHeight * 0.7, 14));
 
-                    const fontSize = Math.max(8, Math.min(pdfHeight * 0.7, 14));
-
-                    if (field.type === 'text') {
-                        page.drawText(field.value, {
-                            x: pdfX,
-                            y: pdfY,
-                            size: fontSize,
-                            color: PDFLib.rgb(0, 0, 0)
-                        });
-                    } else if (field.type === 'checkbox') {
-                        if (field.value) {
-                            page.drawText('✓', {
-                                x: pdfX + 2,
+                        if (field.type === 'text') {
+                            pdfPage.drawText(field.value || '', {
+                                x: pdfX,
+                                y: pdfY,
+                                size: fontSize,
+                                color: PDFLib.rgb(0, 0, 0)
+                            });
+                        } else if (field.type === 'checkbox') {
+                            if (field.value) {
+                                pdfPage.drawText('✓', {
+                                    x: pdfX + 2,
+                                    y: pdfY,
+                                    size: fontSize,
+                                    color: PDFLib.rgb(0, 0, 0)
+                                });
+                            }
+                        } else if (field.type === 'radio') {
+                            if (field.value === 'on') {
+                                const pdfWidth = field.width / page.scale;
+                                pdfPage.drawCircle({
+                                    x: pdfX + pdfWidth / 2,
+                                    y: pdfY + pdfHeight / 2,
+                                    size: pdfHeight / 3,
+                                    color: PDFLib.rgb(0, 0, 0),
+                                    borderColor: PDFLib.rgb(0, 0, 0),
+                                    borderWidth: 0
+                                });
+                            }
+                        } else if (field.type === 'dropdown') {
+                            pdfPage.drawText(field.value || '', {
+                                x: pdfX,
                                 y: pdfY,
                                 size: fontSize,
                                 color: PDFLib.rgb(0, 0, 0)
                             });
                         }
-                    } else if (field.type === 'radio') {
-                        if (field.value === 'on') {
-                            const pdfWidth = field.width / scale;
-                            page.drawCircle({
-                                x: pdfX + pdfWidth / 2,
-                                y: pdfY + pdfHeight / 2,
-                                size: pdfHeight / 3,
-                                color: PDFLib.rgb(0, 0, 0),
-                                borderColor: PDFLib.rgb(0, 0, 0),
-                                borderWidth: 0
-                            });
-                        }
-                    } else if (field.type === 'dropdown') {
-                        page.drawText(field.value, {
-                            x: pdfX,
-                            y: pdfY,
-                            size: fontSize,
-                            color: PDFLib.rgb(0, 0, 0)
-                        });
                     }
                 }
 
-                const pdfBytes = await pdfData.save();
-                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const outputBytes = await pdfData.save();
+                const blob = new Blob([outputBytes], { type: 'application/pdf' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -774,287 +1536,11 @@
                 showStatus('PDF downloaded successfully', false);
                 downloadBtn.disabled = false;
             } catch (error) {
+                console.error('PDF download error:', error);
                 showStatus(`Error downloading PDF: ${error.message}`, true);
                 downloadBtn.disabled = false;
             }
         }
-
-        function generateFieldId() {
-            return 'field-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-        }
-
-        function showStatus(message, isError) {
-            status.textContent = message;
-            status.className = 'visible';
-            if (isError) {
-                status.setAttribute('aria-invalid', 'true');
-            } else {
-                status.removeAttribute('aria-invalid');
-            }
-        }
-
-        // Load OpenCV.js asynchronously
-        function loadOpenCV() {
-            return new Promise((resolve, reject) => {
-                // Check if already loaded
-                if (window.cv && window.cv.Mat) {
-                    console.log('OpenCV already loaded');
-                    opencvReady = true;
-                    resolve();
-                    return;
-                }
-
-                console.log('Starting OpenCV.js load...');
-
-                // Create or get the script element
-                let script = document.getElementById('opencvScript');
-                if (!script) {
-                    script = document.createElement('script');
-                    script.id = 'opencvScript';
-                    script.src = 'https://cdn.jsdelivr.net/npm/opencv.js@1.2.1/opencv.js';
-                    script.async = true;
-                }
-
-                // Set up handlers
-                const onLoadHandler = () => {
-                    console.log('OpenCV.js loaded, checking if cv is available...');
-                    // Wait a bit for cv to be available
-                    setTimeout(() => {
-                        if (window.cv && window.cv.Mat) {
-                            console.log('OpenCV cv object is available');
-                            opencvReady = true;
-                            resolve();
-                        } else {
-                            console.error('OpenCV loaded but cv object not available');
-                            reject(new Error('OpenCV loaded but cv object not available'));
-                        }
-                    }, 100);
-                };
-
-                const onErrorHandler = (error) => {
-                    console.error('Failed to load OpenCV.js:', error);
-                    reject(new Error('Failed to load OpenCV.js library: ' + error));
-                };
-
-                script.onload = onLoadHandler;
-                script.onerror = onErrorHandler;
-
-                // Append script if not already in DOM
-                if (!script.parentElement) {
-                    console.log('Appending OpenCV.js script to DOM');
-                    document.head.appendChild(script);
-                } else {
-                    console.log('OpenCV.js script already in DOM, waiting for load...');
-                }
-
-                // Add a timeout in case the script fails silently
-                setTimeout(() => {
-                    if (!opencvReady && window.cv && window.cv.Mat) {
-                        console.log('OpenCV available after timeout');
-                        opencvReady = true;
-                        resolve();
-                    }
-                }, 5000);
-            });
-        }
-
-        // Detect rectangles in image data using OpenCV
-        function detectRectanglesInImage(imageData) {
-            if (!window.cv || !window.cv.Mat) {
-                showStatus('OpenCV not loaded', true);
-                return [];
-            }
-
-            try {
-                // Convert to OpenCV Mat
-                let src = cv.matFromImageData(imageData);
-                let gray = new cv.Mat();
-                let edges = new cv.Mat();
-                let hierarchy = new cv.Mat();
-                let contours = new cv.MatVector();
-
-                // Convert to grayscale
-                cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-
-                // Apply Gaussian blur to reduce noise
-                cv.GaussianBlur(gray, gray, new cv.Size(DETECTION_CONFIG.GAUSSIAN_KERNEL, DETECTION_CONFIG.GAUSSIAN_KERNEL), 0);
-
-                // Edge detection (Canny)
-                cv.Canny(gray, edges, DETECTION_CONFIG.CANNY_LOW, DETECTION_CONFIG.CANNY_HIGH);
-
-                // Find contours
-                cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
-
-                // Filter for rectangles
-                let rectangles = [];
-                for (let i = 0; i < contours.size(); i++) {
-                    let contour = contours.get(i);
-                    let approx = new cv.Mat();
-
-                    // Approximate contour to polygon
-                    let peri = cv.arcLength(contour, true);
-                    cv.approxPolyDP(contour, approx, 0.02 * peri, true);
-
-                    // Check if it's a rectangle (4 vertices)
-                    if (approx.rows === 4) {
-                        let rect = cv.boundingRect(approx);
-
-                        // Filter by aspect ratio (not too elongated)
-                        let aspectRatio = rect.width / rect.height;
-                        if (aspectRatio >= DETECTION_CONFIG.MIN_ASPECT_RATIO && aspectRatio <= DETECTION_CONFIG.MAX_ASPECT_RATIO) {
-                            // Check if this box overlaps with existing boxes (deduplication)
-                            let isDuplicate = false;
-                            for (let existing of rectangles) {
-                                // Check if centers are close (within 20% of box size)
-                                let dist = Math.hypot(
-                                    (rect.x + rect.width/2) - (existing.x + existing.width/2),
-                                    (rect.y + rect.height/2) - (existing.y + existing.height/2)
-                                );
-                                if (dist < Math.max(rect.width, rect.height) * 0.2) {
-                                    isDuplicate = true;
-                                    break;
-                                }
-                            }
-
-                            if (!isDuplicate) {
-                                rectangles.push({
-                                    x: rect.x,
-                                    y: rect.y,
-                                    width: rect.width,
-                                    height: rect.height
-                                });
-                            }
-                        }
-                    }
-
-                    approx.delete();
-                    contour.delete();
-                }
-
-                // Clean up
-                src.delete();
-                gray.delete();
-                edges.delete();
-                hierarchy.delete();
-                contours.delete();
-
-                return rectangles;
-            } catch (error) {
-                console.error('Rectangle detection error:', error);
-                showStatus(`Detection error: ${error.message}`, true);
-                return [];
-            }
-        }
-
-        // Main detection function
-        async function detectFormBoxes() {
-            console.log('detectFormBoxes called');
-
-            if (!pdfDoc) {
-                console.log('No PDF loaded');
-                showStatus('Please upload a PDF first', true);
-                return;
-            }
-
-            if (isDetecting) {
-                console.log('Detection already in progress');
-                showStatus('Detection already in progress', true);
-                return;
-            }
-
-            try {
-                isDetecting = true;
-                detectBoxesBtn.disabled = true;
-                console.log('Starting detection...');
-                showStatus('Loading detection library...', false);
-
-                // Load OpenCV if not already loaded
-                if (!opencvReady) {
-                    await loadOpenCV();
-                }
-
-                showStatus('Detecting form boxes...', false);
-                let totalDetected = 0;
-
-                // For each rendered page
-                for (let pageNum = 0; pageNum < pdfDoc.numPages; pageNum++) {
-                    // Find canvas for this page
-                    const canvas = document.querySelector(`.pdf-page-canvas[data-page="${pageNum + 1}"]`);
-                    if (!canvas) continue;
-
-                    showStatus(`Detecting boxes on page ${pageNum + 1}/${pdfDoc.numPages}...`, false);
-
-                    try {
-                        // Get image data
-                        const ctx = canvas.getContext('2d');
-                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-                        // Detect rectangles
-                        const rectangles = detectRectanglesInImage(imageData);
-                        console.log(`Page ${pageNum + 1}: Detected ${rectangles.length} total rectangles`);
-
-                        // Log sizes of detected rectangles
-                        if (rectangles.length > 0) {
-                            const sizes = rectangles.map(r => `${r.width}x${r.height}`).slice(0, 10);
-                            console.log(`  Sample sizes: ${sizes.join(', ')} ${rectangles.length > 10 ? '...' : ''}`);
-                        }
-
-                        // Filter for character-sized boxes
-                        const characterBoxes = rectangles.filter(rect => {
-                            const widthOk = rect.width >= DETECTION_CONFIG.MIN_BOX_SIZE && rect.width <= DETECTION_CONFIG.MAX_BOX_SIZE;
-                            const heightOk = rect.height >= DETECTION_CONFIG.MIN_BOX_SIZE && rect.height <= DETECTION_CONFIG.MAX_BOX_SIZE;
-                            return widthOk && heightOk;
-                        });
-                        console.log(`Page ${pageNum + 1}: ${characterBoxes.length} boxes after size filtering (${DETECTION_CONFIG.MIN_BOX_SIZE}-${DETECTION_CONFIG.MAX_BOX_SIZE}px)`);
-
-                        // Create fields for each detected box
-                        characterBoxes.forEach(box => {
-                            fields.push({
-                                id: generateFieldId(),
-                                type: 'text',
-                                page: pageNum,
-                                x: Math.round(box.x),
-                                y: Math.round(box.y),
-                                width: Math.round(box.width),
-                                height: Math.round(box.height),
-                                value: '',
-                                maxLength: 1,
-                                isDetected: true
-                            });
-                        });
-
-                        totalDetected += characterBoxes.length;
-                    } catch (error) {
-                        console.error(`Error detecting boxes on page ${pageNum + 1}:`, error);
-                    }
-                }
-
-                // Re-render overlays with new fields
-                renderFieldOverlays();
-
-                // Show success message
-                if (totalDetected > 0) {
-                    showStatus(`✓ Detected ${totalDetected} form boxes. Review and adjust as needed.`, false);
-                } else {
-                    showStatus('No form boxes detected. Try manually adding fields or check the PDF.', false);
-                }
-            } catch (error) {
-                console.error('Detection error:', error);
-                showStatus(`Error during detection: ${error.message}`, true);
-            } finally {
-                isDetecting = false;
-                detectBoxesBtn.disabled = false;
-            }
-        }
-
-        // Close field selection when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.toolbar') && !e.target.closest('.pdf-page-wrapper')) {
-                document.querySelectorAll('.field-overlay.selected').forEach(el => {
-                    el.classList.remove('selected');
-                });
-            }
-        });
     </script>
 </body>
 </html>

@@ -55,3 +55,13 @@ Each tool is a single, self-contained HTML file in the root directory:
 - Do not duplicate common styles in tool-specific CSS
 - Only add CSS for custom layouts, animations, or tool-specific interactions
 - Use Pico CSS variables where available (e.g., `var(--pico-border-radius)`, `var(--pico-card-background-color)`)
+
+## PDF Tools - Important Notes
+
+**If building a PDF tool**, refer to PATTERNS.md → "PDF Byte Handling - CRITICAL" section for proper ArrayBuffer/Uint8Array handling.
+
+Key points:
+- Store PDF bytes as `Uint8Array` (from `file.arrayBuffer()`)
+- Create a **fresh copy** (`new Uint8Array(originalBytes)`) each time passing to PDFLib
+- Do NOT slice ArrayBuffer or reuse the same Uint8Array multiple times
+- This prevents "detached ArrayBuffer" errors on subsequent operations
