@@ -289,8 +289,8 @@
             MAX_BOX_SIZE: 200,          // Maximum box dimension for character boxes
             MIN_ASPECT_RATIO: 0.2,      // Prevent very elongated rectangles
             MAX_ASPECT_RATIO: 5.0,
-            CANNY_LOW: 30,              // Edge detection threshold (lower = more edges detected)
-            CANNY_HIGH: 100,
+            CANNY_LOW: 10,              // Edge detection threshold - VERY LOW to catch faint edges
+            CANNY_HIGH: 50,             // Upper threshold for edge detection
             GAUSSIAN_KERNEL: 3          // Blur kernel size (smaller = less blur)
         };
         let isDetecting = false; // Track detection state
@@ -879,8 +879,13 @@
                 // Apply Gaussian blur to reduce noise
                 cv.GaussianBlur(gray, gray, new cv.Size(DETECTION_CONFIG.GAUSSIAN_KERNEL, DETECTION_CONFIG.GAUSSIAN_KERNEL), 0);
 
-                // Edge detection (Canny)
+                // Edge detection (Canny) - very aggressive thresholds
                 cv.Canny(gray, edges, DETECTION_CONFIG.CANNY_LOW, DETECTION_CONFIG.CANNY_HIGH);
+
+                // Dilate edges to connect broken lines and fill small gaps
+                let kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(3, 3));
+                cv.dilate(edges, edges, kernel, new cv.Point(-1, -1), 2);
+                kernel.delete();
 
                 // Find contours
                 cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
@@ -898,20 +903,35 @@
                     // Check if it's a rectangle (4 vertices)
                     if (approx.rows === 4) {
                         let rect = cv.boundingRect(approx);
+                        let area = rect.width * rect.height;
+                        let contourArea = cv.contourArea(contour);
 
                         // Filter by aspect ratio (not too elongated)
                         let aspectRatio = rect.width / rect.height;
-                        if (aspectRatio >= DETECTION_CONFIG.MIN_ASPECT_RATIO && aspectRatio <= DETECTION_CONFIG.MAX_ASPECT_RATIO) {
+
+                        // Calculate solidity (contour area / bounding box area)
+                        let solidity = contourArea / area;
+
+                        if (aspectRatio >= DETECTION_CONFIG.MIN_ASPECT_RATIO &&
+                            aspectRatio <= DETECTION_CONFIG.MAX_ASPECT_RATIO &&
+                            solidity > 0.4) {  // Require at least 40% of bounding box to be contour
+
                             // Check if this box overlaps with existing boxes (deduplication)
                             let isDuplicate = false;
                             for (let existing of rectangles) {
-                                // Check if centers are close (within 20% of box size)
+                                // Check if centers are close (within 15% of box size)
                                 let dist = Math.hypot(
                                     (rect.x + rect.width/2) - (existing.x + existing.width/2),
                                     (rect.y + rect.height/2) - (existing.y + existing.height/2)
                                 );
-                                if (dist < Math.max(rect.width, rect.height) * 0.2) {
-                                    isDuplicate = true;
+                                if (dist < Math.max(rect.width, rect.height) * 0.15) {
+                                    // Keep the one with better solidity
+                                    if (solidity > rectangles.find(r => r.solidity)?.solidity) {
+                                        rectangles = rectangles.filter(r => r !== existing);
+                                        isDuplicate = false;
+                                    } else {
+                                        isDuplicate = true;
+                                    }
                                     break;
                                 }
                             }
@@ -921,7 +941,8 @@
                                     x: rect.x,
                                     y: rect.y,
                                     width: rect.width,
-                                    height: rect.height
+                                    height: rect.height,
+                                    solidity: solidity
                                 });
                             }
                         }
