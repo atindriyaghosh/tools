@@ -796,37 +796,65 @@
         // Load OpenCV.js asynchronously
         function loadOpenCV() {
             return new Promise((resolve, reject) => {
+                // Check if already loaded
                 if (window.cv && window.cv.Mat) {
+                    console.log('OpenCV already loaded');
                     opencvReady = true;
                     resolve();
                     return;
                 }
 
-                const script = document.getElementById('opencvScript');
+                console.log('Starting OpenCV.js load...');
+
+                // Create or get the script element
+                let script = document.getElementById('opencvScript');
                 if (!script) {
-                    reject(new Error('OpenCV script not found'));
-                    return;
-                }
-
-                script.onload = () => {
-                    if (window.cv && window.cv.Mat) {
-                        opencvReady = true;
-                        resolve();
-                    } else {
-                        reject(new Error('OpenCV failed to load properly'));
-                    }
-                };
-
-                script.onerror = () => {
-                    reject(new Error('Failed to load OpenCV.js library'));
-                };
-
-                // If already loading, just wait for completion
-                if (!script.src.includes('opencv')) {
+                    script = document.createElement('script');
+                    script.id = 'opencvScript';
                     script.src = 'https://cdn.jsdelivr.net/npm/opencv.js@1.2.1/opencv.js';
                     script.async = true;
-                    document.head.appendChild(script);
                 }
+
+                // Set up handlers
+                const onLoadHandler = () => {
+                    console.log('OpenCV.js loaded, checking if cv is available...');
+                    // Wait a bit for cv to be available
+                    setTimeout(() => {
+                        if (window.cv && window.cv.Mat) {
+                            console.log('OpenCV cv object is available');
+                            opencvReady = true;
+                            resolve();
+                        } else {
+                            console.error('OpenCV loaded but cv object not available');
+                            reject(new Error('OpenCV loaded but cv object not available'));
+                        }
+                    }, 100);
+                };
+
+                const onErrorHandler = (error) => {
+                    console.error('Failed to load OpenCV.js:', error);
+                    reject(new Error('Failed to load OpenCV.js library: ' + error));
+                };
+
+                script.onload = onLoadHandler;
+                script.onerror = onErrorHandler;
+
+                // Append script if not already in DOM
+                if (!script.parentElement) {
+                    console.log('Appending OpenCV.js script to DOM');
+                    document.head.appendChild(script);
+                } else {
+                    console.log('OpenCV.js script already in DOM, waiting for load...');
+                }
+
+                // Add a timeout in case the script fails silently
+                setTimeout(() => {
+                    if (!opencvReady && window.cv && window.cv.Mat) {
+                        console.log('OpenCV available after timeout');
+                        opencvReady = true;
+                        resolve();
+                    }
+                }, 5000);
             });
         }
 
@@ -904,12 +932,16 @@
 
         // Main detection function
         async function detectFormBoxes() {
+            console.log('detectFormBoxes called');
+
             if (!pdfDoc) {
+                console.log('No PDF loaded');
                 showStatus('Please upload a PDF first', true);
                 return;
             }
 
             if (isDetecting) {
+                console.log('Detection already in progress');
                 showStatus('Detection already in progress', true);
                 return;
             }
@@ -917,6 +949,7 @@
             try {
                 isDetecting = true;
                 detectBoxesBtn.disabled = true;
+                console.log('Starting detection...');
                 showStatus('Loading detection library...', false);
 
                 // Load OpenCV if not already loaded
