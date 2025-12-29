@@ -257,10 +257,10 @@
                 <button id="downloadBtn" style="background-color: #28a745; border-color: #28a745;">Download PDF</button>
             </div>
 
+            <div id="status"></div>
+
             <div class="pdf-container" id="pdfContainer"></div>
         </article>
-
-        <div id="status"></div>
 
         <p style="margin-top:1rem"><a href="index.html" class="back-link">← Back to Tools</a></p>
     </main>
@@ -285,10 +285,10 @@
 
         // Detection configuration
         const DETECTION_CONFIG = {
-            MIN_BOX_SIZE: 8,            // Minimum box dimension in pixels (at 1.5x scale)
-            MAX_BOX_SIZE: 80,           // Maximum box dimension for character boxes
-            MIN_ASPECT_RATIO: 0.3,      // Prevent very elongated rectangles
-            MAX_ASPECT_RATIO: 4.0,
+            MIN_BOX_SIZE: 3,            // Minimum box dimension in pixels (at 1.5x scale)
+            MAX_BOX_SIZE: 200,          // Maximum box dimension for character boxes
+            MIN_ASPECT_RATIO: 0.2,      // Prevent very elongated rectangles
+            MAX_ASPECT_RATIO: 5.0,
             CANNY_LOW: 30,              // Edge detection threshold (lower = more edges detected)
             CANNY_HIGH: 100,
             GAUSSIAN_KERNEL: 3          // Blur kernel size (smaller = less blur)
@@ -993,13 +993,18 @@
                         const rectangles = detectRectanglesInImage(imageData);
                         console.log(`Page ${pageNum + 1}: Detected ${rectangles.length} total rectangles`);
 
+                        // Log sizes of detected rectangles
+                        if (rectangles.length > 0) {
+                            const sizes = rectangles.map(r => `${r.width}x${r.height}`).slice(0, 10);
+                            console.log(`  Sample sizes: ${sizes.join(', ')} ${rectangles.length > 10 ? '...' : ''}`);
+                        }
+
                         // Filter for character-sized boxes
-                        const characterBoxes = rectangles.filter(rect =>
-                            rect.width >= DETECTION_CONFIG.MIN_BOX_SIZE &&
-                            rect.width <= DETECTION_CONFIG.MAX_BOX_SIZE &&
-                            rect.height >= DETECTION_CONFIG.MIN_BOX_SIZE &&
-                            rect.height <= DETECTION_CONFIG.MAX_BOX_SIZE
-                        );
+                        const characterBoxes = rectangles.filter(rect => {
+                            const widthOk = rect.width >= DETECTION_CONFIG.MIN_BOX_SIZE && rect.width <= DETECTION_CONFIG.MAX_BOX_SIZE;
+                            const heightOk = rect.height >= DETECTION_CONFIG.MIN_BOX_SIZE && rect.height <= DETECTION_CONFIG.MAX_BOX_SIZE;
+                            return widthOk && heightOk;
+                        });
                         console.log(`Page ${pageNum + 1}: ${characterBoxes.length} boxes after size filtering (${DETECTION_CONFIG.MIN_BOX_SIZE}-${DETECTION_CONFIG.MAX_BOX_SIZE}px)`);
 
                         // Create fields for each detected box
