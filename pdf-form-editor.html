@@ -238,8 +238,8 @@
             <div class="instructions">
                 <h3>How to use:</h3>
                 <ol>
-                    <li>Click a field type button below</li>
-                    <li>Click on the PDF to place the field</li>
+                    <li><strong>Optional:</strong> Click "Auto-Detect Boxes" to automatically detect form fields</li>
+                    <li>Or manually click a field type button and click on the PDF to place fields</li>
                     <li>Drag to reposition, drag corner to resize (text fields)</li>
                     <li>Click the field to select and delete with the X button</li>
                     <li>Fill in your values</li>
@@ -252,6 +252,7 @@
                 <button id="addCheckboxBtn" data-type="checkbox">+ Checkbox</button>
                 <button id="addRadioBtn" data-type="radio">+ Radio Button</button>
                 <button id="addDropdownBtn" data-type="dropdown">+ Dropdown</button>
+                <button id="detectBoxesBtn" style="background-color: #6c757d; border-color: #6c757d;">🔍 Auto-Detect Boxes</button>
                 <button id="clearFieldsBtn" style="background-color: #dc3545; border-color: #dc3545;">Clear All Fields</button>
                 <button id="downloadBtn" style="background-color: #28a745; border-color: #28a745;">Download PDF</button>
             </div>
@@ -266,6 +267,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script async id="opencvScript" src="https://cdn.jsdelivr.net/npm/opencv.js@1.2.1/opencv.js"></script>
     <script>
         // Setup PDF.js worker
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -281,6 +283,19 @@
         const PDF_SCALE = 1.5; // Scale factor for rendering PDFs
         const pageScales = {}; // Store scale factors for each page
 
+        // Detection configuration
+        const DETECTION_CONFIG = {
+            MIN_BOX_SIZE: 15,           // Minimum box dimension in pixels (at 1.5x scale)
+            MAX_BOX_SIZE: 50,           // Maximum box dimension for character boxes
+            MIN_ASPECT_RATIO: 0.5,      // Prevent very elongated rectangles
+            MAX_ASPECT_RATIO: 3.0,
+            CANNY_LOW: 50,              // Edge detection threshold
+            CANNY_HIGH: 150,
+            GAUSSIAN_KERNEL: 5          // Blur kernel size
+        };
+        let isDetecting = false; // Track detection state
+        let opencvReady = false; // Track if OpenCV is loaded
+
         // DOM elements
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
@@ -292,6 +307,7 @@
         const addCheckboxBtn = document.getElementById('addCheckboxBtn');
         const addRadioBtn = document.getElementById('addRadioBtn');
         const addDropdownBtn = document.getElementById('addDropdownBtn');
+        const detectBoxesBtn = document.getElementById('detectBoxesBtn');
         const clearFieldsBtn = document.getElementById('clearFieldsBtn');
         const downloadBtn = document.getElementById('downloadBtn');
 
@@ -472,6 +488,9 @@
                     input = document.createElement('input');
                     input.type = 'text';
                     input.value = field.value;
+                    if (field.maxLength) {
+                        input.maxLength = field.maxLength;
+                    }
                     input.addEventListener('change', (e) => {
                         const idx = fields.findIndex(f => f.id === field.id);
                         if (idx >= 0) fields[idx].value = e.target.value;
@@ -673,6 +692,8 @@
             }
         });
 
+        detectBoxesBtn.addEventListener('click', detectFormBoxes);
+
         downloadBtn.addEventListener('click', downloadFilledPDF);
 
         async function downloadFilledPDF() {
@@ -769,6 +790,204 @@
                 status.setAttribute('aria-invalid', 'true');
             } else {
                 status.removeAttribute('aria-invalid');
+            }
+        }
+
+        // Load OpenCV.js asynchronously
+        function loadOpenCV() {
+            return new Promise((resolve, reject) => {
+                if (window.cv && window.cv.Mat) {
+                    opencvReady = true;
+                    resolve();
+                    return;
+                }
+
+                const script = document.getElementById('opencvScript');
+                if (!script) {
+                    reject(new Error('OpenCV script not found'));
+                    return;
+                }
+
+                script.onload = () => {
+                    if (window.cv && window.cv.Mat) {
+                        opencvReady = true;
+                        resolve();
+                    } else {
+                        reject(new Error('OpenCV failed to load properly'));
+                    }
+                };
+
+                script.onerror = () => {
+                    reject(new Error('Failed to load OpenCV.js library'));
+                };
+
+                // If already loading, just wait for completion
+                if (!script.src.includes('opencv')) {
+                    script.src = 'https://cdn.jsdelivr.net/npm/opencv.js@1.2.1/opencv.js';
+                    script.async = true;
+                    document.head.appendChild(script);
+                }
+            });
+        }
+
+        // Detect rectangles in image data using OpenCV
+        function detectRectanglesInImage(imageData) {
+            if (!window.cv || !window.cv.Mat) {
+                showStatus('OpenCV not loaded', true);
+                return [];
+            }
+
+            try {
+                // Convert to OpenCV Mat
+                let src = cv.matFromImageData(imageData);
+                let gray = new cv.Mat();
+                let edges = new cv.Mat();
+                let hierarchy = new cv.Mat();
+                let contours = new cv.MatVector();
+
+                // Convert to grayscale
+                cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
+
+                // Apply Gaussian blur to reduce noise
+                cv.GaussianBlur(gray, gray, new cv.Size(DETECTION_CONFIG.GAUSSIAN_KERNEL, DETECTION_CONFIG.GAUSSIAN_KERNEL), 0);
+
+                // Edge detection (Canny)
+                cv.Canny(gray, edges, DETECTION_CONFIG.CANNY_LOW, DETECTION_CONFIG.CANNY_HIGH);
+
+                // Find contours
+                cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+                // Filter for rectangles
+                let rectangles = [];
+                for (let i = 0; i < contours.size(); i++) {
+                    let contour = contours.get(i);
+                    let approx = new cv.Mat();
+
+                    // Approximate contour to polygon
+                    let peri = cv.arcLength(contour, true);
+                    cv.approxPolyDP(contour, approx, 0.02 * peri, true);
+
+                    // Check if it's a rectangle (4 vertices)
+                    if (approx.rows === 4) {
+                        let rect = cv.boundingRect(approx);
+
+                        // Filter by aspect ratio (not too elongated)
+                        let aspectRatio = rect.width / rect.height;
+                        if (aspectRatio >= DETECTION_CONFIG.MIN_ASPECT_RATIO && aspectRatio <= DETECTION_CONFIG.MAX_ASPECT_RATIO) {
+                            rectangles.push({
+                                x: rect.x,
+                                y: rect.y,
+                                width: rect.width,
+                                height: rect.height
+                            });
+                        }
+                    }
+
+                    approx.delete();
+                    contour.delete();
+                }
+
+                // Clean up
+                src.delete();
+                gray.delete();
+                edges.delete();
+                hierarchy.delete();
+                contours.delete();
+
+                return rectangles;
+            } catch (error) {
+                console.error('Rectangle detection error:', error);
+                showStatus(`Detection error: ${error.message}`, true);
+                return [];
+            }
+        }
+
+        // Main detection function
+        async function detectFormBoxes() {
+            if (!pdfDoc) {
+                showStatus('Please upload a PDF first', true);
+                return;
+            }
+
+            if (isDetecting) {
+                showStatus('Detection already in progress', true);
+                return;
+            }
+
+            try {
+                isDetecting = true;
+                detectBoxesBtn.disabled = true;
+                showStatus('Loading detection library...', false);
+
+                // Load OpenCV if not already loaded
+                if (!opencvReady) {
+                    await loadOpenCV();
+                }
+
+                showStatus('Detecting form boxes...', false);
+                let totalDetected = 0;
+
+                // For each rendered page
+                for (let pageNum = 0; pageNum < pdfDoc.numPages; pageNum++) {
+                    // Find canvas for this page
+                    const canvas = document.querySelector(`.pdf-page-canvas[data-page="${pageNum + 1}"]`);
+                    if (!canvas) continue;
+
+                    showStatus(`Detecting boxes on page ${pageNum + 1}/${pdfDoc.numPages}...`, false);
+
+                    try {
+                        // Get image data
+                        const ctx = canvas.getContext('2d');
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                        // Detect rectangles
+                        const rectangles = detectRectanglesInImage(imageData);
+
+                        // Filter for character-sized boxes
+                        const characterBoxes = rectangles.filter(rect =>
+                            rect.width >= DETECTION_CONFIG.MIN_BOX_SIZE &&
+                            rect.width <= DETECTION_CONFIG.MAX_BOX_SIZE &&
+                            rect.height >= DETECTION_CONFIG.MIN_BOX_SIZE &&
+                            rect.height <= DETECTION_CONFIG.MAX_BOX_SIZE
+                        );
+
+                        // Create fields for each detected box
+                        characterBoxes.forEach(box => {
+                            fields.push({
+                                id: generateFieldId(),
+                                type: 'text',
+                                page: pageNum,
+                                x: Math.round(box.x),
+                                y: Math.round(box.y),
+                                width: Math.round(box.width),
+                                height: Math.round(box.height),
+                                value: '',
+                                maxLength: 1,
+                                isDetected: true
+                            });
+                        });
+
+                        totalDetected += characterBoxes.length;
+                    } catch (error) {
+                        console.error(`Error detecting boxes on page ${pageNum + 1}:`, error);
+                    }
+                }
+
+                // Re-render overlays with new fields
+                renderFieldOverlays();
+
+                // Show success message
+                if (totalDetected > 0) {
+                    showStatus(`✓ Detected ${totalDetected} form boxes. Review and adjust as needed.`, false);
+                } else {
+                    showStatus('No form boxes detected. Try manually adding fields or check the PDF.', false);
+                }
+            } catch (error) {
+                console.error('Detection error:', error);
+                showStatus(`Error during detection: ${error.message}`, true);
+            } finally {
+                isDetecting = false;
+                detectBoxesBtn.disabled = false;
             }
         }
 
