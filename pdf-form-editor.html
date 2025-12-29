@@ -285,13 +285,13 @@
 
         // Detection configuration
         const DETECTION_CONFIG = {
-            MIN_BOX_SIZE: 15,           // Minimum box dimension in pixels (at 1.5x scale)
-            MAX_BOX_SIZE: 50,           // Maximum box dimension for character boxes
-            MIN_ASPECT_RATIO: 0.5,      // Prevent very elongated rectangles
-            MAX_ASPECT_RATIO: 3.0,
-            CANNY_LOW: 50,              // Edge detection threshold
-            CANNY_HIGH: 150,
-            GAUSSIAN_KERNEL: 5          // Blur kernel size
+            MIN_BOX_SIZE: 8,            // Minimum box dimension in pixels (at 1.5x scale)
+            MAX_BOX_SIZE: 80,           // Maximum box dimension for character boxes
+            MIN_ASPECT_RATIO: 0.3,      // Prevent very elongated rectangles
+            MAX_ASPECT_RATIO: 4.0,
+            CANNY_LOW: 30,              // Edge detection threshold (lower = more edges detected)
+            CANNY_HIGH: 100,
+            GAUSSIAN_KERNEL: 3          // Blur kernel size (smaller = less blur)
         };
         let isDetecting = false; // Track detection state
         let opencvReady = false; // Track if OpenCV is loaded
@@ -902,12 +902,28 @@
                         // Filter by aspect ratio (not too elongated)
                         let aspectRatio = rect.width / rect.height;
                         if (aspectRatio >= DETECTION_CONFIG.MIN_ASPECT_RATIO && aspectRatio <= DETECTION_CONFIG.MAX_ASPECT_RATIO) {
-                            rectangles.push({
-                                x: rect.x,
-                                y: rect.y,
-                                width: rect.width,
-                                height: rect.height
-                            });
+                            // Check if this box overlaps with existing boxes (deduplication)
+                            let isDuplicate = false;
+                            for (let existing of rectangles) {
+                                // Check if centers are close (within 20% of box size)
+                                let dist = Math.hypot(
+                                    (rect.x + rect.width/2) - (existing.x + existing.width/2),
+                                    (rect.y + rect.height/2) - (existing.y + existing.height/2)
+                                );
+                                if (dist < Math.max(rect.width, rect.height) * 0.2) {
+                                    isDuplicate = true;
+                                    break;
+                                }
+                            }
+
+                            if (!isDuplicate) {
+                                rectangles.push({
+                                    x: rect.x,
+                                    y: rect.y,
+                                    width: rect.width,
+                                    height: rect.height
+                                });
+                            }
                         }
                     }
 
@@ -975,6 +991,7 @@
 
                         // Detect rectangles
                         const rectangles = detectRectanglesInImage(imageData);
+                        console.log(`Page ${pageNum + 1}: Detected ${rectangles.length} total rectangles`);
 
                         // Filter for character-sized boxes
                         const characterBoxes = rectangles.filter(rect =>
@@ -983,6 +1000,7 @@
                             rect.height >= DETECTION_CONFIG.MIN_BOX_SIZE &&
                             rect.height <= DETECTION_CONFIG.MAX_BOX_SIZE
                         );
+                        console.log(`Page ${pageNum + 1}: ${characterBoxes.length} boxes after size filtering (${DETECTION_CONFIG.MIN_BOX_SIZE}-${DETECTION_CONFIG.MAX_BOX_SIZE}px)`);
 
                         // Create fields for each detected box
                         characterBoxes.forEach(box => {
