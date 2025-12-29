@@ -289,11 +289,9 @@
             MAX_BOX_SIZE: 200,          // Maximum box dimension for character boxes
             MIN_ASPECT_RATIO: 0.2,      // Prevent very elongated rectangles
             MAX_ASPECT_RATIO: 5.0,
-            CANNY_LOW: 20,              // Edge detection threshold - balanced
-            CANNY_HIGH: 80,             // Upper threshold for edge detection
-            GAUSSIAN_KERNEL: 3,         // Blur kernel size (smaller = less blur)
-            MIN_SOLIDITY: 0.25,         // Minimum solidity (hollow boxes ~30-50%)
-            MAX_SOLIDITY: 0.65          // Maximum solidity (exclude filled text ~70%+)
+            CANNY_LOW: 10,              // Edge detection threshold - VERY LOW to catch faint edges
+            CANNY_HIGH: 50,             // Upper threshold for edge detection
+            GAUSSIAN_KERNEL: 3          // Blur kernel size (smaller = less blur)
         };
         let isDetecting = false; // Track detection state
         let opencvReady = false; // Track if OpenCV is loaded
@@ -881,8 +879,13 @@
                 // Apply Gaussian blur to reduce noise
                 cv.GaussianBlur(gray, gray, new cv.Size(DETECTION_CONFIG.GAUSSIAN_KERNEL, DETECTION_CONFIG.GAUSSIAN_KERNEL), 0);
 
-                // Edge detection (Canny)
+                // Edge detection (Canny) - very aggressive thresholds
                 cv.Canny(gray, edges, DETECTION_CONFIG.CANNY_LOW, DETECTION_CONFIG.CANNY_HIGH);
+
+                // Dilate edges to connect broken lines and fill small gaps
+                let kernel = cv.getStructuringElement(cv.MORPH_RECT, new cv.Size(3, 3));
+                cv.dilate(edges, edges, kernel, new cv.Point(-1, -1), 2);
+                kernel.delete();
 
                 // Find contours
                 cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
@@ -902,7 +905,6 @@
                         let rect = cv.boundingRect(approx);
                         let area = rect.width * rect.height;
                         let contourArea = cv.contourArea(contour);
-                        let perimeter = cv.arcLength(contour, true);
 
                         // Filter by aspect ratio (not too elongated)
                         let aspectRatio = rect.width / rect.height;
@@ -910,16 +912,9 @@
                         // Calculate solidity (contour area / bounding box area)
                         let solidity = contourArea / area;
 
-                        // Expected perimeter for a rectangle
-                        let expectedPerimeter = 2 * (rect.width + rect.height);
-                        // Allow 20% deviation from expected perimeter
-                        let perimeterRatio = perimeter / expectedPerimeter;
-
                         if (aspectRatio >= DETECTION_CONFIG.MIN_ASPECT_RATIO &&
                             aspectRatio <= DETECTION_CONFIG.MAX_ASPECT_RATIO &&
-                            solidity >= DETECTION_CONFIG.MIN_SOLIDITY &&
-                            solidity <= DETECTION_CONFIG.MAX_SOLIDITY &&
-                            perimeterRatio >= 0.8 && perimeterRatio <= 1.3) {  // Perimeter match check
+                            solidity > 0.4) {  // Require at least 40% of bounding box to be contour
 
                             // Check if this box overlaps with existing boxes (deduplication)
                             let isDuplicate = false;
@@ -930,10 +925,8 @@
                                     (rect.y + rect.height/2) - (existing.y + existing.height/2)
                                 );
                                 if (dist < Math.max(rect.width, rect.height) * 0.15) {
-                                    // Keep the one with better solidity (closer to middle range)
-                                    let existingSolidity = rectangles.find(r => r.solidity)?.solidity || 0;
-                                    let targetSolidity = (DETECTION_CONFIG.MIN_SOLIDITY + DETECTION_CONFIG.MAX_SOLIDITY) / 2;
-                                    if (Math.abs(solidity - targetSolidity) < Math.abs(existingSolidity - targetSolidity)) {
+                                    // Keep the one with better solidity
+                                    if (solidity > rectangles.find(r => r.solidity)?.solidity) {
                                         rectangles = rectangles.filter(r => r !== existing);
                                         isDuplicate = false;
                                     } else {
@@ -1033,8 +1026,7 @@
                             const heightOk = rect.height >= DETECTION_CONFIG.MIN_BOX_SIZE && rect.height <= DETECTION_CONFIG.MAX_BOX_SIZE;
                             return widthOk && heightOk;
                         });
-                        console.log(`Page ${pageNum + 1}: After edge detection: ${rectangles.length} rects, after size filter: ${characterBoxes.length} boxes`);
-                        console.log(`  Size range: ${DETECTION_CONFIG.MIN_BOX_SIZE}-${DETECTION_CONFIG.MAX_BOX_SIZE}px, Solidity: ${DETECTION_CONFIG.MIN_SOLIDITY}-${DETECTION_CONFIG.MAX_SOLIDITY}`);
+                        console.log(`Page ${pageNum + 1}: ${characterBoxes.length} boxes after size filtering (${DETECTION_CONFIG.MIN_BOX_SIZE}-${DETECTION_CONFIG.MAX_BOX_SIZE}px)`);
 
                         // Create fields for each detected box
                         characterBoxes.forEach(box => {
