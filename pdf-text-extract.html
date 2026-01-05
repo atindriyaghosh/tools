@@ -5,15 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy"
           content="default-src 'none';
-                   script-src 'self' https://cdnjs.cloudflare.com 'unsafe-inline';
+                   script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline';
                    style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline';
                    img-src 'self' data: blob:;
                    connect-src 'none';">
     <title>Extract Text from PDF</title>
     <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <link rel="stylesheet" href="common-styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <style>
         .upload-area {
             border: 2px dashed var(--pico-muted-border-color);
@@ -151,7 +152,7 @@
 
     <script>
         // Set up PDF.js worker
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
 
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
