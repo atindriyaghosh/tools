@@ -7,9 +7,16 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-PID_FILE="$(cd "$(dirname "$0")" && pwd)/server.pid"
+TEST_DIR="$(cd "$(dirname "$0")" && pwd)"
+PID_FILE="$TEST_DIR/server.pid"
+LOG_FILE="$TEST_DIR/server.log"
 PORT=${1:-8000}
-REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+REPO_ROOT="$(cd "$TEST_DIR/.." && pwd)"
+
+# Initialize log file
+echo "========================================" >> "$LOG_FILE"
+echo "Server start attempt at $(date)" >> "$LOG_FILE"
+echo "========================================" >> "$LOG_FILE"
 
 echo -e "${GREEN}🚀 Starting Python test server${NC}"
 echo ""
@@ -23,7 +30,8 @@ if [ -f "$PID_FILE" ]; then
         # Process is still running
         echo -e "${RED}⚠️  WARNING: Server is already running${NC}"
         echo -e "${RED}   PID: $EXISTING_PID${NC}"
-        echo -e "${RED}   Stop the server first using: ./.test/stop-server.sh${NC}"
+        echo -e "${RED}   Stop the server first using: /test-stop${NC}"
+        echo -e "${RED}   Log file: $LOG_FILE${NC}"
         echo ""
         exit 1
     else
@@ -36,8 +44,8 @@ fi
 # Change to repo root to serve files correctly
 cd "$REPO_ROOT" || exit 1
 
-# Start the server in the background
-python3 -m http.server $PORT > /dev/null 2>&1 &
+# Start the server in the background, redirect output to log file
+python3 -m http.server $PORT >> "$LOG_FILE" 2>&1 &
 SERVER_PID=$!
 
 # Give the server a moment to start
@@ -52,11 +60,14 @@ if kill -0 "$SERVER_PID" 2>/dev/null; then
     echo -e "${GREEN}   PID: $SERVER_PID${NC}"
     echo -e "${GREEN}   Port: $PORT${NC}"
     echo -e "${GREEN}   URL: http://localhost:$PORT${NC}"
+    echo -e "${GREEN}   Log file: $LOG_FILE${NC}"
     echo ""
-    echo -e "${YELLOW}To stop the server, run: ./.test/stop-server.sh${NC}"
+    echo -e "${YELLOW}To stop the server, run: /test-stop${NC}"
     echo ""
     exit 0
 else
     echo -e "${RED}❌ Failed to start server${NC}"
+    echo -e "${RED}   Check log file: $LOG_FILE${NC}"
+    echo ""
     exit 1
 fi
