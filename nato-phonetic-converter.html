@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text to NATO Phonetic Alphabet</title>
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="common-styles.css">
+    <style>
+        .output-options {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .radio-group input[type="radio"] {
+            margin: 0;
+        }
+
+        .radio-group label {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .formatting-options {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .formatting-options label {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin: 0;
+        }
+
+        .formatting-options input[type="checkbox"] {
+            margin: 0;
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .controls button {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        @media (max-width: 600px) {
+            .output-options {
+                gap: 1rem;
+            }
+
+            .controls {
+                gap: 0.35rem;
+            }
+
+            .controls button {
+                min-width: 100px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
+        <hgroup>
+            <h1>Text to NATO Phonetic Alphabet</h1>
+            <p>Convert text to NATO phonetic alphabet (Alpha, Bravo, Charlie...) for clear communication.</p>
+        </hgroup>
+
+        <article>
+            <label for="inputText">Input Text</label>
+            <textarea id="inputText" placeholder="Enter text to convert..." aria-label="Text input for NATO conversion"></textarea>
+        </article>
+
+        <article>
+            <fieldset>
+                <legend>Output format:</legend>
+                <div class="output-options">
+                    <div class="radio-group">
+                        <input type="radio" id="wordsOnlyMode" name="outputFormat" value="wordsOnly" checked>
+                        <label for="wordsOnlyMode">Words only (Alpha Bravo Charlie)</label>
+                    </div>
+                    <div class="radio-group">
+                        <input type="radio" id="letterByLetterMode" name="outputFormat" value="letterByLetter">
+                        <label for="letterByLetterMode">Letter-by-letter (A = Alpha, B = Bravo, C = Charlie)</label>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Formatting options:</legend>
+                <div class="formatting-options">
+                    <label for="includeSpaces">
+                        <input type="checkbox" id="includeSpaces" checked>
+                        Include spaces
+                    </label>
+                    <label for="includePunctuation">
+                        <input type="checkbox" id="includePunctuation">
+                        Include punctuation
+                    </label>
+                </div>
+            </fieldset>
+        </article>
+
+        <article>
+            <label for="outputText">NATO Phonetic Output</label>
+            <textarea id="outputText" readonly placeholder="Converted output will appear here..." aria-label="NATO phonetic converter output"></textarea>
+        </article>
+
+        <div class="controls">
+            <button id="copyButton" title="Copy output to clipboard">Copy Output</button>
+            <button id="clearButton" title="Clear all fields">Clear All</button>
+        </div>
+
+        <p style="margin-top:1rem"><a href="index.html" class="back-link">← Back to Tools</a></p>
+    </main>
+
+    <script>
+        // NATO Phonetic Alphabet mapping
+        const natoAlphabet = {
+            'A': 'Alpha', 'B': 'Bravo', 'C': 'Charlie', 'D': 'Delta', 'E': 'Echo',
+            'F': 'Foxtrot', 'G': 'Golf', 'H': 'Hotel', 'I': 'India', 'J': 'Juliett',
+            'K': 'Kilo', 'L': 'Lima', 'M': 'Mike', 'N': 'November', 'O': 'Oscar',
+            'P': 'Papa', 'Q': 'Quebec', 'R': 'Romeo', 'S': 'Sierra', 'T': 'Tango',
+            'U': 'Uniform', 'V': 'Victor', 'W': 'Whiskey', 'X': 'X-ray', 'Y': 'Yankee',
+            'Z': 'Zulu',
+            '0': 'Zero', '1': 'One', '2': 'Two', '3': 'Three', '4': 'Four',
+            '5': 'Five', '6': 'Six', '7': 'Seven', '8': 'Eight', '9': 'Nine',
+            '.': 'Period', ',': 'Comma', '?': 'Question Mark', '!': 'Exclamation',
+            '-': 'Dash', '/': 'Slash', '@': 'At Sign', ' ': 'Space'
+        };
+
+        // DOM elements
+        const inputText = document.getElementById('inputText');
+        const outputText = document.getElementById('outputText');
+        const copyButton = document.getElementById('copyButton');
+        const clearButton = document.getElementById('clearButton');
+        const wordsOnlyMode = document.getElementById('wordsOnlyMode');
+        const letterByLetterMode = document.getElementById('letterByLetterMode');
+        const includeSpaces = document.getElementById('includeSpaces');
+        const includePunctuation = document.getElementById('includePunctuation');
+
+        // Load preferences from localStorage
+        function loadPreferences() {
+            const saved = localStorage.getItem('natoPreferences');
+            if (saved) {
+                const prefs = JSON.parse(saved);
+                document.querySelector(`input[name="outputFormat"][value="${prefs.outputFormat}"]`).checked = true;
+                includeSpaces.checked = prefs.includeSpaces;
+                includePunctuation.checked = prefs.includePunctuation;
+            }
+        }
+
+        // Save preferences to localStorage
+        function savePreferences() {
+            const prefs = {
+                outputFormat: document.querySelector('input[name="outputFormat"]:checked').value,
+                includeSpaces: includeSpaces.checked,
+                includePunctuation: includePunctuation.checked
+            };
+            localStorage.setItem('natoPreferences', JSON.stringify(prefs));
+        }
+
+        // Convert text to NATO phonetic
+        function convertToNato(text) {
+            const format = document.querySelector('input[name="outputFormat"]:checked').value;
+            const includeSpacesValue = includeSpaces.checked;
+            const includePunctuationValue = includePunctuation.checked;
+
+            // Determine which characters to include
+            const isPunctuation = (char) => {
+                return /[.,?!\-/@]/.test(char);
+            };
+
+            const shouldInclude = (char) => {
+                if (char === ' ') return includeSpacesValue;
+                if (isPunctuation(char)) return includePunctuationValue;
+                return true; // Always include letters and numbers
+            };
+
+            const result = [];
+
+            for (const char of text) {
+                const upperChar = char.toUpperCase();
+
+                if (!shouldInclude(char)) {
+                    continue;
+                }
+
+                const natoWord = natoAlphabet[upperChar];
+
+                if (natoWord) {
+                    result.push({ char: upperChar, nato: natoWord });
+                }
+            }
+
+            // Format output
+            if (format === 'wordsOnly') {
+                return result.map(item => item.nato).join(' ');
+            } else {
+                return result.map(item => `${item.char} = ${item.nato}`).join('\n');
+            }
+        }
+
+        // Update output in real-time
+        function updateOutput() {
+            if (inputText.value.trim()) {
+                outputText.value = convertToNato(inputText.value);
+            } else {
+                outputText.value = '';
+            }
+            savePreferences();
+        }
+
+        // Copy output to clipboard
+        async function copyToClipboard() {
+            if (!outputText.value) {
+                alert('No output to copy');
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(outputText.value);
+                const originalText = copyButton.textContent;
+                copyButton.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyButton.textContent = originalText;
+                }, 2000);
+            } catch (error) {
+                console.error('Copy failed:', error);
+                alert('Failed to copy to clipboard');
+            }
+        }
+
+        // Clear all fields
+        function clearAll() {
+            inputText.value = '';
+            outputText.value = '';
+            inputText.focus();
+        }
+
+        // Event listeners
+        inputText.addEventListener('input', updateOutput);
+        wordsOnlyMode.addEventListener('change', updateOutput);
+        letterByLetterMode.addEventListener('change', updateOutput);
+        includeSpaces.addEventListener('change', updateOutput);
+        includePunctuation.addEventListener('change', updateOutput);
+        copyButton.addEventListener('click', copyToClipboard);
+        clearButton.addEventListener('click', clearAll);
+
+        // Initialize
+        loadPreferences();
+    </script>
+</body>
+</html>

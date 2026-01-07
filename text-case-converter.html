@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Case Converter</title>
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="common-styles.css">
+    <style>
+        .case-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .case-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .case-option input[type="radio"] {
+            cursor: pointer;
+        }
+
+        .case-option label {
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .output-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .char-count {
+            font-size: 0.875rem;
+            color: var(--pico-muted-color);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 150px;
+            font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .copy-button {
+            flex: 1;
+        }
+
+        @media (max-width: 640px) {
+            .case-options {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
+        <hgroup>
+            <h1>Text Case Converter</h1>
+            <p>Convert text between different case formats instantly</p>
+        </hgroup>
+
+        <article>
+            <label for="inputText">Input Text</label>
+            <textarea id="inputText" placeholder="Enter text to convert..."></textarea>
+        </article>
+
+        <fieldset>
+            <legend>Convert to:</legend>
+            <div class="case-options">
+                <div class="case-option">
+                    <input type="radio" id="uppercase" name="caseType" value="uppercase" checked>
+                    <label for="uppercase">UPPER CASE</label>
+                </div>
+                <div class="case-option">
+                    <input type="radio" id="lowercase" name="caseType" value="lowercase">
+                    <label for="lowercase">lower case</label>
+                </div>
+                <div class="case-option">
+                    <input type="radio" id="titlecase" name="caseType" value="titlecase">
+                    <label for="titlecase">Title Case</label>
+                </div>
+                <div class="case-option">
+                    <input type="radio" id="camelcase" name="caseType" value="camelcase">
+                    <label for="camelcase">camelCase</label>
+                </div>
+                <div class="case-option">
+                    <input type="radio" id="pascalcase" name="caseType" value="pascalcase">
+                    <label for="pascalcase">PascalCase</label>
+                </div>
+                <div class="case-option">
+                    <input type="radio" id="snakecase" name="caseType" value="snakecase">
+                    <label for="snakecase">snake_case</label>
+                </div>
+                <div class="case-option">
+                    <input type="radio" id="kebabcase" name="caseType" value="kebabcase">
+                    <label for="kebabcase">kebab-case</label>
+                </div>
+                <div class="case-option">
+                    <input type="radio" id="constantcase" name="caseType" value="constantcase">
+                    <label for="constantcase">CONSTANT_CASE</label>
+                </div>
+            </div>
+        </fieldset>
+
+        <article>
+            <div class="output-label">
+                <label for="outputText">Output</label>
+                <span class="char-count"><span id="charCount">0</span> characters</span>
+            </div>
+            <textarea id="outputText" readonly placeholder="Converted text will appear here"></textarea>
+        </article>
+
+        <div class="button-group">
+            <button id="copyBtn" class="copy-button" onclick="copyOutput()">Copy Output</button>
+        </div>
+
+        <article id="status" style="display: none; margin-top: 1rem;"></article>
+
+        <p style="margin-top:1rem"><a href="index.html" class="back-link">← Back to Tools</a></p>
+    </main>
+
+    <script>
+        const inputText = document.getElementById('inputText');
+        const outputText = document.getElementById('outputText');
+        const charCount = document.getElementById('charCount');
+        const caseRadios = document.querySelectorAll('input[name="caseType"]');
+        const copyBtn = document.getElementById('copyBtn');
+        const status = document.getElementById('status');
+
+        // Restore last selected case format from localStorage
+        const savedCaseType = localStorage.getItem('textCaseConverter_lastCase') || 'uppercase';
+        const savedRadio = document.getElementById(savedCaseType);
+        if (savedRadio) {
+            savedRadio.checked = true;
+        }
+
+        // Convert text based on selected case type
+        function convertText() {
+            const text = inputText.value.trim();
+            const selectedCase = document.querySelector('input[name="caseType"]:checked').value;
+
+            let converted = '';
+
+            switch (selectedCase) {
+                case 'uppercase':
+                    converted = toUpperCase(text);
+                    break;
+                case 'lowercase':
+                    converted = toLowerCase(text);
+                    break;
+                case 'titlecase':
+                    converted = toTitleCase(text);
+                    break;
+                case 'camelcase':
+                    converted = toCamelCase(text);
+                    break;
+                case 'pascalcase':
+                    converted = toPascalCase(text);
+                    break;
+                case 'snakecase':
+                    converted = toSnakeCase(text);
+                    break;
+                case 'kebabcase':
+                    converted = toKebabCase(text);
+                    break;
+                case 'constantcase':
+                    converted = toConstantCase(text);
+                    break;
+            }
+
+            outputText.value = converted;
+            charCount.textContent = converted.length;
+        }
+
+        // Split text into words based on various delimiters and case boundaries
+        function getWords(text) {
+            if (!text) return [];
+
+            // Handle cases where text has existing separators or camelCase
+            let words = [];
+
+            // First, split on common separators (spaces, underscores, hyphens)
+            const parts = text.split(/[\s_-]+/);
+
+            // Then split each part on camelCase boundaries
+            parts.forEach((part) => {
+                if (!part) return;
+
+                // Split on camelCase and consecutive capitals
+                const subParts = part.replace(/([a-z])([A-Z])/g, '$1 $2')
+                    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+                    .split(/\s+/);
+
+                subParts.forEach((subPart) => {
+                    if (subPart) {
+                        words.push(subPart.toLowerCase());
+                    }
+                });
+            });
+
+            return words;
+        }
+
+        function toUpperCase(text) {
+            return text.toUpperCase();
+        }
+
+        function toLowerCase(text) {
+            return text.toLowerCase();
+        }
+
+        function toTitleCase(text) {
+            const words = getWords(text);
+            const articles = ['a', 'an', 'and', 'as', 'at', 'but', 'by', 'for', 'if', 'in', 'into', 'is', 'it', 'nor', 'of', 'on', 'or', 'the', 'to', 'up', 'with'];
+
+            return words.map((word, index) => {
+                if (index === 0) {
+                    return word.charAt(0).toUpperCase() + word.slice(1);
+                }
+                if (articles.includes(word)) {
+                    return word;
+                }
+                return word.charAt(0).toUpperCase() + word.slice(1);
+            }).join(' ');
+        }
+
+        function toCamelCase(text) {
+            const words = getWords(text);
+            return words.map((word, index) => {
+                if (index === 0) {
+                    return word;
+                }
+                return word.charAt(0).toUpperCase() + word.slice(1);
+            }).join('');
+        }
+
+        function toPascalCase(text) {
+            const words = getWords(text);
+            return words.map((word) => {
+                return word.charAt(0).toUpperCase() + word.slice(1);
+            }).join('');
+        }
+
+        function toSnakeCase(text) {
+            const words = getWords(text);
+            return words.join('_');
+        }
+
+        function toKebabCase(text) {
+            const words = getWords(text);
+            return words.join('-');
+        }
+
+        function toConstantCase(text) {
+            const words = getWords(text);
+            return words.map((word) => word.toUpperCase()).join('_');
+        }
+
+        function copyOutput() {
+            const text = outputText.value;
+
+            if (!text) {
+                showStatus('Nothing to copy', true);
+                return;
+            }
+
+            navigator.clipboard.writeText(text).then(() => {
+                showStatus('Copied to clipboard!', false);
+                copyBtn.disabled = true;
+                setTimeout(() => {
+                    copyBtn.disabled = false;
+                }, 2000);
+            }).catch(() => {
+                showStatus('Failed to copy to clipboard', true);
+            });
+        }
+
+        function showStatus(message, isError) {
+            status.textContent = message;
+            status.style.display = 'block';
+            status.className = isError ? 'visible error' : 'visible';
+
+            if (!isError) {
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Event listeners
+        inputText.addEventListener('input', convertText);
+
+        caseRadios.forEach((radio) => {
+            radio.addEventListener('change', (e) => {
+                localStorage.setItem('textCaseConverter_lastCase', e.target.value);
+                convertText();
+            });
+        });
+
+        // Initial conversion
+        convertText();
+    </script>
+</body>
+</html>

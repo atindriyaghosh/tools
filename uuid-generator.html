@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UUID Generator</title>
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="common-styles.css">
+    <style>
+        /* UUID display styling */
+        .uuid-list {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        .uuid-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem;
+            border-bottom: 1px solid var(--pico-muted-border-color);
+            gap: 0.5rem;
+        }
+
+        .uuid-item:last-child {
+            border-bottom: none;
+        }
+
+        .uuid-text {
+            word-break: break-all;
+            flex: 1;
+            user-select: all;
+        }
+
+        .uuid-item button {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        /* Radio group styling */
+        .radio-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            margin-bottom: 0;
+        }
+
+        .radio-group input[type="radio"] {
+            margin: 0;
+        }
+
+        /* Controls layout */
+        .controls-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .bulk-input {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .bulk-input input[type="number"] {
+            width: 80px;
+            margin-bottom: 0;
+        }
+
+        /* Action buttons */
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        /* Status styling */
+        #status {
+            margin-top: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: var(--pico-border-radius);
+            display: none;
+        }
+
+        #status.visible {
+            display: block;
+            background: rgba(107, 141, 214, 0.1);
+            border: 1px solid rgba(107, 141, 214, 0.3);
+        }
+
+        #status[aria-invalid="true"] {
+            background: rgba(214, 107, 107, 0.1);
+            border: 1px solid rgba(214, 107, 107, 0.3);
+            color: #d66b6b;
+        }
+
+        /* Fieldset styling */
+        fieldset {
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+        }
+
+        fieldset legend {
+            padding: 0 0.5rem;
+            font-weight: 600;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            color: var(--pico-muted-color);
+            padding: 2rem;
+        }
+
+        /* Copy all section */
+        .copy-all-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--pico-muted-border-color);
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">&larr; Back to Tools</a></p>
+        <hgroup>
+            <h1>UUID Generator</h1>
+            <p>Generate UUIDs (v4 random or v7 timestamp-based) with bulk generation and format options</p>
+        </hgroup>
+
+        <fieldset>
+            <legend>UUID Version</legend>
+            <div class="radio-group">
+                <label>
+                    <input type="radio" name="version" value="v4" checked>
+                    v4 (Random)
+                </label>
+                <label>
+                    <input type="radio" name="version" value="v7">
+                    v7 (Timestamp-based)
+                </label>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend>Format</legend>
+            <div class="radio-group">
+                <label>
+                    <input type="radio" name="format" value="standard" checked>
+                    Standard (lowercase)
+                </label>
+                <label>
+                    <input type="radio" name="format" value="uppercase">
+                    Uppercase
+                </label>
+                <label>
+                    <input type="radio" name="format" value="nohyphens">
+                    No hyphens
+                </label>
+            </div>
+        </fieldset>
+
+        <div class="controls-row">
+            <button type="button" id="generateSingleBtn">Generate Single</button>
+            <span>or</span>
+            <div class="bulk-input">
+                <label for="bulkCount" style="margin-bottom: 0;">Bulk:</label>
+                <input type="number" id="bulkCount" min="1" max="1000" value="10">
+                <span>UUIDs</span>
+            </div>
+            <button type="button" id="generateBulkBtn">Generate Bulk</button>
+            <button type="button" id="clearBtn" style="background: var(--pico-secondary-background); border-color: var(--pico-secondary-background);">Clear</button>
+        </div>
+
+        <div id="status" role="status" aria-live="polite"></div>
+
+        <article id="resultsContainer">
+            <h2>Generated UUIDs</h2>
+            <div id="uuidList" class="uuid-list">
+                <div class="empty-state">No UUIDs generated yet. Click "Generate Single" or "Generate Bulk" to create UUIDs.</div>
+            </div>
+            <div class="copy-all-section" id="copyAllSection" style="display: none;">
+                <button type="button" id="copyAllBtn">Copy All UUIDs</button>
+            </div>
+        </article>
+
+        <p style="margin-top: 1rem;"><a href="index.html" class="back-link">&larr; Back to Tools</a></p>
+    </main>
+
+    <script>
+        // State management
+        const state = {
+            uuids: [],
+            version: 'v4',
+            format: 'standard',
+            bulkCount: 10
+        };
+
+        // DOM Elements
+        const generateSingleBtn = document.getElementById('generateSingleBtn');
+        const generateBulkBtn = document.getElementById('generateBulkBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const copyAllBtn = document.getElementById('copyAllBtn');
+        const bulkCountInput = document.getElementById('bulkCount');
+        const uuidList = document.getElementById('uuidList');
+        const copyAllSection = document.getElementById('copyAllSection');
+        const status = document.getElementById('status');
+
+        // Load saved preferences from localStorage
+        function loadPreferences() {
+            try {
+                const saved = localStorage.getItem('uuid-generator-prefs');
+                if (saved) {
+                    const prefs = JSON.parse(saved);
+                    if (prefs.version) {
+                        state.version = prefs.version;
+                        document.querySelector(`input[name="version"][value="${prefs.version}"]`).checked = true;
+                    }
+                    if (prefs.format) {
+                        state.format = prefs.format;
+                        document.querySelector(`input[name="format"][value="${prefs.format}"]`).checked = true;
+                    }
+                    if (prefs.bulkCount && prefs.bulkCount >= 1 && prefs.bulkCount <= 1000) {
+                        state.bulkCount = prefs.bulkCount;
+                        bulkCountInput.value = prefs.bulkCount;
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading preferences:', e);
+            }
+        }
+
+        // Save preferences to localStorage
+        function savePreferences() {
+            try {
+                localStorage.setItem('uuid-generator-prefs', JSON.stringify({
+                    version: state.version,
+                    format: state.format,
+                    bulkCount: state.bulkCount
+                }));
+            } catch (e) {
+                console.error('Error saving preferences:', e);
+            }
+        }
+
+        // Show status message
+        function showStatus(message, isError = false) {
+            status.textContent = message;
+            status.className = 'visible';
+            if (isError) {
+                status.setAttribute('aria-invalid', 'true');
+            } else {
+                status.removeAttribute('aria-invalid');
+            }
+        }
+
+        // Hide status message
+        function hideStatus() {
+            status.className = '';
+            status.removeAttribute('aria-invalid');
+        }
+
+        // Check if crypto API is available
+        function checkCryptoSupport() {
+            if (typeof crypto === 'undefined' || typeof crypto.getRandomValues !== 'function') {
+                showStatus('Your browser does not support secure random number generation required for UUID generation.', true);
+                generateSingleBtn.disabled = true;
+                generateBulkBtn.disabled = true;
+                return false;
+            }
+            return true;
+        }
+
+        // Generate UUID v4 (random)
+        function generateUUIDv4() {
+            // Use native crypto.randomUUID if available
+            if (typeof crypto.randomUUID === 'function') {
+                return crypto.randomUUID();
+            }
+            // Fallback implementation using crypto.getRandomValues
+            return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c =>
+                (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+            );
+        }
+
+        // Generate UUID v7 (timestamp-based)
+        function generateUUIDv7() {
+            // Get current timestamp in milliseconds (48 bits)
+            const timestamp = Date.now();
+
+            // Create byte array for UUID (16 bytes = 128 bits)
+            const bytes = new Uint8Array(16);
+            crypto.getRandomValues(bytes);
+
+            // Set timestamp (first 48 bits / 6 bytes)
+            bytes[0] = (timestamp / 2**40) & 0xff;
+            bytes[1] = (timestamp / 2**32) & 0xff;
+            bytes[2] = (timestamp / 2**24) & 0xff;
+            bytes[3] = (timestamp / 2**16) & 0xff;
+            bytes[4] = (timestamp / 2**8) & 0xff;
+            bytes[5] = timestamp & 0xff;
+
+            // Set version 7 (4 bits in position 48-51)
+            bytes[6] = (bytes[6] & 0x0f) | 0x70;
+
+            // Set variant bits (2 bits in position 64-65) - RFC 4122 variant
+            bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+            // Convert to hex string with hyphens
+            const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+            return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+        }
+
+        // Generate UUID based on selected version
+        function generateUUID() {
+            if (state.version === 'v7') {
+                return generateUUIDv7();
+            }
+            return generateUUIDv4();
+        }
+
+        // Format UUID based on selected format
+        function formatUUID(uuid) {
+            switch (state.format) {
+                case 'uppercase':
+                    return uuid.toUpperCase();
+                case 'nohyphens':
+                    return uuid.replace(/-/g, '');
+                default:
+                    return uuid.toLowerCase();
+            }
+        }
+
+        // Render UUID list
+        function renderUUIDs() {
+            if (state.uuids.length === 0) {
+                uuidList.innerHTML = '<div class="empty-state">No UUIDs generated yet. Click "Generate Single" or "Generate Bulk" to create UUIDs.</div>';
+                copyAllSection.style.display = 'none';
+                return;
+            }
+
+            const formattedUUIDs = state.uuids.map(uuid => formatUUID(uuid));
+            uuidList.innerHTML = formattedUUIDs.map((uuid, index) => `
+                <div class="uuid-item">
+                    <span class="uuid-text">${uuid}</span>
+                    <button type="button" onclick="copyUUID(${index})" title="Copy this UUID">Copy</button>
+                </div>
+            `).join('');
+
+            copyAllSection.style.display = 'block';
+        }
+
+        // Copy single UUID to clipboard
+        async function copyUUID(index) {
+            const uuid = formatUUID(state.uuids[index]);
+            try {
+                await navigator.clipboard.writeText(uuid);
+                showStatus('UUID copied to clipboard!', false);
+                setTimeout(hideStatus, 2000);
+            } catch (err) {
+                showStatus('Failed to copy UUID. Please select and copy manually.', true);
+            }
+        }
+
+        // Copy all UUIDs to clipboard
+        async function copyAllUUIDs() {
+            if (state.uuids.length === 0) {
+                showStatus('No UUIDs to copy.', true);
+                return;
+            }
+
+            const formattedUUIDs = state.uuids.map(uuid => formatUUID(uuid));
+            const text = formattedUUIDs.join('\n');
+
+            try {
+                await navigator.clipboard.writeText(text);
+                showStatus(`${state.uuids.length} UUID${state.uuids.length > 1 ? 's' : ''} copied to clipboard!`, false);
+                setTimeout(hideStatus, 2000);
+            } catch (err) {
+                showStatus('Failed to copy UUIDs. Please select and copy manually.', true);
+            }
+        }
+
+        // Generate single UUID
+        function generateSingle() {
+            if (!checkCryptoSupport()) return;
+
+            const uuid = generateUUID();
+            state.uuids.push(uuid);
+            renderUUIDs();
+            showStatus('1 UUID generated!', false);
+            setTimeout(hideStatus, 2000);
+        }
+
+        // Generate bulk UUIDs
+        function generateBulk() {
+            if (!checkCryptoSupport()) return;
+
+            let count = parseInt(bulkCountInput.value, 10);
+
+            // Validate count
+            if (isNaN(count) || count < 1) {
+                showStatus('Please enter a valid number between 1 and 1000.', true);
+                return;
+            }
+
+            if (count > 1000) {
+                showStatus('Maximum bulk generation is 1000 UUIDs. Generating 1000.', true);
+                count = 1000;
+                bulkCountInput.value = 1000;
+            }
+
+            state.bulkCount = count;
+            savePreferences();
+
+            // Generate UUIDs
+            for (let i = 0; i < count; i++) {
+                state.uuids.push(generateUUID());
+            }
+
+            renderUUIDs();
+            showStatus(`${count} UUID${count > 1 ? 's' : ''} generated!`, false);
+            setTimeout(hideStatus, 2000);
+        }
+
+        // Clear all UUIDs
+        function clearUUIDs() {
+            state.uuids = [];
+            renderUUIDs();
+            hideStatus();
+        }
+
+        // Event listeners for version radio buttons
+        document.querySelectorAll('input[name="version"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                state.version = e.target.value;
+                savePreferences();
+                // Re-render with new format if UUIDs exist
+                renderUUIDs();
+            });
+        });
+
+        // Event listeners for format radio buttons
+        document.querySelectorAll('input[name="format"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                state.format = e.target.value;
+                savePreferences();
+                // Re-render with new format if UUIDs exist
+                renderUUIDs();
+            });
+        });
+
+        // Button event listeners
+        generateSingleBtn.addEventListener('click', generateSingle);
+        generateBulkBtn.addEventListener('click', generateBulk);
+        clearBtn.addEventListener('click', clearUUIDs);
+        copyAllBtn.addEventListener('click', copyAllUUIDs);
+
+        // Bulk count change listener
+        bulkCountInput.addEventListener('change', () => {
+            const count = parseInt(bulkCountInput.value, 10);
+            if (!isNaN(count) && count >= 1 && count <= 1000) {
+                state.bulkCount = count;
+                savePreferences();
+            }
+        });
+
+        // Make copyUUID available globally for onclick handlers
+        window.copyUUID = copyUUID;
+
+        // Initialize
+        loadPreferences();
+        checkCryptoSupport();
+    </script>
+</body>
+</html>
