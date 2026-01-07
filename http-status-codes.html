@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTTP Status Code Reference</title>
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="common-styles.css">
+    <style>
+        .search-container {
+            margin-bottom: 1rem;
+        }
+        .search-container input {
+            margin-bottom: 0;
+        }
+        .filter-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .filter-tab {
+            padding: 0.4rem 0.8rem;
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            background: transparent;
+            color: var(--pico-muted-color);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-tab:hover {
+            border-color: #6b8dd6;
+            color: #6b8dd6;
+            background: rgba(107, 141, 214, 0.05);
+        }
+        .filter-tab.active {
+            background: #6b8dd6;
+            border-color: #6b8dd6;
+            color: white;
+        }
+        .status-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .status-card {
+            padding: 1rem 1.25rem;
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            background: var(--pico-card-background-color);
+        }
+        .status-card-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        .status-code-title {
+            font-size: 1.15rem;
+            font-weight: bold;
+            margin: 0;
+        }
+        .category-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .category-1xx {
+            background: #3498db;
+            color: white;
+        }
+        .category-2xx {
+            background: #27ae60;
+            color: white;
+        }
+        .category-3xx {
+            background: #f39c12;
+            color: white;
+        }
+        .category-4xx {
+            background: #e67e22;
+            color: white;
+        }
+        .category-5xx {
+            background: #e74c3c;
+            color: white;
+        }
+        .copy-buttons {
+            margin-left: auto;
+            display: flex;
+            gap: 0.5rem;
+        }
+        .copy-btn {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+            background: transparent;
+            border: 1px solid #6b8dd6;
+            color: #6b8dd6;
+        }
+        .copy-btn:hover {
+            background: #6b8dd6;
+            color: white;
+        }
+        .status-description {
+            margin-bottom: 0.75rem;
+            color: var(--pico-color);
+        }
+        .use-cases {
+            margin-bottom: 0.5rem;
+        }
+        .use-cases-title {
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+            color: var(--pico-muted-color);
+        }
+        .use-cases-list {
+            margin: 0;
+            padding-left: 1.25rem;
+            font-size: 0.9rem;
+        }
+        .use-cases-list li {
+            margin-bottom: 0.15rem;
+        }
+        .example {
+            font-size: 0.85rem;
+            color: var(--pico-muted-color);
+            font-style: italic;
+        }
+        .no-results {
+            text-align: center;
+            padding: 2rem;
+            color: var(--pico-muted-color);
+        }
+        @media (max-width: 600px) {
+            .status-card-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .copy-buttons {
+                margin-left: 0;
+                margin-top: 0.5rem;
+            }
+            .filter-tabs {
+                gap: 0.35rem;
+            }
+            .filter-tab {
+                padding: 0.35rem 0.6rem;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
+        <hgroup>
+            <h1>HTTP Status Code Reference</h1>
+            <p>Searchable guide for HTTP status codes with descriptions, use cases, and examples.</p>
+        </hgroup>
+
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search by code or description..." aria-label="Search status codes">
+        </div>
+
+        <div class="filter-tabs" role="tablist" aria-label="Filter by category">
+            <button type="button" class="filter-tab active" data-filter="all">All</button>
+            <button type="button" class="filter-tab" data-filter="1xx">1xx Info</button>
+            <button type="button" class="filter-tab" data-filter="2xx">2xx Success</button>
+            <button type="button" class="filter-tab" data-filter="3xx">3xx Redirect</button>
+            <button type="button" class="filter-tab" data-filter="4xx">4xx Client Error</button>
+            <button type="button" class="filter-tab" data-filter="5xx">5xx Server Error</button>
+        </div>
+
+        <div id="statusCards" class="status-cards" aria-live="polite"></div>
+
+        <p style="margin-top:1rem"><a href="index.html" class="back-link">← Back to Tools</a></p>
+    </main>
+
+    <script>
+        const statusCodes = [
+            // 1xx Informational
+            {
+                code: 100,
+                name: "Continue",
+                category: "1xx",
+                categoryName: "Info",
+                description: "The server has received the request headers and the client should proceed to send the request body.",
+                useCases: [
+                    "Large file uploads with Expect: 100-continue header",
+                    "Checking if server will accept request before sending body"
+                ],
+                example: "Client sends headers for a large POST, server responds 100 before client sends body"
+            },
+            {
+                code: 101,
+                name: "Switching Protocols",
+                category: "1xx",
+                categoryName: "Info",
+                description: "The server is switching protocols as requested by the client via the Upgrade header.",
+                useCases: [
+                    "Upgrading HTTP to WebSocket connection",
+                    "Upgrading HTTP/1.1 to HTTP/2"
+                ],
+                example: "Browser initiates WebSocket handshake and receives 101 before switching to WebSocket protocol"
+            },
+            {
+                code: 102,
+                name: "Processing",
+                category: "1xx",
+                categoryName: "Info",
+                description: "The server has received and is processing the request, but no response is available yet (WebDAV).",
+                useCases: [
+                    "Long-running WebDAV operations",
+                    "Preventing client timeout during processing"
+                ],
+                example: "WebDAV server processes a large COPY operation and sends 102 to prevent timeout"
+            },
+            {
+                code: 103,
+                name: "Early Hints",
+                category: "1xx",
+                categoryName: "Info",
+                description: "Used to return some response headers before final HTTP message, allowing preloading of resources.",
+                useCases: [
+                    "Preloading CSS and JavaScript while server processes request",
+                    "Improving page load performance"
+                ],
+                example: "Server sends 103 with Link headers for CSS files while preparing the HTML response"
+            },
+
+            // 2xx Success
+            {
+                code: 200,
+                name: "OK",
+                category: "2xx",
+                categoryName: "Success",
+                description: "The request succeeded. The meaning depends on the HTTP method used.",
+                useCases: [
+                    "Successful GET request returning data",
+                    "Successful POST that doesn't create a new resource",
+                    "Successful PUT update of existing resource"
+                ],
+                example: "API returns user profile data after successful authentication"
+            },
+            {
+                code: 201,
+                name: "Created",
+                category: "2xx",
+                categoryName: "Success",
+                description: "The request succeeded and a new resource was created as a result.",
+                useCases: [
+                    "POST request creates new resource",
+                    "PUT creates resource at specified URI"
+                ],
+                example: "User registration endpoint successfully creates new account"
+            },
+            {
+                code: 202,
+                name: "Accepted",
+                category: "2xx",
+                categoryName: "Success",
+                description: "The request has been received but not yet acted upon. It is intended for cases where another process handles the request.",
+                useCases: [
+                    "Asynchronous job processing",
+                    "Batch operations queued for later",
+                    "Email sending queued"
+                ],
+                example: "Video transcoding job is queued and will be processed in background"
+            },
+            {
+                code: 203,
+                name: "Non-Authoritative Information",
+                category: "2xx",
+                categoryName: "Success",
+                description: "The returned metadata is not exactly the same as available from the origin server, but collected from a local or third-party copy.",
+                useCases: [
+                    "Proxy returning modified response",
+                    "Cached response with transformed content"
+                ],
+                example: "Proxy server returns cached and modified version of original response"
+            },
+            {
+                code: 204,
+                name: "No Content",
+                category: "2xx",
+                categoryName: "Success",
+                description: "The server successfully processed the request but is not returning any content.",
+                useCases: [
+                    "Successful DELETE operation",
+                    "Form submission with no redirect needed",
+                    "Save operation where page shouldn't change"
+                ],
+                example: "Delete button removes item without refreshing page"
+            },
+            {
+                code: 205,
+                name: "Reset Content",
+                category: "2xx",
+                categoryName: "Success",
+                description: "The server successfully processed the request and asks the client to reset the document view.",
+                useCases: [
+                    "Form submission requiring form reset",
+                    "Clear input fields after successful save"
+                ],
+                example: "Form submission succeeds and browser should clear all form fields"
+            },
+            {
+                code: 206,
+                name: "Partial Content",
+                category: "2xx",
+                categoryName: "Success",
+                description: "The server is delivering only part of the resource due to a range header sent by the client.",
+                useCases: [
+                    "Resumable file downloads",
+                    "Video streaming with seek support",
+                    "Large file downloads with pause/resume"
+                ],
+                example: "Video player requests specific byte range for seeking to timestamp"
+            },
+            {
+                code: 207,
+                name: "Multi-Status",
+                category: "2xx",
+                categoryName: "Success",
+                description: "Conveys information about multiple resources in situations where multiple status codes might be appropriate (WebDAV).",
+                useCases: [
+                    "WebDAV batch operations",
+                    "Multiple file operations with mixed results"
+                ],
+                example: "WebDAV PROPFIND returns status for multiple files in single response"
+            },
+            {
+                code: 208,
+                name: "Already Reported",
+                category: "2xx",
+                categoryName: "Success",
+                description: "Used in DAV binding to avoid enumerating the internal members of multiple bindings to the same collection repeatedly.",
+                useCases: [
+                    "WebDAV collection with multiple bindings",
+                    "Avoiding duplicate reporting in DAV responses"
+                ],
+                example: "WebDAV response indicates member was already enumerated in previous part of response"
+            },
+            {
+                code: 226,
+                name: "IM Used",
+                category: "2xx",
+                categoryName: "Success",
+                description: "The server has fulfilled a GET request for the resource with instance-manipulations applied to current instance.",
+                useCases: [
+                    "Delta encoding responses",
+                    "Bandwidth optimization with differential updates"
+                ],
+                example: "Server returns only changes since last request using delta encoding"
+            },
+
+            // 3xx Redirection
+            {
+                code: 300,
+                name: "Multiple Choices",
+                category: "3xx",
+                categoryName: "Redirect",
+                description: "The request has more than one possible response. The user or user agent should choose one of them.",
+                useCases: [
+                    "Content available in multiple formats",
+                    "Multiple language versions available"
+                ],
+                example: "Resource available as HTML, JSON, or XML - client chooses format"
+            },
+            {
+                code: 301,
+                name: "Moved Permanently",
+                category: "3xx",
+                categoryName: "Redirect",
+                description: "The URL of the requested resource has been changed permanently. The new URL is given in the response.",
+                useCases: [
+                    "Website domain change",
+                    "URL restructuring",
+                    "Permanent page relocations for SEO"
+                ],
+                example: "Old blog URL permanently redirects to new URL structure"
+            },
+            {
+                code: 302,
+                name: "Found",
+                category: "3xx",
+                categoryName: "Redirect",
+                description: "The URI of requested resource has been changed temporarily. Further changes might be made in the future.",
+                useCases: [
+                    "Temporary redirects during maintenance",
+                    "A/B testing redirects",
+                    "Login redirects"
+                ],
+                example: "Unauthenticated user temporarily redirected to login page"
+            },
+            {
+                code: 303,
+                name: "See Other",
+                category: "3xx",
+                categoryName: "Redirect",
+                description: "The server sent this response to direct the client to get the requested resource at another URI with a GET request.",
+                useCases: [
+                    "POST/Redirect/GET pattern",
+                    "Form submission redirecting to result page"
+                ],
+                example: "After form POST, redirect to confirmation page via GET"
+            },
+            {
+                code: 304,
+                name: "Not Modified",
+                category: "3xx",
+                categoryName: "Redirect",
+                description: "Indicates the resource has not been modified since last requested. Client can use cached version.",
+                useCases: [
+                    "Browser cache validation",
+                    "Conditional GET requests",
+                    "Bandwidth optimization"
+                ],
+                example: "Browser sends If-Modified-Since header, server confirms cache is still valid"
+            },
+            {
+                code: 305,
+                name: "Use Proxy",
+                category: "3xx",
+                categoryName: "Redirect",
+                description: "The requested resource must be accessed through the proxy given by the Location field. Deprecated due to security concerns.",
+                useCases: [
+                    "Deprecated - historically used for mandatory proxy access"
+                ],
+                example: "Deprecated status code - should not be used in modern applications"
+            },
+            {
+                code: 307,
+                name: "Temporary Redirect",
+                category: "3xx",
+                categoryName: "Redirect",
+                description: "The server sends this response to direct the client to get the requested resource at another URI with same method.",
+                useCases: [
+                    "Temporary redirect preserving HTTP method",
+                    "Load balancing redirects",
+                    "API version redirects"
+                ],
+                example: "POST request temporarily redirected to different server, keeping POST method"
+            },
+            {
+                code: 308,
+                name: "Permanent Redirect",
+                category: "3xx",
+                categoryName: "Redirect",
+                description: "The resource is now permanently located at another URI. Unlike 301, it requires method and body not to be changed.",
+                useCases: [
+                    "Permanent redirect preserving HTTP method",
+                    "API endpoint moved permanently"
+                ],
+                example: "API endpoint permanently moved, POST requests should use new URL with same method"
+            },
+
+            // 4xx Client Errors
+            {
+                code: 400,
+                name: "Bad Request",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The server cannot process the request due to malformed syntax or invalid request message framing.",
+                useCases: [
+                    "Invalid JSON in request body",
+                    "Missing required parameters",
+                    "Malformed URL encoding"
+                ],
+                example: "API receives invalid JSON syntax in POST body"
+            },
+            {
+                code: 401,
+                name: "Unauthorized",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The request requires user authentication. The client must authenticate to get the requested response.",
+                useCases: [
+                    "Missing authentication token",
+                    "Expired session",
+                    "Invalid credentials"
+                ],
+                example: "API request without Bearer token in Authorization header"
+            },
+            {
+                code: 402,
+                name: "Payment Required",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "Reserved for future use. Originally intended for digital payment systems.",
+                useCases: [
+                    "Paywall access required",
+                    "Subscription expired",
+                    "Payment needed to access resource"
+                ],
+                example: "Premium API feature requires paid subscription"
+            },
+            {
+                code: 403,
+                name: "Forbidden",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The client does not have access rights to the content. Unlike 401, the client's identity is known to the server.",
+                useCases: [
+                    "Insufficient permissions",
+                    "IP address blocked",
+                    "Resource restricted to certain users"
+                ],
+                example: "User authenticated but lacks admin privileges for requested action"
+            },
+            {
+                code: 404,
+                name: "Not Found",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The server cannot find the requested resource. The URL is not recognized or the resource doesn't exist.",
+                useCases: [
+                    "Page doesn't exist",
+                    "Deleted resource",
+                    "Incorrect URL"
+                ],
+                example: "User requests /users/12345 but that user ID doesn't exist"
+            },
+            {
+                code: 405,
+                name: "Method Not Allowed",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The request method is known by the server but not supported by the target resource.",
+                useCases: [
+                    "POST to read-only endpoint",
+                    "DELETE on collection that doesn't support it",
+                    "Using wrong HTTP verb"
+                ],
+                example: "Client sends DELETE to an endpoint that only supports GET"
+            },
+            {
+                code: 406,
+                name: "Not Acceptable",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The server cannot produce a response matching the list of acceptable values defined in the request's headers.",
+                useCases: [
+                    "Requested content type not available",
+                    "Accept header cannot be satisfied",
+                    "Language not supported"
+                ],
+                example: "Client requests application/xml but server only provides application/json"
+            },
+            {
+                code: 407,
+                name: "Proxy Authentication Required",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The client must first authenticate itself with the proxy.",
+                useCases: [
+                    "Corporate proxy requires authentication",
+                    "Proxy server access control"
+                ],
+                example: "Request through corporate proxy requires proxy credentials"
+            },
+            {
+                code: 408,
+                name: "Request Timeout",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The server would like to shut down this unused connection. It is sent on an idle connection by some servers.",
+                useCases: [
+                    "Client took too long to send request",
+                    "Slow network connection",
+                    "Server closing idle connections"
+                ],
+                example: "Server closes connection after client fails to complete request within timeout"
+            },
+            {
+                code: 409,
+                name: "Conflict",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The request conflicts with the current state of the server or target resource.",
+                useCases: [
+                    "Duplicate resource creation",
+                    "Edit conflict (concurrent modifications)",
+                    "Version mismatch"
+                ],
+                example: "Creating user with email that already exists in database"
+            },
+            {
+                code: 410,
+                name: "Gone",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The content has been permanently deleted from server, with no forwarding address.",
+                useCases: [
+                    "Permanently removed content",
+                    "Intentionally deleted resources",
+                    "API version deprecated and removed"
+                ],
+                example: "Deleted blog post that won't be restored - different from 404"
+            },
+            {
+                code: 411,
+                name: "Length Required",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "Server rejected request because the Content-Length header field is not defined and the server requires it.",
+                useCases: [
+                    "POST/PUT without Content-Length header",
+                    "Chunked encoding not accepted"
+                ],
+                example: "Server requires Content-Length header for POST requests"
+            },
+            {
+                code: 412,
+                name: "Precondition Failed",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The client has indicated preconditions in its headers which the server does not meet.",
+                useCases: [
+                    "Conditional request with If-Match fails",
+                    "ETag mismatch",
+                    "Optimistic locking failure"
+                ],
+                example: "If-Match header ETag doesn't match current resource version"
+            },
+            {
+                code: 413,
+                name: "Payload Too Large",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "Request entity is larger than limits defined by server.",
+                useCases: [
+                    "File upload exceeds size limit",
+                    "Request body too large",
+                    "JSON payload exceeds limit"
+                ],
+                example: "User tries to upload 100MB file when limit is 10MB"
+            },
+            {
+                code: 414,
+                name: "URI Too Long",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The URI requested by the client is longer than the server is willing to interpret.",
+                useCases: [
+                    "GET request with too many query parameters",
+                    "Improperly using GET for large data",
+                    "URL length exceeds server limit"
+                ],
+                example: "Query string with thousands of characters exceeds 8KB limit"
+            },
+            {
+                code: 415,
+                name: "Unsupported Media Type",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The media format of the requested data is not supported by the server.",
+                useCases: [
+                    "Wrong Content-Type header",
+                    "Uploading unsupported file format",
+                    "Sending XML to JSON-only endpoint"
+                ],
+                example: "API expects application/json but receives text/plain"
+            },
+            {
+                code: 416,
+                name: "Range Not Satisfiable",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The range specified by the Range header field in the request cannot be fulfilled.",
+                useCases: [
+                    "Requested byte range outside file size",
+                    "Invalid range header format",
+                    "Seeking past end of file"
+                ],
+                example: "Client requests bytes 1000-2000 of a 500-byte file"
+            },
+            {
+                code: 417,
+                name: "Expectation Failed",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The expectation given in the request's Expect header field cannot be met by the server.",
+                useCases: [
+                    "Expect: 100-continue rejected",
+                    "Server cannot meet client expectations"
+                ],
+                example: "Server rejects Expect: 100-continue header for large upload"
+            },
+            {
+                code: 418,
+                name: "I'm a teapot",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The server refuses to brew coffee because it is, permanently, a teapot. A reference to Hyper Text Coffee Pot Control Protocol.",
+                useCases: [
+                    "April Fools' joke from 1998",
+                    "Easter egg in some APIs",
+                    "Used humorously for unsupported operations"
+                ],
+                example: "HTCPCP joke - server is a teapot and cannot brew coffee"
+            },
+            {
+                code: 421,
+                name: "Misdirected Request",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The request was directed at a server that is not able to produce a response.",
+                useCases: [
+                    "Wrong server in connection reuse",
+                    "TLS certificate mismatch",
+                    "HTTP/2 connection routing issue"
+                ],
+                example: "HTTP/2 connection reused for different origin that server cannot handle"
+            },
+            {
+                code: 422,
+                name: "Unprocessable Entity",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The request was well-formed but was unable to be followed due to semantic errors.",
+                useCases: [
+                    "Validation errors in request body",
+                    "Business logic validation failure",
+                    "Invalid field values"
+                ],
+                example: "JSON is valid but email field contains invalid email format"
+            },
+            {
+                code: 423,
+                name: "Locked",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The resource that is being accessed is locked (WebDAV).",
+                useCases: [
+                    "WebDAV resource locked by another user",
+                    "File being edited by someone else",
+                    "Resource temporarily locked for maintenance"
+                ],
+                example: "Document locked for editing by another user in WebDAV"
+            },
+            {
+                code: 424,
+                name: "Failed Dependency",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The request failed due to failure of a previous request (WebDAV).",
+                useCases: [
+                    "WebDAV batch operation dependency failed",
+                    "Cascading failure in multi-step operation"
+                ],
+                example: "WebDAV COPY failed because parent directory creation failed"
+            },
+            {
+                code: 425,
+                name: "Too Early",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The server is unwilling to risk processing a request that might be replayed.",
+                useCases: [
+                    "TLS 1.3 early data (0-RTT) rejected",
+                    "Replay attack prevention"
+                ],
+                example: "Server rejects early data to prevent replay attacks in TLS 1.3"
+            },
+            {
+                code: 426,
+                name: "Upgrade Required",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The server refuses to perform the request using the current protocol but might be willing to do so after client upgrades.",
+                useCases: [
+                    "HTTP upgrade to HTTPS required",
+                    "Protocol version upgrade needed",
+                    "WebSocket upgrade required"
+                ],
+                example: "Server requires TLS and rejects plain HTTP connection"
+            },
+            {
+                code: 428,
+                name: "Precondition Required",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The origin server requires the request to be conditional to prevent lost updates.",
+                useCases: [
+                    "If-Match header required for updates",
+                    "Preventing lost update problem",
+                    "Enforcing optimistic concurrency"
+                ],
+                example: "PUT request requires If-Match header to prevent overwriting concurrent changes"
+            },
+            {
+                code: 429,
+                name: "Too Many Requests",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The user has sent too many requests in a given amount of time (rate limiting).",
+                useCases: [
+                    "API rate limit exceeded",
+                    "Brute force prevention",
+                    "DDoS protection triggered"
+                ],
+                example: "API allows 100 requests per minute, user exceeded limit"
+            },
+            {
+                code: 431,
+                name: "Request Header Fields Too Large",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The server is unwilling to process the request because its header fields are too large.",
+                useCases: [
+                    "Cookie header too large",
+                    "Too many custom headers",
+                    "Single header value too long"
+                ],
+                example: "Request with many cookies exceeds server's header size limit"
+            },
+            {
+                code: 451,
+                name: "Unavailable For Legal Reasons",
+                category: "4xx",
+                categoryName: "Client Error",
+                description: "The server is denying access to the resource as a consequence of a legal demand. Named after Fahrenheit 451.",
+                useCases: [
+                    "Content blocked due to court order",
+                    "DMCA takedown",
+                    "Government censorship",
+                    "GDPR right to be forgotten"
+                ],
+                example: "Website blocked in region due to legal requirements"
+            },
+
+            // 5xx Server Errors
+            {
+                code: 500,
+                name: "Internal Server Error",
+                category: "5xx",
+                categoryName: "Server Error",
+                description: "The server has encountered a situation it does not know how to handle.",
+                useCases: [
+                    "Unhandled exception in application",
+                    "Database connection failure",
+                    "Server misconfiguration"
+                ],
+                example: "Application throws uncaught exception during request processing"
+            },
+            {
+                code: 501,
+                name: "Not Implemented",
+                category: "5xx",
+                categoryName: "Server Error",
+                description: "The request method is not supported by the server and cannot be handled.",
+                useCases: [
+                    "HTTP method not implemented",
+                    "Feature not yet developed",
+                    "Legacy server limitations"
+                ],
+                example: "Server doesn't support PATCH method at all"
+            },
+            {
+                code: 502,
+                name: "Bad Gateway",
+                category: "5xx",
+                categoryName: "Server Error",
+                description: "The server, while acting as a gateway or proxy, received an invalid response from the upstream server.",
+                useCases: [
+                    "Upstream server returned invalid response",
+                    "Backend service crashed",
+                    "Proxy configuration error"
+                ],
+                example: "Nginx receives malformed response from application server"
+            },
+            {
+                code: 503,
+                name: "Service Unavailable",
+                category: "5xx",
+                categoryName: "Server Error",
+                description: "The server is not ready to handle the request. Common causes are a server that is down for maintenance or overloaded.",
+                useCases: [
+                    "Server maintenance",
+                    "Server overloaded",
+                    "Temporary outage"
+                ],
+                example: "Website shows maintenance page during scheduled downtime"
+            },
+            {
+                code: 504,
+                name: "Gateway Timeout",
+                category: "5xx",
+                categoryName: "Server Error",
+                description: "The server is acting as a gateway and cannot get a response in time from the upstream server.",
+                useCases: [
+                    "Backend service too slow",
+                    "Network issues to upstream",
+                    "Long-running operation timeout"
+                ],
+                example: "Proxy times out waiting for slow backend database query"
+            },
+            {
+                code: 505,
+                name: "HTTP Version Not Supported",
+                category: "5xx",
+                categoryName: "Server Error",
+                description: "The HTTP version used in the request is not supported by the server.",
+                useCases: [
+                    "Client using unsupported HTTP version",
+                    "Server only supports HTTP/1.1"
+                ],
+                example: "Server doesn't support HTTP/2 and client only speaks HTTP/2"
+            },
+            {
+                code: 506,
+                name: "Variant Also Negotiates",
+                category: "5xx",
+                categoryName: "Server Error",
+                description: "The server has an internal configuration error: the chosen variant resource is configured to engage in transparent content negotiation itself.",
+                useCases: [
+                    "Content negotiation misconfiguration",
+                    "Circular reference in negotiation"
+                ],
+                example: "Server misconfiguration causes infinite content negotiation loop"
+            },
+            {
+                code: 507,
+                name: "Insufficient Storage",
+                category: "5xx",
+                categoryName: "Server Error",
+                description: "The server is unable to store the representation needed to complete the request (WebDAV).",
+                useCases: [
+                    "Disk space exhausted",
+                    "Storage quota exceeded",
+                    "Database storage full"
+                ],
+                example: "WebDAV server cannot save file because disk is full"
+            },
+            {
+                code: 508,
+                name: "Loop Detected",
+                category: "5xx",
+                categoryName: "Server Error",
+                description: "The server detected an infinite loop while processing the request (WebDAV).",
+                useCases: [
+                    "Circular symlinks in WebDAV",
+                    "Infinite redirect loop",
+                    "Recursive binding in DAV"
+                ],
+                example: "WebDAV PROPFIND encounters infinite loop in directory structure"
+            },
+            {
+                code: 510,
+                name: "Not Extended",
+                category: "5xx",
+                categoryName: "Server Error",
+                description: "Further extensions to the request are required for the server to fulfill it.",
+                useCases: [
+                    "HTTP extension not supported",
+                    "Additional protocol extension needed"
+                ],
+                example: "Request requires HTTP extension that server doesn't have"
+            },
+            {
+                code: 511,
+                name: "Network Authentication Required",
+                category: "5xx",
+                categoryName: "Server Error",
+                description: "Indicates that the client needs to authenticate to gain network access.",
+                useCases: [
+                    "Captive portal login required",
+                    "Hotel/airport WiFi authentication",
+                    "Network access control"
+                ],
+                example: "WiFi hotspot requires login before allowing internet access"
+            }
+        ];
+
+        const searchInput = document.getElementById('searchInput');
+        const filterTabs = document.querySelectorAll('.filter-tab');
+        const statusCardsContainer = document.getElementById('statusCards');
+
+        let currentFilter = 'all';
+        let currentSearch = '';
+
+        function renderStatusCodes() {
+            const filtered = statusCodes.filter(code => {
+                // Apply category filter
+                if (currentFilter !== 'all' && code.category !== currentFilter) {
+                    return false;
+                }
+
+                // Apply search filter
+                if (currentSearch) {
+                    const searchLower = currentSearch.toLowerCase();
+                    const codeStr = String(code.code);
+                    const nameLower = code.name.toLowerCase();
+                    const descLower = code.description.toLowerCase();
+                    const useCasesLower = code.useCases.join(' ').toLowerCase();
+
+                    return codeStr.includes(searchLower) ||
+                           nameLower.includes(searchLower) ||
+                           descLower.includes(searchLower) ||
+                           useCasesLower.includes(searchLower);
+                }
+
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                statusCardsContainer.innerHTML = '<div class="no-results">No matching status codes found</div>';
+                return;
+            }
+
+            statusCardsContainer.innerHTML = filtered.map(code => `
+                <article class="status-card">
+                    <div class="status-card-header">
+                        <h3 class="status-code-title">${code.code} ${code.name}</h3>
+                        <span class="category-badge category-${code.category}">${code.categoryName}</span>
+                        <div class="copy-buttons">
+                            <button type="button" class="copy-btn" data-copy="${code.code}" title="Copy status code">Copy Code</button>
+                            <button type="button" class="copy-btn" data-copy="HTTP/1.1 ${code.code} ${code.name}" title="Copy full status line">Copy Status Line</button>
+                        </div>
+                    </div>
+                    <p class="status-description">${code.description}</p>
+                    <div class="use-cases">
+                        <p class="use-cases-title">Use cases:</p>
+                        <ul class="use-cases-list">
+                            ${code.useCases.map(uc => `<li>${uc}</li>`).join('')}
+                        </ul>
+                    </div>
+                    <p class="example"><strong>Example:</strong> ${code.example}</p>
+                </article>
+            `).join('');
+
+            // Add copy button event listeners
+            statusCardsContainer.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const textToCopy = btn.getAttribute('data-copy');
+                    try {
+                        await navigator.clipboard.writeText(textToCopy);
+                        const originalText = btn.textContent;
+                        btn.textContent = 'Copied!';
+                        setTimeout(() => {
+                            btn.textContent = originalText;
+                        }, 1500);
+                    } catch (err) {
+                        console.error('Failed to copy:', err);
+                    }
+                });
+            });
+        }
+
+        // Search input handler
+        searchInput.addEventListener('input', (e) => {
+            currentSearch = e.target.value.trim();
+            renderStatusCodes();
+        });
+
+        // Filter tab handlers
+        filterTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                filterTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentFilter = tab.getAttribute('data-filter');
+                renderStatusCodes();
+            });
+        });
+
+        // Initial render
+        document.addEventListener('DOMContentLoaded', () => {
+            renderStatusCodes();
+        });
+    </script>
+</body>
+</html>
