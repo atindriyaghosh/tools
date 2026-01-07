@@ -1,3 +1,4 @@
 .brainstorm/
 .claude/*.json
+.test/server.pid
 _site/
