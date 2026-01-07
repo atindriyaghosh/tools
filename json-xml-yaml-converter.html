@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON/XML/YAML Converter</title>
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="common-styles.css">
+    <style>
+        .format-row {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+        .format-row label {
+            margin-bottom: 0;
+        }
+        .format-row select {
+            min-width: 120px;
+            margin-bottom: 0;
+        }
+        .arrow {
+            font-size: 1.5rem;
+            color: var(--pico-muted-color);
+        }
+        .swap-btn {
+            padding: 0.5rem 0.75rem;
+            font-size: 1rem;
+        }
+        .textarea-container {
+            margin-bottom: 1rem;
+        }
+        .textarea-container label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        textarea {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            min-height: 200px;
+            resize: vertical;
+        }
+        #outputText {
+            background-color: var(--pico-card-background-color);
+        }
+        .action-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+        #status {
+            padding: 0.75rem 1rem;
+            border-radius: var(--pico-border-radius);
+            margin-bottom: 1rem;
+            display: none;
+        }
+        #status.visible {
+            display: block;
+        }
+        #status.success {
+            background-color: rgba(46, 125, 50, 0.1);
+            border: 1px solid rgba(46, 125, 50, 0.3);
+            color: #2e7d32;
+        }
+        #status.error {
+            background-color: rgba(211, 47, 47, 0.1);
+            border: 1px solid rgba(211, 47, 47, 0.3);
+            color: #d32f2f;
+        }
+        .file-input-wrapper {
+            margin-bottom: 1rem;
+        }
+        .file-input-wrapper input[type="file"] {
+            font-size: 0.9rem;
+        }
+        @media (max-width: 600px) {
+            .format-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .arrow {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
+        <hgroup>
+            <h1>JSON/XML/YAML Converter</h1>
+            <p>Convert between JSON, XML, and YAML formats bidirectionally with validation.</p>
+        </hgroup>
+
+        <div class="format-row">
+            <label>
+                From
+                <select id="sourceFormat" aria-label="Source format">
+                    <option value="json">JSON</option>
+                    <option value="xml">XML</option>
+                    <option value="yaml">YAML</option>
+                </select>
+            </label>
+            <span class="arrow">→</span>
+            <label>
+                To
+                <select id="targetFormat" aria-label="Target format">
+                    <option value="json">JSON</option>
+                    <option value="xml" selected>XML</option>
+                    <option value="yaml">YAML</option>
+                </select>
+            </label>
+            <button type="button" class="swap-btn" id="swapBtn" title="Swap source and target formats">⇄ Swap</button>
+        </div>
+
+        <div class="file-input-wrapper">
+            <label for="fileInput">Or load from file (.json, .xml, .yaml, .yml - max 10 MB)</label>
+            <input type="file" id="fileInput" accept=".json,.xml,.yaml,.yml">
+        </div>
+
+        <div id="status" role="status" aria-live="polite"></div>
+
+        <div class="textarea-container">
+            <label for="inputText">Input</label>
+            <textarea id="inputText" placeholder="Paste your JSON, XML, or YAML here..." aria-label="Input text"></textarea>
+        </div>
+
+        <div class="action-row">
+            <button type="button" id="convertBtn">Convert</button>
+            <button type="button" id="clearBtn" style="background-color: var(--pico-secondary-background);">Clear</button>
+        </div>
+
+        <div class="textarea-container">
+            <label for="outputText">Output</label>
+            <textarea id="outputText" readonly placeholder="Converted output will appear here..." aria-label="Output text"></textarea>
+        </div>
+
+        <div class="action-row">
+            <button type="button" id="copyBtn">Copy Output</button>
+        </div>
+
+        <p style="margin-top:1rem"><a href="index.html" class="back-link">← Back to Tools</a></p>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script>
+        // DOM Elements
+        const sourceFormatEl = document.getElementById('sourceFormat');
+        const targetFormatEl = document.getElementById('targetFormat');
+        const swapBtn = document.getElementById('swapBtn');
+        const inputText = document.getElementById('inputText');
+        const outputText = document.getElementById('outputText');
+        const convertBtn = document.getElementById('convertBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const fileInput = document.getElementById('fileInput');
+        const statusEl = document.getElementById('status');
+
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+        const STORAGE_KEY = 'json-xml-yaml-converter-prefs';
+
+        // Load saved preferences
+        function loadPreferences() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const prefs = JSON.parse(saved);
+                    if (prefs.sourceFormat) sourceFormatEl.value = prefs.sourceFormat;
+                    if (prefs.targetFormat) targetFormatEl.value = prefs.targetFormat;
+                }
+            } catch (e) {
+                console.error('Error loading preferences:', e);
+            }
+        }
+
+        // Save preferences
+        function savePreferences() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    sourceFormat: sourceFormatEl.value,
+                    targetFormat: targetFormatEl.value
+                }));
+            } catch (e) {
+                console.error('Error saving preferences:', e);
+            }
+        }
+
+        // Show status message
+        function showStatus(message, isError) {
+            statusEl.textContent = message;
+            statusEl.className = 'visible ' + (isError ? 'error' : 'success');
+            if (isError) {
+                statusEl.setAttribute('aria-invalid', 'true');
+            } else {
+                statusEl.removeAttribute('aria-invalid');
+            }
+        }
+
+        // Clear status
+        function clearStatus() {
+            statusEl.className = '';
+            statusEl.textContent = '';
+            statusEl.removeAttribute('aria-invalid');
+        }
+
+        // Parse JSON
+        function parseJSON(text) {
+            return JSON.parse(text);
+        }
+
+        // Parse XML to JavaScript object
+        function parseXML(text) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, 'application/xml');
+            const errorNode = doc.querySelector('parsererror');
+            if (errorNode) {
+                throw new Error('Invalid XML: ' + errorNode.textContent.substring(0, 100));
+            }
+            return xmlToObj(doc.documentElement);
+        }
+
+        // Convert XML element to JavaScript object
+        function xmlToObj(element) {
+            const obj = {};
+
+            // Handle attributes - prefix with @
+            if (element.attributes && element.attributes.length > 0) {
+                for (const attr of element.attributes) {
+                    obj['@' + attr.name] = attr.value;
+                }
+            }
+
+            // Handle child nodes
+            const children = element.childNodes;
+            let hasTextContent = false;
+            let textContent = '';
+
+            for (const child of children) {
+                if (child.nodeType === Node.TEXT_NODE) {
+                    const text = child.textContent.trim();
+                    if (text) {
+                        hasTextContent = true;
+                        textContent += text;
+                    }
+                } else if (child.nodeType === Node.ELEMENT_NODE) {
+                    const childObj = xmlToObj(child);
+                    const tagName = child.tagName;
+
+                    if (obj[tagName] !== undefined) {
+                        // Convert to array if multiple elements with same name
+                        if (!Array.isArray(obj[tagName])) {
+                            obj[tagName] = [obj[tagName]];
+                        }
+                        obj[tagName].push(childObj);
+                    } else {
+                        obj[tagName] = childObj;
+                    }
+                }
+            }
+
+            // If element only has text content and no attributes or child elements
+            const keys = Object.keys(obj);
+            if (hasTextContent && keys.length === 0) {
+                return parseValue(textContent);
+            } else if (hasTextContent) {
+                obj['#text'] = parseValue(textContent);
+            }
+
+            // If object is empty, return empty string
+            if (Object.keys(obj).length === 0) {
+                return '';
+            }
+
+            return obj;
+        }
+
+        // Try to parse string values to appropriate types
+        function parseValue(value) {
+            if (value === 'true') return true;
+            if (value === 'false') return false;
+            if (value === 'null') return null;
+            if (value === '') return '';
+            const num = Number(value);
+            if (!isNaN(num) && value.trim() !== '') return num;
+            return value;
+        }
+
+        // Parse YAML
+        function parseYAML(text) {
+            return jsyaml.load(text);
+        }
+
+        // Convert JavaScript object to JSON string
+        function toJSON(obj) {
+            return JSON.stringify(obj, null, 2);
+        }
+
+        // Convert JavaScript object to XML string
+        function toXML(obj, rootName = 'root') {
+            let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+
+            // Handle arrays at root level
+            if (Array.isArray(obj)) {
+                xml += `<${rootName}>\n`;
+                obj.forEach((item, index) => {
+                    xml += objToXml(item, 'item', 1);
+                });
+                xml += `</${rootName}>`;
+            } else if (typeof obj === 'object' && obj !== null) {
+                // Check if object has single root key
+                const keys = Object.keys(obj);
+                if (keys.length === 1 && typeof obj[keys[0]] === 'object') {
+                    xml += objToXml(obj[keys[0]], keys[0], 0);
+                } else {
+                    xml += `<${rootName}>\n`;
+                    xml += objectContentToXml(obj, 1);
+                    xml += `</${rootName}>`;
+                }
+            } else {
+                xml += `<${rootName}>${escapeXml(String(obj))}</${rootName}>`;
+            }
+
+            return xml;
+        }
+
+        // Convert object content to XML (handles nested objects)
+        function objectContentToXml(obj, indent) {
+            let xml = '';
+            const indentStr = '  '.repeat(indent);
+
+            for (const [key, value] of Object.entries(obj)) {
+                // Skip attribute keys (those starting with @) - handled separately
+                if (key.startsWith('@')) continue;
+                // Skip text content key - handled separately
+                if (key === '#text') continue;
+
+                if (Array.isArray(value)) {
+                    value.forEach(item => {
+                        xml += objToXml(item, key, indent);
+                    });
+                } else {
+                    xml += objToXml(value, key, indent);
+                }
+            }
+
+            return xml;
+        }
+
+        // Convert single value/object to XML element
+        function objToXml(value, tagName, indent) {
+            const indentStr = '  '.repeat(indent);
+            const nextIndent = indent + 1;
+
+            // Sanitize tag name (replace invalid characters)
+            const safeTagName = sanitizeTagName(tagName);
+
+            if (value === null || value === undefined) {
+                return `${indentStr}<${safeTagName}/>\n`;
+            }
+
+            if (typeof value === 'object' && !Array.isArray(value)) {
+                // Extract attributes
+                let attrs = '';
+                let textContent = '';
+                const hasChildren = Object.keys(value).some(k => !k.startsWith('@') && k !== '#text');
+
+                for (const [k, v] of Object.entries(value)) {
+                    if (k.startsWith('@')) {
+                        attrs += ` ${k.substring(1)}="${escapeXml(String(v))}"`;
+                    } else if (k === '#text') {
+                        textContent = String(v);
+                    }
+                }
+
+                if (!hasChildren && textContent) {
+                    return `${indentStr}<${safeTagName}${attrs}>${escapeXml(textContent)}</${safeTagName}>\n`;
+                } else if (!hasChildren && !textContent) {
+                    if (attrs) {
+                        return `${indentStr}<${safeTagName}${attrs}/>\n`;
+                    }
+                    return `${indentStr}<${safeTagName}/>\n`;
+                } else {
+                    let xml = `${indentStr}<${safeTagName}${attrs}>\n`;
+                    if (textContent) {
+                        xml += `${'  '.repeat(nextIndent)}${escapeXml(textContent)}\n`;
+                    }
+                    xml += objectContentToXml(value, nextIndent);
+                    xml += `${indentStr}</${safeTagName}>\n`;
+                    return xml;
+                }
+            } else if (Array.isArray(value)) {
+                let xml = '';
+                value.forEach(item => {
+                    xml += objToXml(item, safeTagName, indent);
+                });
+                return xml;
+            } else {
+                return `${indentStr}<${safeTagName}>${escapeXml(String(value))}</${safeTagName}>\n`;
+            }
+        }
+
+        // Sanitize string to be valid XML tag name
+        function sanitizeTagName(name) {
+            // Replace invalid characters with underscore
+            let safe = String(name).replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+            // Ensure it starts with letter or underscore
+            if (!/^[a-zA-Z_]/.test(safe)) {
+                safe = '_' + safe;
+            }
+            return safe || 'item';
+        }
+
+        // Escape special XML characters
+        function escapeXml(str) {
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&apos;');
+        }
+
+        // Convert JavaScript object to YAML string
+        function toYAML(obj) {
+            return jsyaml.dump(obj, {
+                indent: 2,
+                lineWidth: -1,
+                noRefs: true
+            });
+        }
+
+        // Main conversion function
+        function convert() {
+            clearStatus();
+            const source = sourceFormatEl.value;
+            const target = targetFormatEl.value;
+            const input = inputText.value.trim();
+
+            if (!input) {
+                showStatus('Please enter input text to convert.', true);
+                outputText.value = '';
+                return;
+            }
+
+            if (source === target) {
+                showStatus('Source and target formats are the same. No conversion needed.', true);
+                outputText.value = input;
+                return;
+            }
+
+            convertBtn.disabled = true;
+
+            try {
+                // Parse input
+                let data;
+                switch (source) {
+                    case 'json':
+                        data = parseJSON(input);
+                        break;
+                    case 'xml':
+                        data = parseXML(input);
+                        break;
+                    case 'yaml':
+                        data = parseYAML(input);
+                        break;
+                }
+
+                // Convert to target format
+                let output;
+                switch (target) {
+                    case 'json':
+                        output = toJSON(data);
+                        break;
+                    case 'xml':
+                        output = toXML(data);
+                        break;
+                    case 'yaml':
+                        output = toYAML(data);
+                        break;
+                }
+
+                outputText.value = output;
+                showStatus(`Converted ${source.toUpperCase()} to ${target.toUpperCase()} successfully.`, false);
+                savePreferences();
+
+            } catch (error) {
+                console.error('Conversion error:', error);
+                showStatus(`Error: ${error.message}`, true);
+                outputText.value = '';
+            } finally {
+                convertBtn.disabled = false;
+            }
+        }
+
+        // Swap source and target formats
+        function swapFormats() {
+            const temp = sourceFormatEl.value;
+            sourceFormatEl.value = targetFormatEl.value;
+            targetFormatEl.value = temp;
+
+            // Also swap input and output if output has content
+            if (outputText.value.trim()) {
+                const tempText = inputText.value;
+                inputText.value = outputText.value;
+                outputText.value = tempText;
+            }
+
+            clearStatus();
+            savePreferences();
+        }
+
+        // Clear all fields
+        function clearAll() {
+            inputText.value = '';
+            outputText.value = '';
+            fileInput.value = '';
+            clearStatus();
+        }
+
+        // Copy output to clipboard
+        async function copyOutput() {
+            const text = outputText.value;
+            if (!text) {
+                showStatus('No output to copy.', true);
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(text);
+                showStatus('Output copied to clipboard!', false);
+            } catch (error) {
+                // Fallback for older browsers
+                outputText.select();
+                document.execCommand('copy');
+                showStatus('Output copied to clipboard!', false);
+            }
+        }
+
+        // Handle file upload
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validate file size
+            if (file.size > MAX_FILE_SIZE) {
+                showStatus(`File too large: ${(file.size / (1024 * 1024)).toFixed(2)} MB. Maximum 10 MB.`, true);
+                fileInput.value = '';
+                return;
+            }
+
+            // Detect format from extension
+            const ext = file.name.split('.').pop().toLowerCase();
+            let format;
+            if (ext === 'json') format = 'json';
+            else if (ext === 'xml') format = 'xml';
+            else if (ext === 'yaml' || ext === 'yml') format = 'yaml';
+            else {
+                showStatus('Unsupported file type. Use .json, .xml, .yaml, or .yml files.', true);
+                fileInput.value = '';
+                return;
+            }
+
+            try {
+                const text = await file.text();
+                inputText.value = text;
+                sourceFormatEl.value = format;
+                clearStatus();
+                showStatus(`Loaded ${file.name} (${format.toUpperCase()})`, false);
+                savePreferences();
+            } catch (error) {
+                showStatus(`Error reading file: ${error.message}`, true);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPreferences();
+
+            // Event listeners
+            convertBtn.addEventListener('click', convert);
+            swapBtn.addEventListener('click', swapFormats);
+            clearBtn.addEventListener('click', clearAll);
+            copyBtn.addEventListener('click', copyOutput);
+            fileInput.addEventListener('change', handleFileUpload);
+
+            // Save preferences on format change
+            sourceFormatEl.addEventListener('change', savePreferences);
+            targetFormatEl.addEventListener('change', savePreferences);
+
+            // Convert on Ctrl/Cmd + Enter
+            inputText.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    convert();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

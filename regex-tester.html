@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Regex Tester</title>
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="common-styles.css">
+    <style>
+        .pattern-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-family: monospace;
+            font-size: 1.1rem;
+        }
+        .pattern-input-wrapper input {
+            flex: 1;
+            font-family: monospace;
+            margin-bottom: 0;
+        }
+        .pattern-delimiter {
+            color: var(--pico-muted-color);
+            font-size: 1.2rem;
+        }
+        .flags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        .flags-container label {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            cursor: pointer;
+            margin-bottom: 0;
+        }
+        .flags-container input[type="checkbox"] {
+            margin: 0;
+            width: auto;
+        }
+        .common-patterns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+        .common-patterns button {
+            font-size: 0.85rem;
+            padding: 0.35rem 0.75rem;
+        }
+        #testString {
+            font-family: monospace;
+            min-height: 150px;
+            resize: vertical;
+        }
+        #highlightedOutput {
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-word;
+            padding: 1rem;
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            background: var(--pico-card-background-color);
+            min-height: 100px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        #highlightedOutput mark {
+            background-color: #ffeb3b;
+            color: #000;
+            padding: 0 2px;
+            border-radius: 2px;
+        }
+        #highlightedOutput mark.alt {
+            background-color: #90caf9;
+        }
+        .match-count {
+            font-weight: bold;
+            margin: 1rem 0;
+        }
+        .match-count.success {
+            color: #4caf50;
+        }
+        .match-count.no-match {
+            color: #f44336;
+        }
+        .matches-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .match-item {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            background: var(--pico-card-background-color);
+        }
+        .match-item strong {
+            color: #6b8dd6;
+        }
+        .match-item code {
+            background: rgba(107, 141, 214, 0.1);
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .group-item {
+            margin-left: 1rem;
+            color: var(--pico-muted-color);
+        }
+        #replacement {
+            font-family: monospace;
+        }
+        #replaceResult {
+            font-family: monospace;
+            min-height: 100px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .status-message {
+            padding: 0.75rem 1rem;
+            border-radius: var(--pico-border-radius);
+            margin: 0.5rem 0;
+        }
+        .status-message.error {
+            background-color: rgba(244, 67, 54, 0.1);
+            color: #c62828;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+        .status-message.info {
+            background-color: rgba(33, 150, 243, 0.1);
+            color: #1565c0;
+            border: 1px solid rgba(33, 150, 243, 0.3);
+        }
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        #copyMatchesBtn {
+            background-color: #4caf50;
+            border-color: #4caf50;
+        }
+        #copyMatchesBtn:hover {
+            background-color: #388e3c;
+            border-color: #388e3c;
+        }
+        #copyMatchesBtn:disabled {
+            background-color: #81c784;
+            border-color: #81c784;
+        }
+        @media (max-width: 600px) {
+            .flags-container {
+                gap: 0.5rem;
+            }
+            .flags-container label {
+                flex: 1 1 45%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
+        <hgroup>
+            <h1>Regex Tester</h1>
+            <p>Test regular expressions with match highlighting, capture groups, and common patterns.</p>
+        </hgroup>
+
+        <section>
+            <fieldset>
+                <legend>Pattern</legend>
+                <div class="pattern-input-wrapper">
+                    <span class="pattern-delimiter">/</span>
+                    <input type="text" id="patternInput" placeholder="Enter regex pattern (e.g., \w+@\w+\.\w+)" aria-label="Regular expression pattern">
+                    <span class="pattern-delimiter">/</span>
+                </div>
+            </fieldset>
+
+            <div id="patternStatus"></div>
+
+            <div class="flags-container" role="group" aria-label="Regex flags">
+                <label><input type="checkbox" id="flagG" checked> <code>g</code> global</label>
+                <label><input type="checkbox" id="flagI"> <code>i</code> case insensitive</label>
+                <label><input type="checkbox" id="flagM"> <code>m</code> multiline</label>
+                <label><input type="checkbox" id="flagS"> <code>s</code> dotall</label>
+                <label><input type="checkbox" id="flagU"> <code>u</code> unicode</label>
+                <label><input type="checkbox" id="flagY"> <code>y</code> sticky</label>
+            </div>
+
+            <details>
+                <summary>Common Patterns</summary>
+                <div class="common-patterns">
+                    <button type="button" data-pattern="[\w.+-]+@[\w.-]+\.[a-z]{2,}" data-flags="gi">Email</button>
+                    <button type="button" data-pattern="https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)" data-flags="gi">URL</button>
+                    <button type="button" data-pattern="\(?([0-9]{3})\)?[-.\s]?([0-9]{3})[-.\s]?([0-9]{4})" data-flags="g">Phone (US)</button>
+                    <button type="button" data-pattern="\d{4}-\d{2}-\d{2}" data-flags="g">Date (YYYY-MM-DD)</button>
+                    <button type="button" data-pattern="\b(?:\d{1,3}\.){3}\d{1,3}\b" data-flags="g">IP Address</button>
+                    <button type="button" data-pattern="#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})" data-flags="g">Hex Color</button>
+                </div>
+            </details>
+
+            <fieldset style="margin-top: 1rem;">
+                <legend>Test String</legend>
+                <textarea id="testString" placeholder="Enter text to test against the regex pattern..." aria-label="Test string"></textarea>
+            </fieldset>
+
+            <div class="action-buttons">
+                <button type="button" id="testBtn">Test</button>
+                <button type="button" id="clearBtn" style="background-color: #9e9e9e; border-color: #9e9e9e;">Clear</button>
+            </div>
+        </section>
+
+        <hr style="margin: 2rem 0;">
+
+        <section id="resultsSection" style="display: none;">
+            <h2>Results</h2>
+
+            <div id="matchCount" class="match-count" aria-live="polite"></div>
+
+            <h3>Highlighted Matches</h3>
+            <div id="highlightedOutput" aria-label="Highlighted matches"></div>
+
+            <h3 style="margin-top: 1.5rem;">Match Details</h3>
+            <div id="matchesList" class="matches-list result"></div>
+
+            <div class="action-buttons">
+                <button type="button" id="copyMatchesBtn" disabled>Copy Matches as JSON</button>
+            </div>
+        </section>
+
+        <hr style="margin: 2rem 0;">
+
+        <section>
+            <h2>Replace</h2>
+            <fieldset>
+                <legend>Replacement</legend>
+                <label for="replacement">Replace with</label>
+                <input type="text" id="replacement" placeholder="Replacement text (use $1, $2 for groups)" aria-label="Replacement text">
+            </fieldset>
+            <button type="button" id="replaceBtn">Replace All</button>
+
+            <div id="replaceResultSection" style="display: none; margin-top: 1rem;">
+                <h3>Replacement Result</h3>
+                <div id="replaceResult" class="result"></div>
+                <button type="button" id="copyReplaceBtn" style="margin-top: 0.5rem;">Copy Result</button>
+            </div>
+        </section>
+
+        <p style="margin-top: 2rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
+    </main>
+
+    <script>
+        // DOM elements
+        const patternInput = document.getElementById('patternInput');
+        const patternStatus = document.getElementById('patternStatus');
+        const testString = document.getElementById('testString');
+        const testBtn = document.getElementById('testBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const resultsSection = document.getElementById('resultsSection');
+        const matchCount = document.getElementById('matchCount');
+        const highlightedOutput = document.getElementById('highlightedOutput');
+        const matchesList = document.getElementById('matchesList');
+        const copyMatchesBtn = document.getElementById('copyMatchesBtn');
+        const replacement = document.getElementById('replacement');
+        const replaceBtn = document.getElementById('replaceBtn');
+        const replaceResultSection = document.getElementById('replaceResultSection');
+        const replaceResult = document.getElementById('replaceResult');
+        const copyReplaceBtn = document.getElementById('copyReplaceBtn');
+
+        // Flag checkboxes
+        const flagG = document.getElementById('flagG');
+        const flagI = document.getElementById('flagI');
+        const flagM = document.getElementById('flagM');
+        const flagS = document.getElementById('flagS');
+        const flagU = document.getElementById('flagU');
+        const flagY = document.getElementById('flagY');
+
+        // State for storing matches for JSON export
+        let currentMatches = [];
+        let debounceTimer = null;
+
+        // LocalStorage keys
+        const STORAGE_KEY = 'regex-tester-state';
+
+        // Get current flags string
+        function getFlags() {
+            let flags = '';
+            if (flagG.checked) flags += 'g';
+            if (flagI.checked) flags += 'i';
+            if (flagM.checked) flags += 'm';
+            if (flagS.checked) flags += 's';
+            if (flagU.checked) flags += 'u';
+            if (flagY.checked) flags += 'y';
+            return flags;
+        }
+
+        // Set flags from string
+        function setFlags(flagStr) {
+            flagG.checked = flagStr.includes('g');
+            flagI.checked = flagStr.includes('i');
+            flagM.checked = flagStr.includes('m');
+            flagS.checked = flagStr.includes('s');
+            flagU.checked = flagStr.includes('u');
+            flagY.checked = flagStr.includes('y');
+        }
+
+        // Validate regex pattern
+        function validatePattern(pattern, flags) {
+            try {
+                new RegExp(pattern, flags);
+                return { valid: true };
+            } catch (e) {
+                return { valid: false, error: e.message };
+            }
+        }
+
+        // Show status message
+        function showPatternStatus(message, isError) {
+            patternStatus.innerHTML = `<div class="status-message ${isError ? 'error' : 'info'}">${escapeHtml(message)}</div>`;
+        }
+
+        // Clear status
+        function clearPatternStatus() {
+            patternStatus.innerHTML = '';
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Perform regex test with timeout protection
+        function performTest() {
+            const pattern = patternInput.value;
+            const text = testString.value;
+            const flags = getFlags();
+
+            // Clear previous results
+            currentMatches = [];
+            copyMatchesBtn.disabled = true;
+
+            // Check for empty pattern
+            if (!pattern) {
+                clearPatternStatus();
+                resultsSection.style.display = 'none';
+                return;
+            }
+
+            // Validate pattern
+            const validation = validatePattern(pattern, flags);
+            if (!validation.valid) {
+                showPatternStatus(`Syntax Error: ${validation.error}`, true);
+                resultsSection.style.display = 'none';
+                return;
+            }
+
+            clearPatternStatus();
+
+            // Check for empty test string
+            if (!text) {
+                showPatternStatus('Enter a test string to find matches', false);
+                resultsSection.style.display = 'none';
+                return;
+            }
+
+            // Warn for large text
+            if (text.length > 100 * 1024) {
+                showPatternStatus('Warning: Large text input may cause performance issues', false);
+            }
+
+            // Create regex and find matches with timeout
+            try {
+                const regex = new RegExp(pattern, flags);
+                const startTime = performance.now();
+                const matches = [];
+
+                if (flags.includes('g')) {
+                    let match;
+                    while ((match = regex.exec(text)) !== null) {
+                        // Timeout protection: abort if taking too long
+                        if (performance.now() - startTime > 1000) {
+                            showPatternStatus('Operation timed out: Regex is taking too long (possible catastrophic backtracking)', true);
+                            resultsSection.style.display = 'none';
+                            return;
+                        }
+
+                        matches.push({
+                            fullMatch: match[0],
+                            index: match.index,
+                            endIndex: match.index + match[0].length,
+                            groups: match.slice(1).map((g, i) => ({
+                                index: i + 1,
+                                value: g === undefined ? null : g
+                            }))
+                        });
+
+                        // Prevent infinite loop for zero-length matches
+                        if (match[0].length === 0) {
+                            regex.lastIndex++;
+                        }
+                    }
+                } else {
+                    const match = regex.exec(text);
+                    if (match) {
+                        matches.push({
+                            fullMatch: match[0],
+                            index: match.index,
+                            endIndex: match.index + match[0].length,
+                            groups: match.slice(1).map((g, i) => ({
+                                index: i + 1,
+                                value: g === undefined ? null : g
+                            }))
+                        });
+                    }
+                }
+
+                currentMatches = matches;
+                displayResults(text, matches);
+
+            } catch (e) {
+                showPatternStatus(`Error: ${e.message}`, true);
+                resultsSection.style.display = 'none';
+            }
+
+            // Save state
+            saveState();
+        }
+
+        // Display results
+        function displayResults(text, matches) {
+            resultsSection.style.display = 'block';
+
+            // Match count
+            if (matches.length === 0) {
+                matchCount.textContent = 'No matches found';
+                matchCount.className = 'match-count no-match';
+                highlightedOutput.textContent = text;
+                matchesList.innerHTML = '<p>No matches to display.</p>';
+                copyMatchesBtn.disabled = true;
+                return;
+            }
+
+            matchCount.textContent = `${matches.length} match${matches.length === 1 ? '' : 'es'} found`;
+            matchCount.className = 'match-count success';
+            copyMatchesBtn.disabled = false;
+
+            // Highlighted output
+            let highlighted = '';
+            let lastIndex = 0;
+            let isAlt = false;
+
+            // Sort matches by index to handle properly
+            const sortedMatches = [...matches].sort((a, b) => a.index - b.index);
+
+            for (const match of sortedMatches) {
+                // Add text before match
+                highlighted += escapeHtml(text.substring(lastIndex, match.index));
+                // Add highlighted match
+                highlighted += `<mark class="${isAlt ? 'alt' : ''}">${escapeHtml(match.fullMatch)}</mark>`;
+                lastIndex = match.endIndex;
+                isAlt = !isAlt;
+            }
+            // Add remaining text
+            highlighted += escapeHtml(text.substring(lastIndex));
+            highlightedOutput.innerHTML = highlighted;
+
+            // Match details list
+            let listHtml = '';
+            matches.forEach((match, i) => {
+                listHtml += `<div class="match-item">
+                    <strong>Match ${i + 1}</strong> (index ${match.index}-${match.endIndex}):<br>
+                    Full match: <code>${escapeHtml(match.fullMatch) || '(empty string)'}</code>`;
+
+                if (match.groups.length > 0) {
+                    listHtml += '<br>Groups:';
+                    match.groups.forEach(group => {
+                        const value = group.value === null ? '(no match)' : (group.value === '' ? '(empty)' : escapeHtml(group.value));
+                        listHtml += `<div class="group-item">$${group.index}: <code>${value}</code></div>`;
+                    });
+                } else {
+                    listHtml += '<br><span class="group-item">No capture groups</span>';
+                }
+
+                listHtml += '</div>';
+            });
+            matchesList.innerHTML = listHtml;
+        }
+
+        // Perform replacement
+        function performReplace() {
+            const pattern = patternInput.value;
+            const text = testString.value;
+            const replaceText = replacement.value;
+            const flags = getFlags();
+
+            if (!pattern) {
+                showPatternStatus('Enter a pattern first', true);
+                return;
+            }
+
+            const validation = validatePattern(pattern, flags);
+            if (!validation.valid) {
+                showPatternStatus(`Syntax Error: ${validation.error}`, true);
+                return;
+            }
+
+            if (!text) {
+                showPatternStatus('Enter a test string first', true);
+                return;
+            }
+
+            try {
+                const regex = new RegExp(pattern, flags);
+                const result = text.replace(regex, replaceText);
+
+                replaceResult.textContent = result;
+                replaceResultSection.style.display = 'block';
+            } catch (e) {
+                showPatternStatus(`Replace Error: ${e.message}`, true);
+            }
+        }
+
+        // Copy matches as JSON
+        async function copyMatchesAsJson() {
+            if (currentMatches.length === 0) return;
+
+            const json = JSON.stringify(currentMatches, null, 2);
+
+            try {
+                await navigator.clipboard.writeText(json);
+                const originalText = copyMatchesBtn.textContent;
+                copyMatchesBtn.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyMatchesBtn.textContent = originalText;
+                }, 2000);
+            } catch (e) {
+                showPatternStatus('Failed to copy to clipboard', true);
+            }
+        }
+
+        // Copy replace result
+        async function copyReplaceResult() {
+            const text = replaceResult.textContent;
+
+            try {
+                await navigator.clipboard.writeText(text);
+                const originalText = copyReplaceBtn.textContent;
+                copyReplaceBtn.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyReplaceBtn.textContent = originalText;
+                }, 2000);
+            } catch (e) {
+                showPatternStatus('Failed to copy to clipboard', true);
+            }
+        }
+
+        // Clear all inputs
+        function clearAll() {
+            patternInput.value = '';
+            testString.value = '';
+            replacement.value = '';
+            setFlags('g');
+            clearPatternStatus();
+            resultsSection.style.display = 'none';
+            replaceResultSection.style.display = 'none';
+            currentMatches = [];
+            copyMatchesBtn.disabled = true;
+            localStorage.removeItem(STORAGE_KEY);
+        }
+
+        // Apply common pattern
+        function applyCommonPattern(pattern, flags) {
+            patternInput.value = pattern;
+            setFlags(flags);
+            performTest();
+        }
+
+        // Save state to localStorage
+        function saveState() {
+            const state = {
+                pattern: patternInput.value,
+                flags: getFlags(),
+                testString: testString.value,
+                replacement: replacement.value,
+                timestamp: Date.now()
+            };
+
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch (e) {
+                console.warn('Failed to save state to localStorage:', e);
+            }
+        }
+
+        // Load state from localStorage
+        function loadState() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (!stored) return;
+
+                const state = JSON.parse(stored);
+
+                // Check if data is too old (30 days)
+                if (Date.now() - state.timestamp > 30 * 24 * 60 * 60 * 1000) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    return;
+                }
+
+                if (state.pattern) patternInput.value = state.pattern;
+                if (state.flags) setFlags(state.flags);
+                if (state.testString) testString.value = state.testString;
+                if (state.replacement) replacement.value = state.replacement;
+
+                // Auto-test if there's both pattern and test string
+                if (state.pattern && state.testString) {
+                    performTest();
+                }
+            } catch (e) {
+                console.warn('Failed to load state from localStorage:', e);
+            }
+        }
+
+        // Debounced test (for live validation)
+        function debouncedValidate() {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                const pattern = patternInput.value;
+                const flags = getFlags();
+
+                if (!pattern) {
+                    clearPatternStatus();
+                    return;
+                }
+
+                const validation = validatePattern(pattern, flags);
+                if (!validation.valid) {
+                    showPatternStatus(`Syntax Error: ${validation.error}`, true);
+                } else {
+                    clearPatternStatus();
+                }
+            }, 300);
+        }
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Button clicks
+            testBtn.addEventListener('click', performTest);
+            clearBtn.addEventListener('click', clearAll);
+            replaceBtn.addEventListener('click', performReplace);
+            copyMatchesBtn.addEventListener('click', copyMatchesAsJson);
+            copyReplaceBtn.addEventListener('click', copyReplaceResult);
+
+            // Common patterns
+            document.querySelectorAll('.common-patterns button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    applyCommonPattern(btn.dataset.pattern, btn.dataset.flags);
+                });
+            });
+
+            // Live validation on pattern input
+            patternInput.addEventListener('input', debouncedValidate);
+
+            // Flag changes trigger validation
+            [flagG, flagI, flagM, flagS, flagU, flagY].forEach(flag => {
+                flag.addEventListener('change', debouncedValidate);
+            });
+
+            // Enter key triggers test
+            patternInput.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') performTest();
+            });
+
+            testString.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter' && e.ctrlKey) performTest();
+            });
+
+            replacement.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') performReplace();
+            });
+
+            // Load saved state
+            loadState();
+        });
+    </script>
+</body>
+</html>
