@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON/XML/YAML Formatter</title>
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="common-styles.css">
+    <style>
+        .formatter-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--pico-muted-border-color);
+        }
+
+        .formatter-tab {
+            padding: 0.75rem 1rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--pico-muted-color);
+            transition: all 0.2s;
+        }
+
+        .formatter-tab:hover {
+            background: none;
+            color: #6b8dd6;
+        }
+
+        .formatter-tab.active {
+            background: none;
+            color: #6b8dd6;
+            border-bottom: 2px solid #6b8dd6;
+            padding-bottom: calc(0.75rem - 2px);
+        }
+
+        .formatter-tab.active:hover {
+            background: none;
+        }
+
+        .textarea-container {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        textarea {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            min-height: 250px;
+            padding: 1rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .output-textarea {
+            background: var(--pico-card-background-color);
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+        }
+
+        .button-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .button-row button {
+            flex: 0 1 auto;
+        }
+
+        .status-message {
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            border-radius: var(--pico-border-radius);
+            border: 1px solid var(--pico-muted-border-color);
+            font-size: 0.95rem;
+        }
+
+        .status-message.success {
+            background-color: rgba(76, 175, 80, 0.1);
+            border-color: #4caf50;
+            color: #2e7d32;
+        }
+
+        .status-message.error {
+            background-color: rgba(244, 67, 54, 0.1);
+            border-color: #f44336;
+            color: #c62828;
+        }
+
+        .char-count {
+            font-size: 0.85rem;
+            color: var(--pico-muted-color);
+            margin-top: 0.5rem;
+        }
+
+        .indent-options {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .indent-options label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0;
+        }
+
+        .indent-options input[type="radio"] {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
+        <hgroup>
+            <h1>JSON/XML/YAML Formatter</h1>
+            <p>Validate, prettify, or minify JSON, XML, and YAML data with syntax highlighting.</p>
+        </hgroup>
+
+        <!-- Format tabs -->
+        <div class="formatter-tabs">
+            <button class="formatter-tab active" data-format="json">JSON</button>
+            <button class="formatter-tab" data-format="xml">XML</button>
+            <button class="formatter-tab" data-format="yaml">YAML</button>
+        </div>
+
+        <!-- Input section -->
+        <label for="inputText">Input</label>
+        <div class="textarea-container">
+            <textarea id="inputText" placeholder="Paste your JSON, XML, or YAML data here..."></textarea>
+            <div class="char-count"><span id="inputCharCount">0</span> characters, <span id="inputLineCount">0</span> lines</div>
+        </div>
+
+        <!-- Indent options -->
+        <div class="indent-options">
+            <label>
+                <input type="radio" name="indent" value="2" checked>
+                Prettify (2 spaces)
+            </label>
+            <label>
+                <input type="radio" name="indent" value="4">
+                Prettify (4 spaces)
+            </label>
+            <label>
+                <input type="radio" name="indent" value="tab">
+                Prettify (tabs)
+            </label>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="button-row">
+            <button id="prettifyBtn">Prettify</button>
+            <button id="minifyBtn">Minify</button>
+            <button id="copyOutputBtn">Copy Output</button>
+        </div>
+
+        <!-- Status message -->
+        <article id="statusMessage" class="status-message" style="display: none;"></article>
+
+        <!-- Output section -->
+        <label for="outputText">Output</label>
+        <div class="textarea-container">
+            <textarea id="outputText" class="output-textarea" readonly placeholder="Formatted output will appear here..."></textarea>
+            <div class="char-count"><span id="outputCharCount">0</span> characters, <span id="outputLineCount">0</span> lines</div>
+        </div>
+
+        <p style="margin-top: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script>
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+        const WARNING_SIZE = 5 * 1024 * 1024; // 5 MB
+
+        const state = {
+            currentFormat: 'json',
+            inputText: '',
+            outputText: '',
+            lastError: null
+        };
+
+        // DOM elements
+        const formatTabs = document.querySelectorAll('.formatter-tab');
+        const inputText = document.getElementById('inputText');
+        const outputText = document.getElementById('outputText');
+        const prettifyBtn = document.getElementById('prettifyBtn');
+        const minifyBtn = document.getElementById('minifyBtn');
+        const copyOutputBtn = document.getElementById('copyOutputBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const inputCharCount = document.getElementById('inputCharCount');
+        const inputLineCount = document.getElementById('inputLineCount');
+        const outputCharCount = document.getElementById('outputCharCount');
+        const outputLineCount = document.getElementById('outputLineCount');
+
+        // Load preferences from localStorage
+        function loadPreferences() {
+            const saved = localStorage.getItem('formatterPrefs');
+            if (saved) {
+                try {
+                    const prefs = JSON.parse(saved);
+                    state.currentFormat = prefs.format || 'json';
+                    const indentRadio = document.querySelector(`input[name="indent"][value="${prefs.indent || '2'}"]`);
+                    if (indentRadio) indentRadio.checked = true;
+                } catch (e) {
+                    console.error('Error loading preferences:', e);
+                }
+            }
+        }
+
+        // Save preferences to localStorage
+        function savePreferences() {
+            const indent = document.querySelector('input[name="indent"]:checked').value;
+            localStorage.setItem('formatterPrefs', JSON.stringify({
+                format: state.currentFormat,
+                indent: indent
+            }));
+        }
+
+        // Update character and line counts
+        function updateCharCounts() {
+            const inputChars = inputText.value.length;
+            const inputLines = inputText.value ? inputText.value.split('\n').length : 0;
+            const outputChars = outputText.value.length;
+            const outputLines = outputText.value ? outputText.value.split('\n').length : 0;
+
+            inputCharCount.textContent = inputChars.toLocaleString();
+            inputLineCount.textContent = inputLines;
+            outputCharCount.textContent = outputChars.toLocaleString();
+            outputLineCount.textContent = outputLines;
+        }
+
+        // Show status message
+        function showStatus(message, isError = false) {
+            statusMessage.textContent = message;
+            statusMessage.className = isError ? 'status-message error' : 'status-message success';
+            statusMessage.style.display = 'block';
+
+            if (!isError) {
+                setTimeout(() => {
+                    statusMessage.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Validate JSON
+        function validateJSON(text) {
+            try {
+                JSON.parse(text);
+                return { valid: true };
+            } catch (error) {
+                return {
+                    valid: false,
+                    error: `Invalid JSON: ${error.message}`
+                };
+            }
+        }
+
+        // Validate XML
+        function validateXML(text) {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(text, 'application/xml');
+
+                // Check for parsing errors
+                if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                    const errorMsg = xmlDoc.getElementsByTagName('parsererror')[0].textContent;
+                    return {
+                        valid: false,
+                        error: `XML Parse Error: ${errorMsg}`
+                    };
+                }
+
+                return { valid: true };
+            } catch (error) {
+                return {
+                    valid: false,
+                    error: `XML Error: ${error.message}`
+                };
+            }
+        }
+
+        // Validate YAML
+        function validateYAML(text) {
+            try {
+                jsyaml.load(text);
+                return { valid: true };
+            } catch (error) {
+                return {
+                    valid: false,
+                    error: `YAML Error: ${error.message}`
+                };
+            }
+        }
+
+        // Validate input
+        function validate(text, format) {
+            if (!text.trim()) {
+                return { valid: false, error: 'Input is empty' };
+            }
+
+            if (text.length > MAX_FILE_SIZE) {
+                return { valid: false, error: `Input exceeds maximum size of 10 MB` };
+            }
+
+            if (text.length > WARNING_SIZE) {
+                console.warn('Large input detected, formatting may take a moment');
+            }
+
+            switch (format) {
+                case 'json':
+                    return validateJSON(text);
+                case 'xml':
+                    return validateXML(text);
+                case 'yaml':
+                    return validateYAML(text);
+                default:
+                    return { valid: false, error: 'Unknown format' };
+            }
+        }
+
+        // Format JSON
+        function formatJSON(text, indent) {
+            try {
+                const parsed = JSON.parse(text);
+                const indentStr = indent === 'tab' ? '\t' : ' '.repeat(parseInt(indent));
+                return JSON.stringify(parsed, null, indentStr);
+            } catch (error) {
+                throw new Error(`JSON formatting error: ${error.message}`);
+            }
+        }
+
+        // Format XML
+        function formatXML(text, indent) {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(text, 'application/xml');
+
+                if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                    throw new Error('Invalid XML');
+                }
+
+                const indentStr = indent === 'tab' ? '\t' : ' '.repeat(parseInt(indent));
+                return formatXMLNode(xmlDoc.documentElement, 0, indentStr);
+            } catch (error) {
+                throw new Error(`XML formatting error: ${error.message}`);
+            }
+        }
+
+        // Helper function to format XML recursively
+        function formatXMLNode(node, level, indent) {
+            let result = '';
+            const currentIndent = indent.repeat(level);
+            const nextIndent = indent.repeat(level + 1);
+
+            if (node.nodeType === 1) { // Element node
+                result += currentIndent + '<' + node.tagName;
+
+                // Add attributes
+                for (let i = 0; i < node.attributes.length; i++) {
+                    const attr = node.attributes[i];
+                    result += ` ${attr.name}="${attr.value}"`;
+                }
+
+                if (node.childNodes.length === 0) {
+                    result += ' />\n';
+                } else {
+                    result += '>\n';
+
+                    // Format children
+                    for (let i = 0; i < node.childNodes.length; i++) {
+                        const child = node.childNodes[i];
+                        if (child.nodeType === 1) { // Element node
+                            result += formatXMLNode(child, level + 1, indent);
+                        } else if (child.nodeType === 3 && child.nodeValue.trim()) { // Text node with content
+                            result += nextIndent + child.nodeValue.trim() + '\n';
+                        }
+                    }
+
+                    result += currentIndent + '</' + node.tagName + '>\n';
+                }
+            }
+
+            return result;
+        }
+
+        // Format YAML
+        function formatYAML(text, indent) {
+            try {
+                const parsed = jsyaml.load(text);
+                const indentNum = indent === 'tab' ? 2 : parseInt(indent); // js-yaml uses numeric indent
+                return jsyaml.dump(parsed, { indent: indentNum });
+            } catch (error) {
+                throw new Error(`YAML formatting error: ${error.message}`);
+            }
+        }
+
+        // Minify JSON
+        function minifyJSON(text) {
+            try {
+                const parsed = JSON.parse(text);
+                return JSON.stringify(parsed);
+            } catch (error) {
+                throw new Error(`JSON minify error: ${error.message}`);
+            }
+        }
+
+        // Minify XML
+        function minifyXML(text) {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(text, 'application/xml');
+
+                if (xmlDoc.getElementsByTagName('parsererror').length > 0) {
+                    throw new Error('Invalid XML');
+                }
+
+                const serializer = new XMLSerializer();
+                let result = serializer.serializeToString(xmlDoc);
+                // Remove whitespace between tags
+                result = result.replace(/>\s+</g, '><');
+                return result;
+            } catch (error) {
+                throw new Error(`XML minify error: ${error.message}`);
+            }
+        }
+
+        // Minify YAML
+        function minifyYAML(text) {
+            try {
+                const parsed = jsyaml.load(text);
+                return jsyaml.dump(parsed, { indent: 1 }).replace(/\n/g, ' ').trim();
+            } catch (error) {
+                throw new Error(`YAML minify error: ${error.message}`);
+            }
+        }
+
+        // Prettify handler
+        function handlePrettify() {
+            const text = inputText.value.trim();
+
+            const validation = validate(text, state.currentFormat);
+            if (!validation.valid) {
+                showStatus(validation.error, true);
+                return;
+            }
+
+            try {
+                const indent = document.querySelector('input[name="indent"]:checked').value;
+                let formatted;
+
+                switch (state.currentFormat) {
+                    case 'json':
+                        formatted = formatJSON(text, indent);
+                        break;
+                    case 'xml':
+                        formatted = formatXML(text, indent);
+                        break;
+                    case 'yaml':
+                        formatted = formatYAML(text, indent);
+                        break;
+                }
+
+                outputText.value = formatted;
+                updateCharCounts();
+                showStatus(`✓ Valid ${state.currentFormat.toUpperCase()} - Formatted successfully`);
+            } catch (error) {
+                showStatus(error.message, true);
+            }
+        }
+
+        // Minify handler
+        function handleMinify() {
+            const text = inputText.value.trim();
+
+            const validation = validate(text, state.currentFormat);
+            if (!validation.valid) {
+                showStatus(validation.error, true);
+                return;
+            }
+
+            try {
+                let minified;
+
+                switch (state.currentFormat) {
+                    case 'json':
+                        minified = minifyJSON(text);
+                        break;
+                    case 'xml':
+                        minified = minifyXML(text);
+                        break;
+                    case 'yaml':
+                        minified = minifyYAML(text);
+                        break;
+                }
+
+                outputText.value = minified;
+                updateCharCounts();
+                showStatus(`✓ Valid ${state.currentFormat.toUpperCase()} - Minified successfully`);
+            } catch (error) {
+                showStatus(error.message, true);
+            }
+        }
+
+        // Copy output handler
+        async function handleCopyOutput() {
+            const text = outputText.value;
+
+            if (!text) {
+                showStatus('Nothing to copy - format or minify first', true);
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(text);
+                showStatus('Copied to clipboard!');
+            } catch (error) {
+                showStatus(`Copy failed: ${error.message}`, true);
+            }
+        }
+
+        // Format tab change handler
+        function handleFormatChange(format) {
+            state.currentFormat = format;
+            outputText.value = '';
+            updateCharCounts();
+            savePreferences();
+
+            // Update active tab styling
+            formatTabs.forEach(tab => {
+                if (tab.dataset.format === format) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+        }
+
+        // Event listeners
+        formatTabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                handleFormatChange(tab.dataset.format);
+            });
+        });
+
+        prettifyBtn.addEventListener('click', handlePrettify);
+        minifyBtn.addEventListener('click', handleMinify);
+        copyOutputBtn.addEventListener('click', handleCopyOutput);
+
+        inputText.addEventListener('input', updateCharCounts);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Don't trigger when typing in textareas
+            if (e.target.tagName === 'TEXTAREA') {
+                return;
+            }
+
+            const isMeta = e.metaKey || e.ctrlKey;
+            if (isMeta && e.key === 'Enter') {
+                e.preventDefault();
+                handlePrettify();
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadPreferences();
+            handleFormatChange(state.currentFormat);
+            updateCharCounts();
+        });
+    </script>
+</body>
+</html>
