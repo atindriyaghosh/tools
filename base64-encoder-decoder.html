@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Base64 Encoder/Decoder</title>
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="common-styles.css">
+    <style>
+        /* Tool-specific styles */
+        .mode-toggle {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .mode-toggle label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            cursor: pointer;
+            margin-bottom: 0;
+        }
+
+        .mode-toggle input[type="radio"] {
+            margin: 0;
+        }
+
+        .swap-btn {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.9rem;
+        }
+
+        .input-type-toggle {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .input-type-toggle label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            cursor: pointer;
+            margin-bottom: 0;
+        }
+
+        .input-type-toggle input[type="radio"] {
+            margin: 0;
+        }
+
+        .upload-area {
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.75rem;
+            border: 2px dashed var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .upload-area:hover,
+        .upload-area.drag-over {
+            border-color: #6b8dd6;
+            background: rgba(107, 141, 214, 0.05);
+        }
+
+        .upload-area p {
+            margin: 0.25rem 0;
+        }
+
+        .upload-area input[type="file"] {
+            display: none;
+        }
+
+        .upload-area .file-info {
+            font-weight: bold;
+            color: #6b8dd6;
+        }
+
+        #textInputSection,
+        #fileInputSection {
+            display: none;
+        }
+
+        #textInputSection.active,
+        #fileInputSection.active {
+            display: block;
+        }
+
+        textarea {
+            font-family: monospace;
+            resize: vertical;
+        }
+
+        #inputText {
+            min-height: 150px;
+        }
+
+        #outputText {
+            min-height: 150px;
+            background: var(--pico-card-background-color);
+        }
+
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .char-count {
+            font-size: 0.85rem;
+            color: var(--pico-muted-color);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .action-buttons button {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        #status {
+            display: none;
+            padding: 0.75rem 1rem;
+            border-radius: var(--pico-border-radius);
+            margin-bottom: 1rem;
+        }
+
+        #status.visible {
+            display: block;
+            background: rgba(107, 141, 214, 0.1);
+            border: 1px solid rgba(107, 141, 214, 0.3);
+        }
+
+        #status[aria-invalid="true"] {
+            background: rgba(214, 107, 107, 0.1);
+            border: 1px solid rgba(214, 107, 107, 0.3);
+            color: #d66b6b;
+        }
+
+        .suggestion {
+            background: rgba(107, 141, 214, 0.1);
+            border: 1px solid rgba(107, 141, 214, 0.3);
+            padding: 0.75rem 1rem;
+            border-radius: var(--pico-border-radius);
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .suggestion.visible {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .suggestion button {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.85rem;
+        }
+
+        #outputSection {
+            display: none;
+        }
+
+        #outputSection.visible {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--pico-muted-border-color);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 0.5rem;
+            display: none;
+        }
+
+        .progress-bar.visible {
+            display: block;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: #6b8dd6;
+            width: 0%;
+            transition: width 0.2s;
+        }
+
+        /* Data URL option */
+        .data-url-option {
+            margin-bottom: 1rem;
+        }
+
+        .data-url-option label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .mime-type-input {
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .mime-type-input.visible {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">&larr; Back to Tools</a></p>
+        <hgroup>
+            <h1>Base64 Encoder/Decoder</h1>
+            <p>Encode text and files to Base64 or decode Base64 back to original format.</p>
+        </hgroup>
+
+        <!-- Mode selection -->
+        <fieldset>
+            <legend>Mode</legend>
+            <div class="mode-toggle">
+                <label>
+                    <input type="radio" name="mode" value="encode" checked>
+                    Encode
+                </label>
+                <label>
+                    <input type="radio" name="mode" value="decode">
+                    Decode
+                </label>
+                <button type="button" class="swap-btn" id="swapBtn" title="Swap input and output">&harr; Swap</button>
+            </div>
+        </fieldset>
+
+        <!-- Input type selection -->
+        <fieldset>
+            <legend>Input Type</legend>
+            <div class="input-type-toggle">
+                <label>
+                    <input type="radio" name="inputType" value="text" checked>
+                    Text
+                </label>
+                <label>
+                    <input type="radio" name="inputType" value="file">
+                    File
+                </label>
+            </div>
+        </fieldset>
+
+        <!-- Auto-detect suggestion -->
+        <div id="suggestion" class="suggestion" role="alert">
+            <span>This looks like Base64. Switch to Decode?</span>
+            <button type="button" id="switchToDecodeBtn">Switch to Decode</button>
+        </div>
+
+        <!-- Text input section -->
+        <section id="textInputSection" class="active">
+            <label for="inputText">Input</label>
+            <textarea id="inputText" placeholder="Enter text to encode or Base64 to decode..."></textarea>
+            <div class="char-count">
+                <span id="inputCharCount">0</span> characters
+            </div>
+        </section>
+
+        <!-- File input section -->
+        <section id="fileInputSection">
+            <div class="upload-area" id="uploadArea">
+                <p>Drop file here or click to upload</p>
+                <p style="font-size: 0.85rem; color: var(--pico-muted-color);">Any file type, max 10 MB</p>
+                <p class="file-info" id="fileInfo" style="display: none;"></p>
+                <input type="file" id="fileInput">
+            </div>
+        </section>
+
+        <!-- Status message -->
+        <article id="status" aria-live="polite"></article>
+
+        <!-- Progress bar -->
+        <div class="progress-bar" id="progressBar">
+            <div class="progress-bar-fill" id="progressFill"></div>
+        </div>
+
+        <!-- Data URL option (for encoding files) -->
+        <div class="data-url-option" id="dataUrlOption" style="display: none;">
+            <label>
+                <input type="checkbox" id="outputDataUrl">
+                Output as Data URL
+            </label>
+            <div class="mime-type-input" id="mimeTypeInput">
+                <input type="text" id="mimeType" placeholder="MIME type (e.g., image/png)" value="">
+            </div>
+        </div>
+
+        <!-- Process button -->
+        <button type="button" id="processBtn">Process</button>
+
+        <!-- Output section -->
+        <section id="outputSection">
+            <div class="output-header">
+                <label for="outputText">Output</label>
+                <span class="char-count"><span id="outputCharCount">0</span> characters</span>
+            </div>
+            <textarea id="outputText" readonly></textarea>
+            <div class="action-buttons">
+                <button type="button" id="copyBtn">Copy Output</button>
+                <button type="button" id="downloadBtn">Download as File</button>
+            </div>
+        </section>
+
+        <p style="margin-top:1rem"><a href="index.html" class="back-link">&larr; Back to Tools</a></p>
+    </main>
+
+    <script>
+        // DOM Elements
+        const modeInputs = document.querySelectorAll('input[name="mode"]');
+        const inputTypeInputs = document.querySelectorAll('input[name="inputType"]');
+        const swapBtn = document.getElementById('swapBtn');
+        const textInputSection = document.getElementById('textInputSection');
+        const fileInputSection = document.getElementById('fileInputSection');
+        const inputText = document.getElementById('inputText');
+        const inputCharCount = document.getElementById('inputCharCount');
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const status = document.getElementById('status');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const dataUrlOption = document.getElementById('dataUrlOption');
+        const outputDataUrl = document.getElementById('outputDataUrl');
+        const mimeTypeInput = document.getElementById('mimeTypeInput');
+        const mimeType = document.getElementById('mimeType');
+        const processBtn = document.getElementById('processBtn');
+        const outputSection = document.getElementById('outputSection');
+        const outputText = document.getElementById('outputText');
+        const outputCharCount = document.getElementById('outputCharCount');
+        const copyBtn = document.getElementById('copyBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const suggestion = document.getElementById('suggestion');
+        const switchToDecodeBtn = document.getElementById('switchToDecodeBtn');
+
+        // State
+        let currentFile = null;
+        let currentFileBytes = null;
+        let lastOutput = '';
+        let lastOutputBytes = null;
+        let detectedMimeType = null;
+
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
+        // localStorage keys
+        const STORAGE_KEY_MODE = 'base64-tool-mode';
+        const STORAGE_KEY_INPUT_TYPE = 'base64-tool-input-type';
+
+        // Initialize from localStorage
+        function initFromStorage() {
+            const savedMode = localStorage.getItem(STORAGE_KEY_MODE);
+            const savedInputType = localStorage.getItem(STORAGE_KEY_INPUT_TYPE);
+
+            if (savedMode) {
+                const modeInput = document.querySelector(`input[name="mode"][value="${savedMode}"]`);
+                if (modeInput) modeInput.checked = true;
+            }
+
+            if (savedInputType) {
+                const typeInput = document.querySelector(`input[name="inputType"][value="${savedInputType}"]`);
+                if (typeInput) typeInput.checked = true;
+            }
+
+            updateUI();
+        }
+
+        // Save preferences to localStorage
+        function saveToStorage() {
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            const inputType = document.querySelector('input[name="inputType"]:checked').value;
+            localStorage.setItem(STORAGE_KEY_MODE, mode);
+            localStorage.setItem(STORAGE_KEY_INPUT_TYPE, inputType);
+        }
+
+        // Show status message
+        function showStatus(message, isError = false) {
+            status.textContent = message;
+            status.className = 'visible';
+            if (isError) {
+                status.setAttribute('aria-invalid', 'true');
+            } else {
+                status.removeAttribute('aria-invalid');
+            }
+        }
+
+        // Hide status message
+        function hideStatus() {
+            status.className = '';
+            status.textContent = '';
+            status.removeAttribute('aria-invalid');
+        }
+
+        // Show/hide progress bar
+        function showProgress(percent) {
+            progressBar.classList.add('visible');
+            progressFill.style.width = percent + '%';
+        }
+
+        function hideProgress() {
+            progressBar.classList.remove('visible');
+            progressFill.style.width = '0%';
+        }
+
+        // Update UI based on current selections
+        function updateUI() {
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            const inputType = document.querySelector('input[name="inputType"]:checked').value;
+
+            // Show/hide input sections
+            if (inputType === 'text') {
+                textInputSection.classList.add('active');
+                fileInputSection.classList.remove('active');
+            } else {
+                textInputSection.classList.remove('active');
+                fileInputSection.classList.add('active');
+            }
+
+            // Show data URL option only when encoding files
+            if (mode === 'encode' && inputType === 'file') {
+                dataUrlOption.style.display = 'block';
+            } else {
+                dataUrlOption.style.display = 'none';
+            }
+
+            // Update button text
+            processBtn.textContent = mode === 'encode' ? 'Encode' : 'Decode';
+
+            saveToStorage();
+        }
+
+        // Check if input looks like Base64
+        function looksLikeBase64(text) {
+            if (!text || text.length < 50) return false;
+
+            // Check for data URL
+            if (text.startsWith('data:')) return true;
+
+            // Strip whitespace and check Base64 pattern
+            const cleanText = text.replace(/\s/g, '');
+            const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
+            return base64Pattern.test(cleanText) && cleanText.length > 50;
+        }
+
+        // Auto-detect Base64 and show suggestion
+        function checkAutoDetect() {
+            const mode = document.querySelector('input[name="mode"]:checked').value;
+            const inputType = document.querySelector('input[name="inputType"]:checked').value;
+
+            if (mode === 'encode' && inputType === 'text' && looksLikeBase64(inputText.value)) {
+                suggestion.classList.add('visible');
+            } else {
+                suggestion.classList.remove('visible');
+            }
+        }
+
+        // Parse data URL and extract MIME type and data
+        function parseDataUrl(dataUrl) {
+            const match = dataUrl.match(/^data:([^;,]+)?(?:;base64)?,(.*)$/);
+            if (match) {
+                return {
+                    mimeType: match[1] || 'application/octet-stream',
+                    data: match[2]
+                };
+            }
+            return null;
+        }
+
+        // Encode text to Base64 (UTF-8 safe)
+        function encodeTextToBase64(text) {
+            const encoder = new TextEncoder();
+            const bytes = encoder.encode(text);
+            let binary = '';
+            for (let i = 0; i < bytes.length; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        }
+
+        // Decode Base64 to text (UTF-8 safe)
+        function decodeBase64ToText(base64) {
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            const decoder = new TextDecoder();
+            return decoder.decode(bytes);
+        }
+
+        // Encode bytes to Base64
+        function encodeBytesToBase64(bytes) {
+            let binary = '';
+            for (let i = 0; i < bytes.length; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        }
+
+        // Decode Base64 to bytes
+        function decodeBase64ToBytes(base64) {
+            const binary = atob(base64);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) {
+                bytes[i] = binary.charCodeAt(i);
+            }
+            return bytes;
+        }
+
+        // Validate Base64 string
+        function validateBase64(text) {
+            const cleanText = text.replace(/\s/g, '');
+
+            // Check for data URL format
+            if (cleanText.startsWith('data:')) {
+                const parsed = parseDataUrl(cleanText);
+                if (!parsed) {
+                    return { valid: false, error: 'Invalid data URL format.' };
+                }
+                return validateBase64(parsed.data);
+            }
+
+            // Check length (must be multiple of 4)
+            if (cleanText.length % 4 !== 0) {
+                return { valid: false, error: 'Invalid Base64: length must be a multiple of 4. Check for missing characters.' };
+            }
+
+            // Check characters
+            const base64Pattern = /^[A-Za-z0-9+/]*={0,2}$/;
+            if (!base64Pattern.test(cleanText)) {
+                return { valid: false, error: 'Invalid Base64: contains invalid characters. Only A-Z, a-z, 0-9, +, /, and = are allowed.' };
+            }
+
+            // Check padding
+            const paddingMatch = cleanText.match(/=+$/);
+            if (paddingMatch && paddingMatch[0].length > 2) {
+                return { valid: false, error: 'Invalid Base64: too much padding. Maximum 2 "=" characters allowed at the end.' };
+            }
+
+            return { valid: true, cleanText };
+        }
+
+        // Format bytes for display
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' bytes';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        // Get file extension from MIME type
+        function getExtensionFromMime(mimeType) {
+            const mimeMap = {
+                'image/png': 'png',
+                'image/jpeg': 'jpg',
+                'image/gif': 'gif',
+                'image/webp': 'webp',
+                'image/svg+xml': 'svg',
+                'application/pdf': 'pdf',
+                'text/plain': 'txt',
+                'text/html': 'html',
+                'text/css': 'css',
+                'application/javascript': 'js',
+                'application/json': 'json',
+                'application/xml': 'xml',
+                'audio/mpeg': 'mp3',
+                'audio/wav': 'wav',
+                'video/mp4': 'mp4',
+                'application/zip': 'zip'
+            };
+            return mimeMap[mimeType] || 'bin';
+        }
+
+        // Process encoding
+        async function processEncode() {
+            const inputType = document.querySelector('input[name="inputType"]:checked').value;
+
+            if (inputType === 'text') {
+                const text = inputText.value;
+                if (!text) {
+                    showStatus('Please enter some text to encode.', true);
+                    return;
+                }
+
+                try {
+                    const base64 = encodeTextToBase64(text);
+                    lastOutput = base64;
+                    lastOutputBytes = null;
+                    outputText.value = base64;
+                    outputCharCount.textContent = base64.length.toLocaleString();
+                    outputSection.classList.add('visible');
+                    showStatus('Encoding complete!');
+                } catch (error) {
+                    showStatus('Encoding failed: ' + error.message, true);
+                }
+            } else {
+                // File encoding
+                if (!currentFileBytes) {
+                    showStatus('Please select a file to encode.', true);
+                    return;
+                }
+
+                try {
+                    showStatus('Encoding file...');
+                    showProgress(50);
+
+                    const base64 = encodeBytesToBase64(currentFileBytes);
+
+                    let result = base64;
+                    if (outputDataUrl.checked) {
+                        const mime = mimeType.value || detectedMimeType || 'application/octet-stream';
+                        result = `data:${mime};base64,${base64}`;
+                    }
+
+                    lastOutput = result;
+                    lastOutputBytes = null;
+                    outputText.value = result;
+                    outputCharCount.textContent = result.length.toLocaleString();
+                    outputSection.classList.add('visible');
+
+                    showProgress(100);
+                    setTimeout(hideProgress, 500);
+                    showStatus('Encoding complete!');
+                } catch (error) {
+                    hideProgress();
+                    showStatus('Encoding failed: ' + error.message, true);
+                }
+            }
+        }
+
+        // Process decoding
+        async function processDecode() {
+            const inputType = document.querySelector('input[name="inputType"]:checked').value;
+            let base64Text = '';
+
+            if (inputType === 'text') {
+                base64Text = inputText.value;
+            } else {
+                // Read file as text (for Base64 file input)
+                if (!currentFileBytes) {
+                    showStatus('Please select a file containing Base64 data.', true);
+                    return;
+                }
+                const decoder = new TextDecoder();
+                base64Text = decoder.decode(currentFileBytes);
+            }
+
+            if (!base64Text.trim()) {
+                showStatus('Please enter Base64 data to decode.', true);
+                return;
+            }
+
+            // Clean whitespace
+            let cleanBase64 = base64Text.trim();
+
+            // Check for data URL
+            let extractedMime = null;
+            if (cleanBase64.startsWith('data:')) {
+                const parsed = parseDataUrl(cleanBase64);
+                if (parsed) {
+                    extractedMime = parsed.mimeType;
+                    cleanBase64 = parsed.data;
+                } else {
+                    showStatus('Invalid data URL format.', true);
+                    return;
+                }
+            }
+
+            // Strip whitespace
+            cleanBase64 = cleanBase64.replace(/\s/g, '');
+
+            // Validate
+            const validation = validateBase64(cleanBase64);
+            if (!validation.valid) {
+                showStatus(validation.error, true);
+                return;
+            }
+
+            try {
+                showStatus('Decoding...');
+                showProgress(50);
+
+                const bytes = decodeBase64ToBytes(cleanBase64);
+                lastOutputBytes = bytes;
+                detectedMimeType = extractedMime;
+
+                // Try to decode as text
+                try {
+                    const decoder = new TextDecoder('utf-8', { fatal: true });
+                    const text = decoder.decode(bytes);
+                    lastOutput = text;
+                    outputText.value = text;
+                    outputCharCount.textContent = text.length.toLocaleString();
+                } catch {
+                    // Binary data - show info
+                    lastOutput = `[Binary data: ${formatBytes(bytes.length)}]`;
+                    outputText.value = lastOutput;
+                    outputCharCount.textContent = bytes.length.toLocaleString() + ' bytes';
+                }
+
+                outputSection.classList.add('visible');
+                showProgress(100);
+                setTimeout(hideProgress, 500);
+                showStatus('Decoding complete!' + (extractedMime ? ` Detected type: ${extractedMime}` : ''));
+            } catch (error) {
+                hideProgress();
+                showStatus('Decoding failed: ' + error.message, true);
+            }
+        }
+
+        // Event listeners
+        modeInputs.forEach(input => {
+            input.addEventListener('change', () => {
+                updateUI();
+                checkAutoDetect();
+            });
+        });
+
+        inputTypeInputs.forEach(input => {
+            input.addEventListener('change', updateUI);
+        });
+
+        swapBtn.addEventListener('click', () => {
+            if (!lastOutput || lastOutput.startsWith('[Binary')) return;
+
+            const currentMode = document.querySelector('input[name="mode"]:checked').value;
+            const newMode = currentMode === 'encode' ? 'decode' : 'encode';
+
+            // Set new mode
+            document.querySelector(`input[name="mode"][value="${newMode}"]`).checked = true;
+
+            // Switch to text input and set the output as new input
+            document.querySelector('input[name="inputType"][value="text"]').checked = true;
+            inputText.value = outputText.value;
+            inputCharCount.textContent = inputText.value.length.toLocaleString();
+
+            // Clear output
+            outputSection.classList.remove('visible');
+            outputText.value = '';
+            outputCharCount.textContent = '0';
+            lastOutput = '';
+            lastOutputBytes = null;
+
+            updateUI();
+            checkAutoDetect();
+            hideStatus();
+        });
+
+        inputText.addEventListener('input', () => {
+            inputCharCount.textContent = inputText.value.length.toLocaleString();
+            checkAutoDetect();
+        });
+
+        switchToDecodeBtn.addEventListener('click', () => {
+            document.querySelector('input[name="mode"][value="decode"]').checked = true;
+            suggestion.classList.remove('visible');
+            updateUI();
+        });
+
+        // File upload handling
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        async function handleFile(file) {
+            if (file.size > MAX_FILE_SIZE) {
+                showStatus(`File too large: ${formatBytes(file.size)}. Maximum ${formatBytes(MAX_FILE_SIZE)}.`, true);
+                currentFile = null;
+                currentFileBytes = null;
+                fileInfo.style.display = 'none';
+                return;
+            }
+
+            currentFile = file;
+            fileInfo.textContent = `${file.name} (${formatBytes(file.size)})`;
+            fileInfo.style.display = 'block';
+
+            // Detect MIME type
+            detectedMimeType = file.type || 'application/octet-stream';
+            mimeType.value = detectedMimeType;
+
+            try {
+                if (file.size > 1024 * 1024) {
+                    showStatus('Reading file...');
+                    showProgress(0);
+                }
+
+                const arrayBuffer = await file.arrayBuffer();
+                currentFileBytes = new Uint8Array(arrayBuffer);
+
+                if (file.size > 1024 * 1024) {
+                    showProgress(100);
+                    setTimeout(hideProgress, 500);
+                }
+
+                hideStatus();
+            } catch (error) {
+                showStatus('Could not read file: ' + error.message, true);
+                currentFile = null;
+                currentFileBytes = null;
+            }
+        }
+
+        // Data URL checkbox
+        outputDataUrl.addEventListener('change', () => {
+            mimeTypeInput.classList.toggle('visible', outputDataUrl.checked);
+        });
+
+        // Process button
+        processBtn.addEventListener('click', async () => {
+            processBtn.disabled = true;
+            hideStatus();
+
+            try {
+                const mode = document.querySelector('input[name="mode"]:checked').value;
+                if (mode === 'encode') {
+                    await processEncode();
+                } else {
+                    await processDecode();
+                }
+            } finally {
+                processBtn.disabled = false;
+            }
+        });
+
+        // Copy button
+        copyBtn.addEventListener('click', async () => {
+            if (!outputText.value) return;
+
+            try {
+                await navigator.clipboard.writeText(outputText.value);
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                }, 2000);
+            } catch (error) {
+                showStatus('Failed to copy: ' + error.message, true);
+            }
+        });
+
+        // Download button
+        downloadBtn.addEventListener('click', () => {
+            if (!lastOutput && !lastOutputBytes) return;
+
+            downloadBtn.disabled = true;
+
+            try {
+                let blob;
+                let filename;
+
+                if (lastOutputBytes) {
+                    // Binary download
+                    const mime = detectedMimeType || 'application/octet-stream';
+                    blob = new Blob([lastOutputBytes], { type: mime });
+                    const ext = getExtensionFromMime(mime);
+                    filename = `decoded-file.${ext}`;
+                } else {
+                    // Text download
+                    const mode = document.querySelector('input[name="mode"]:checked').value;
+                    if (mode === 'encode') {
+                        blob = new Blob([lastOutput], { type: 'text/plain' });
+                        filename = 'encoded.txt';
+                    } else {
+                        blob = new Blob([lastOutput], { type: 'text/plain' });
+                        filename = 'decoded.txt';
+                    }
+                }
+
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = filename;
+                link.click();
+                URL.revokeObjectURL(url);
+
+                showStatus('Download started!');
+            } catch (error) {
+                showStatus('Download failed: ' + error.message, true);
+            } finally {
+                downloadBtn.disabled = false;
+            }
+        });
+
+        // Keyboard accessibility for upload area
+        uploadArea.setAttribute('tabindex', '0');
+        uploadArea.setAttribute('role', 'button');
+        uploadArea.setAttribute('aria-label', 'Click or drop file to upload');
+
+        uploadArea.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                fileInput.click();
+            }
+        });
+
+        // Initialize
+        initFromStorage();
+    </script>
+</body>
+</html>
