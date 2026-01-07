@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'none';
+                   script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline';
+                   style-src 'self' https://cdn.jsdelivr.net 'unsafe-inline';
+                   img-src 'self' data: blob:;
+                   connect-src 'none';">
+    <title>Hash Generator</title>
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="common-styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/spark-md5@3.0.2/spark-md5.min.js"></script>
+    <style>
+        .input-type-toggle {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .input-type-toggle label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .input-section {
+            display: none;
+        }
+
+        .input-section.visible {
+            display: block;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            padding: 0.75rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 0.75rem;
+        }
+
+        .upload-area:hover,
+        .upload-area.drag-over {
+            border-color: #6b8dd6;
+            background: rgba(107, 141, 214, 0.05);
+        }
+
+        .upload-area p {
+            margin: 0;
+        }
+
+        .upload-area p:first-child {
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .upload-area p:last-child {
+            font-size: 0.8rem;
+            color: var(--pico-muted-color);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        #status {
+            display: none;
+        }
+
+        #status.visible {
+            display: block;
+        }
+
+        #resultsSection {
+            display: none;
+        }
+
+        #resultsSection.visible {
+            display: block;
+        }
+
+        .hash-result {
+            margin-bottom: 1rem;
+        }
+
+        .hash-result label {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+
+        .hash-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: stretch;
+        }
+
+        .hash-row input {
+            flex: 1;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.8rem;
+            margin-bottom: 0;
+        }
+
+        .hash-row button {
+            flex-shrink: 0;
+            padding: 0.5rem 1rem;
+        }
+
+        .copy-all-btn {
+            margin-top: 1rem;
+            width: 100%;
+        }
+
+        .verify-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--pico-muted-border-color);
+        }
+
+        .verify-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: stretch;
+        }
+
+        .verify-row input {
+            flex: 1;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.85rem;
+            margin-bottom: 0;
+        }
+
+        .verify-row button {
+            flex-shrink: 0;
+        }
+
+        #verifyResult {
+            margin-top: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: var(--pico-border-radius);
+            display: none;
+        }
+
+        #verifyResult.visible {
+            display: block;
+        }
+
+        #verifyResult.match {
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            color: #2e7d32;
+        }
+
+        #verifyResult.no-match {
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+            color: #c62828;
+        }
+
+        .md5-warning {
+            font-size: 0.75rem;
+            color: var(--pico-muted-color);
+            margin-top: 0.25rem;
+        }
+
+        .progress-container {
+            display: none;
+            margin-top: 0.5rem;
+        }
+
+        .progress-container.visible {
+            display: block;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: var(--pico-muted-border-color);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: #6b8dd6;
+            width: 0%;
+            transition: width 0.1s ease;
+        }
+
+        .progress-text {
+            font-size: 0.75rem;
+            color: var(--pico-muted-color);
+            margin-top: 0.25rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
+        <hgroup>
+            <h1>Hash Generator</h1>
+            <p>Generate MD5, SHA-1, SHA-256, and SHA-512 hashes for text and files.</p>
+        </hgroup>
+
+        <fieldset>
+            <legend>Input Type</legend>
+            <div class="input-type-toggle">
+                <label>
+                    <input type="radio" name="inputType" value="text" checked>
+                    Text
+                </label>
+                <label>
+                    <input type="radio" name="inputType" value="file">
+                    File
+                </label>
+            </div>
+        </fieldset>
+
+        <div id="textSection" class="input-section visible">
+            <label for="textInput">
+                Input Text
+                <textarea id="textInput" rows="6" placeholder="Enter text to hash..."></textarea>
+            </label>
+        </div>
+
+        <div id="fileSection" class="input-section">
+            <div class="upload-area" id="uploadArea">
+                <p>Drop file here or click to upload</p>
+                <p>Any file type, maximum 100 MB</p>
+                <input type="file" id="fileInput">
+            </div>
+            <div id="fileName" style="font-size: 0.875rem; color: var(--pico-muted-color);"></div>
+        </div>
+
+        <article id="status" aria-live="polite"></article>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-bar-fill" id="progressBarFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">0%</div>
+        </div>
+
+        <button id="generateBtn">Generate Hashes</button>
+
+        <article id="resultsSection">
+            <h3>Hash Results</h3>
+
+            <div class="hash-result">
+                <label for="md5Hash">MD5</label>
+                <div class="hash-row">
+                    <input type="text" id="md5Hash" readonly>
+                    <button type="button" class="copy-btn" data-target="md5Hash">Copy</button>
+                </div>
+                <p class="md5-warning">MD5 is not secure for cryptographic use. Use for checksums only.</p>
+            </div>
+
+            <div class="hash-result">
+                <label for="sha1Hash">SHA-1</label>
+                <div class="hash-row">
+                    <input type="text" id="sha1Hash" readonly>
+                    <button type="button" class="copy-btn" data-target="sha1Hash">Copy</button>
+                </div>
+            </div>
+
+            <div class="hash-result">
+                <label for="sha256Hash">SHA-256</label>
+                <div class="hash-row">
+                    <input type="text" id="sha256Hash" readonly>
+                    <button type="button" class="copy-btn" data-target="sha256Hash">Copy</button>
+                </div>
+            </div>
+
+            <div class="hash-result">
+                <label for="sha512Hash">SHA-512</label>
+                <div class="hash-row">
+                    <input type="text" id="sha512Hash" readonly>
+                    <button type="button" class="copy-btn" data-target="sha512Hash">Copy</button>
+                </div>
+            </div>
+
+            <button type="button" id="copyAllBtn" class="copy-all-btn">Copy All Hashes</button>
+
+            <div class="verify-section">
+                <h4>Verify Hash</h4>
+                <p style="font-size: 0.875rem; color: var(--pico-muted-color); margin-bottom: 0.75rem;">
+                    Paste an expected hash to verify against the generated hashes.
+                </p>
+                <div class="verify-row">
+                    <input type="text" id="verifyInput" placeholder="Paste expected hash here...">
+                    <button type="button" id="verifyBtn">Verify</button>
+                </div>
+                <div id="verifyResult" aria-live="polite"></div>
+            </div>
+        </article>
+
+        <p style="margin-top:1rem"><a href="index.html" class="back-link">← Back to Tools</a></p>
+    </main>
+
+    <script>
+        // DOM elements
+        const textInput = document.getElementById('textInput');
+        const fileInput = document.getElementById('fileInput');
+        const uploadArea = document.getElementById('uploadArea');
+        const fileNameDiv = document.getElementById('fileName');
+        const textSection = document.getElementById('textSection');
+        const fileSection = document.getElementById('fileSection');
+        const generateBtn = document.getElementById('generateBtn');
+        const resultsSection = document.getElementById('resultsSection');
+        const status = document.getElementById('status');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBarFill = document.getElementById('progressBarFill');
+        const progressText = document.getElementById('progressText');
+        const verifyInput = document.getElementById('verifyInput');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const verifyResult = document.getElementById('verifyResult');
+        const copyAllBtn = document.getElementById('copyAllBtn');
+
+        // Hash output elements
+        const hashOutputs = {
+            md5: document.getElementById('md5Hash'),
+            sha1: document.getElementById('sha1Hash'),
+            sha256: document.getElementById('sha256Hash'),
+            sha512: document.getElementById('sha512Hash')
+        };
+
+        // State
+        let currentFile = null;
+        let currentInputType = 'text';
+        let generatedHashes = {};
+
+        // Initialize input type from localStorage
+        const savedInputType = localStorage.getItem('hashGenerator_inputType');
+        if (savedInputType) {
+            currentInputType = savedInputType;
+            document.querySelector(`input[name="inputType"][value="${savedInputType}"]`).checked = true;
+            updateInputSection();
+        }
+
+        // Input type toggle
+        document.querySelectorAll('input[name="inputType"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                currentInputType = e.target.value;
+                localStorage.setItem('hashGenerator_inputType', currentInputType);
+                updateInputSection();
+            });
+        });
+
+        function updateInputSection() {
+            textSection.classList.toggle('visible', currentInputType === 'text');
+            fileSection.classList.toggle('visible', currentInputType === 'file');
+        }
+
+        // File upload handling
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                handleFileSelect(file);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleFileSelect(file);
+            }
+        });
+
+        function handleFileSelect(file) {
+            const maxSize = 100 * 1024 * 1024; // 100 MB
+            if (file.size > maxSize) {
+                showStatus(`File too large: ${(file.size / (1024 * 1024)).toFixed(1)} MB. Maximum allowed: 100 MB`, true);
+                return;
+            }
+            currentFile = file;
+            fileNameDiv.textContent = `Selected: ${file.name} (${formatBytes(file.size)})`;
+            showStatus('File loaded. Click "Generate Hashes" to proceed.', false);
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Generate hashes
+        generateBtn.addEventListener('click', async () => {
+            if (currentInputType === 'text') {
+                const text = textInput.value;
+                if (!text) {
+                    showStatus('Please enter text to hash.', true);
+                    return;
+                }
+                await generateTextHashes(text);
+            } else {
+                if (!currentFile) {
+                    showStatus('Please select a file to hash.', true);
+                    return;
+                }
+                await generateFileHashes(currentFile);
+            }
+        });
+
+        async function generateTextHashes(text) {
+            generateBtn.disabled = true;
+            showStatus('Generating hashes...', false);
+            resultsSection.classList.remove('visible');
+
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(text);
+
+                // Generate all hashes
+                generatedHashes.md5 = SparkMD5.ArrayBuffer.hash(data.buffer);
+                generatedHashes.sha1 = await hashWithSubtle('SHA-1', data);
+                generatedHashes.sha256 = await hashWithSubtle('SHA-256', data);
+                generatedHashes.sha512 = await hashWithSubtle('SHA-512', data);
+
+                displayHashes();
+                showStatus('Hashes generated successfully.', false);
+            } catch (error) {
+                showStatus(`Hashing failed: ${error.message}`, true);
+            } finally {
+                generateBtn.disabled = false;
+            }
+        }
+
+        async function generateFileHashes(file) {
+            generateBtn.disabled = true;
+            showStatus('Reading file...', false);
+            resultsSection.classList.remove('visible');
+
+            const chunkSize = 2 * 1024 * 1024; // 2 MB chunks
+            const isLargeFile = file.size > 10 * 1024 * 1024; // > 10 MB
+
+            if (isLargeFile) {
+                progressContainer.classList.add('visible');
+                updateProgress(0);
+            }
+
+            try {
+                // For large files, use chunked hashing
+                if (isLargeFile) {
+                    await generateFileHashesChunked(file, chunkSize);
+                } else {
+                    // For smaller files, read all at once
+                    const arrayBuffer = await file.arrayBuffer();
+                    const data = new Uint8Array(arrayBuffer);
+
+                    showStatus('Generating hashes...', false);
+
+                    generatedHashes.md5 = SparkMD5.ArrayBuffer.hash(arrayBuffer);
+                    generatedHashes.sha1 = await hashWithSubtle('SHA-1', data);
+                    generatedHashes.sha256 = await hashWithSubtle('SHA-256', data);
+                    generatedHashes.sha512 = await hashWithSubtle('SHA-512', data);
+                }
+
+                displayHashes();
+                showStatus('Hashes generated successfully.', false);
+            } catch (error) {
+                showStatus(`Hashing failed: ${error.message}`, true);
+            } finally {
+                generateBtn.disabled = false;
+                progressContainer.classList.remove('visible');
+            }
+        }
+
+        async function generateFileHashesChunked(file, chunkSize) {
+            // Initialize SparkMD5 incremental hasher
+            const sparkMD5 = new SparkMD5.ArrayBuffer();
+
+            // For Web Crypto API, we need to read the entire file
+            // But we can show progress while reading
+            const chunks = [];
+            let offset = 0;
+
+            while (offset < file.size) {
+                const chunk = file.slice(offset, offset + chunkSize);
+                const arrayBuffer = await chunk.arrayBuffer();
+
+                // Append to MD5 hasher incrementally
+                sparkMD5.append(arrayBuffer);
+
+                // Store chunks for SHA hashing
+                chunks.push(new Uint8Array(arrayBuffer));
+
+                offset += chunkSize;
+                const progress = Math.min((offset / file.size) * 50, 50); // First 50% for reading
+                updateProgress(progress);
+                showStatus(`Reading file: ${Math.round(progress * 2)}%`, false);
+            }
+
+            // Finalize MD5
+            generatedHashes.md5 = sparkMD5.end();
+            updateProgress(55);
+
+            // Combine all chunks for SHA hashing
+            showStatus('Computing SHA hashes...', false);
+            const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+            const combinedData = new Uint8Array(totalLength);
+            let position = 0;
+            for (const chunk of chunks) {
+                combinedData.set(chunk, position);
+                position += chunk.length;
+            }
+
+            // Generate SHA hashes
+            showStatus('Computing SHA-1...', false);
+            generatedHashes.sha1 = await hashWithSubtle('SHA-1', combinedData);
+            updateProgress(70);
+
+            showStatus('Computing SHA-256...', false);
+            generatedHashes.sha256 = await hashWithSubtle('SHA-256', combinedData);
+            updateProgress(85);
+
+            showStatus('Computing SHA-512...', false);
+            generatedHashes.sha512 = await hashWithSubtle('SHA-512', combinedData);
+            updateProgress(100);
+        }
+
+        function updateProgress(percent) {
+            progressBarFill.style.width = percent + '%';
+            progressText.textContent = Math.round(percent) + '%';
+        }
+
+        async function hashWithSubtle(algorithm, data) {
+            const hashBuffer = await crypto.subtle.digest(algorithm, data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function displayHashes() {
+            hashOutputs.md5.value = generatedHashes.md5;
+            hashOutputs.sha1.value = generatedHashes.sha1;
+            hashOutputs.sha256.value = generatedHashes.sha256;
+            hashOutputs.sha512.value = generatedHashes.sha512;
+            resultsSection.classList.add('visible');
+            verifyResult.classList.remove('visible', 'match', 'no-match');
+        }
+
+        // Copy individual hash
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const targetId = btn.getAttribute('data-target');
+                const input = document.getElementById(targetId);
+                try {
+                    await navigator.clipboard.writeText(input.value);
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => {
+                        btn.textContent = originalText;
+                    }, 1500);
+                } catch (err) {
+                    showStatus('Failed to copy to clipboard.', true);
+                }
+            });
+        });
+
+        // Copy all hashes
+        copyAllBtn.addEventListener('click', async () => {
+            const allHashes = `MD5: ${generatedHashes.md5}
+SHA-1: ${generatedHashes.sha1}
+SHA-256: ${generatedHashes.sha256}
+SHA-512: ${generatedHashes.sha512}`;
+
+            try {
+                await navigator.clipboard.writeText(allHashes);
+                const originalText = copyAllBtn.textContent;
+                copyAllBtn.textContent = 'Copied All!';
+                setTimeout(() => {
+                    copyAllBtn.textContent = originalText;
+                }, 1500);
+            } catch (err) {
+                showStatus('Failed to copy to clipboard.', true);
+            }
+        });
+
+        // Verify hash
+        verifyBtn.addEventListener('click', () => {
+            const expectedHash = verifyInput.value.trim().toLowerCase();
+
+            if (!expectedHash) {
+                showStatus('Please enter a hash to verify.', true);
+                return;
+            }
+
+            if (!generatedHashes.md5) {
+                showStatus('Please generate hashes first.', true);
+                return;
+            }
+
+            // Detect algorithm by length and find match
+            const hashLengths = {
+                32: { name: 'MD5', key: 'md5' },
+                40: { name: 'SHA-1', key: 'sha1' },
+                64: { name: 'SHA-256', key: 'sha256' },
+                128: { name: 'SHA-512', key: 'sha512' }
+            };
+
+            const detectedAlgo = hashLengths[expectedHash.length];
+
+            if (!detectedAlgo) {
+                // Check all hashes for a match
+                for (const [key, hash] of Object.entries(generatedHashes)) {
+                    if (hash.toLowerCase() === expectedHash) {
+                        showVerifyResult(true, key.toUpperCase());
+                        return;
+                    }
+                }
+                showVerifyResult(false, null);
+                return;
+            }
+
+            // Compare with detected algorithm
+            const generatedHash = generatedHashes[detectedAlgo.key].toLowerCase();
+            if (generatedHash === expectedHash) {
+                showVerifyResult(true, detectedAlgo.name);
+            } else {
+                // Also check other hashes in case user pasted wrong length
+                for (const [key, hash] of Object.entries(generatedHashes)) {
+                    if (hash.toLowerCase() === expectedHash) {
+                        showVerifyResult(true, key.toUpperCase());
+                        return;
+                    }
+                }
+                showVerifyResult(false, detectedAlgo.name);
+            }
+        });
+
+        function showVerifyResult(isMatch, algorithm) {
+            verifyResult.classList.remove('match', 'no-match');
+            verifyResult.classList.add('visible');
+
+            if (isMatch) {
+                verifyResult.classList.add('match');
+                verifyResult.textContent = `Match! Hash verified successfully (${algorithm}).`;
+            } else {
+                verifyResult.classList.add('no-match');
+                verifyResult.textContent = algorithm
+                    ? `No match. The ${algorithm} hash does not match.`
+                    : 'No match. Hash does not match any generated hash.';
+            }
+        }
+
+        function showStatus(message, isError) {
+            status.textContent = message;
+            status.className = 'visible';
+            if (isError) {
+                status.setAttribute('aria-invalid', 'true');
+            } else {
+                status.removeAttribute('aria-invalid');
+            }
+        }
+    </script>
+</body>
+</html>
