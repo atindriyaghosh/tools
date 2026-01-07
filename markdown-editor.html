@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markdown Editor</title>
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="common-styles.css">
+    <style>
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            margin-bottom: 0.75rem;
+            padding: 0.5rem;
+            background: var(--pico-card-background-color);
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+        }
+        .toolbar button {
+            padding: 0.4rem 0.6rem;
+            font-size: 0.85rem;
+            min-width: 2.5rem;
+        }
+        .toolbar button.separator {
+            visibility: hidden;
+            width: 0.5rem;
+            min-width: 0.5rem;
+            padding: 0;
+        }
+        .editor-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            min-height: 400px;
+        }
+        @media (max-width: 768px) {
+            .editor-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        .editor-pane, .preview-pane {
+            display: flex;
+            flex-direction: column;
+        }
+        .pane-header {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: var(--pico-muted-color);
+            font-size: 0.9rem;
+        }
+        #markdownInput {
+            flex: 1;
+            min-height: 350px;
+            resize: vertical;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        #preview {
+            flex: 1;
+            min-height: 350px;
+            padding: 1rem;
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            background: var(--pico-card-background-color);
+            overflow: auto;
+        }
+        #preview h1, #preview h2, #preview h3, #preview h4, #preview h5, #preview h6 {
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+        #preview h1:first-child, #preview h2:first-child, #preview h3:first-child {
+            margin-top: 0;
+        }
+        #preview pre {
+            background: var(--pico-code-background-color);
+            padding: 1rem;
+            border-radius: var(--pico-border-radius);
+            overflow-x: auto;
+        }
+        #preview code {
+            background: var(--pico-code-background-color);
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        #preview pre code {
+            padding: 0;
+            background: none;
+        }
+        #preview blockquote {
+            border-left: 4px solid var(--pico-muted-border-color);
+            margin: 1rem 0;
+            padding-left: 1rem;
+            color: var(--pico-muted-color);
+        }
+        #preview ul, #preview ol {
+            margin: 0.5rem 0;
+            padding-left: 1.5rem;
+        }
+        #preview img {
+            max-width: 100%;
+            height: auto;
+        }
+        #preview table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        #preview th, #preview td {
+            border: 1px solid var(--pico-muted-border-color);
+            padding: 0.5rem;
+            text-align: left;
+        }
+        #preview th {
+            background: var(--pico-card-background-color);
+        }
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        #status {
+            margin-top: 0.75rem;
+            padding: 0.75rem 1rem;
+            border-radius: var(--pico-border-radius);
+            display: none;
+        }
+        #status.visible {
+            display: block;
+            background: rgba(107, 141, 214, 0.1);
+            border: 1px solid rgba(107, 141, 214, 0.3);
+        }
+        #status.error {
+            background: rgba(214, 107, 107, 0.1);
+            border: 1px solid rgba(214, 107, 107, 0.3);
+            color: #d66b6b;
+        }
+        .upload-area {
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.75rem;
+            border: 2px dashed var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        .upload-area:hover,
+        .upload-area.drag-over {
+            border-color: #6b8dd6;
+            background: rgba(107, 141, 214, 0.05);
+        }
+        .upload-area p {
+            margin: 0.25rem 0;
+        }
+        .upload-area input[type="file"] {
+            display: none;
+        }
+        .autosave-indicator {
+            font-size: 0.8rem;
+            color: var(--pico-muted-color);
+            margin-left: auto;
+        }
+        .toolbar-row {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
+        <hgroup>
+            <h1>Markdown Editor</h1>
+            <p>Write markdown with live HTML preview. Includes toolbar for common formatting.</p>
+        </hgroup>
+
+        <!-- File upload area -->
+        <div class="upload-area" id="uploadArea">
+            <p>Drop .md file here or click to upload</p>
+            <p style="font-size: 0.85rem; color: var(--pico-muted-color);">Maximum 5 MB</p>
+            <input type="file" id="fileInput" accept=".md,.markdown,text/markdown">
+        </div>
+
+        <!-- Status message -->
+        <div id="status"></div>
+
+        <!-- Toolbar -->
+        <div class="toolbar-row">
+            <div class="toolbar" role="toolbar" aria-label="Markdown formatting toolbar">
+                <button type="button" id="boldBtn" title="Bold (Ctrl+B)" aria-label="Bold">B</button>
+                <button type="button" id="italicBtn" title="Italic (Ctrl+I)" aria-label="Italic"><em>I</em></button>
+                <span class="separator"></span>
+                <button type="button" id="h1Btn" title="Heading 1" aria-label="Heading 1">H1</button>
+                <button type="button" id="h2Btn" title="Heading 2" aria-label="Heading 2">H2</button>
+                <button type="button" id="h3Btn" title="Heading 3" aria-label="Heading 3">H3</button>
+                <span class="separator"></span>
+                <button type="button" id="linkBtn" title="Insert Link (Ctrl+K)" aria-label="Insert Link">Link</button>
+                <button type="button" id="imageBtn" title="Insert Image" aria-label="Insert Image">Image</button>
+                <button type="button" id="codeBtn" title="Inline Code" aria-label="Inline Code">Code</button>
+                <button type="button" id="codeBlockBtn" title="Code Block" aria-label="Code Block">Block</button>
+                <span class="separator"></span>
+                <button type="button" id="ulBtn" title="Unordered List" aria-label="Unordered List">* List</button>
+                <button type="button" id="olBtn" title="Ordered List" aria-label="Ordered List">1. List</button>
+                <button type="button" id="quoteBtn" title="Blockquote" aria-label="Blockquote">Quote</button>
+            </div>
+            <span class="autosave-indicator" id="autosaveIndicator"></span>
+        </div>
+
+        <!-- Editor and Preview panes -->
+        <div class="editor-container">
+            <div class="editor-pane">
+                <label class="pane-header" for="markdownInput">Markdown</label>
+                <textarea id="markdownInput" placeholder="Type your markdown here..." aria-label="Markdown input"></textarea>
+            </div>
+            <div class="preview-pane">
+                <span class="pane-header">Preview</span>
+                <div id="preview" role="region" aria-label="HTML preview" aria-live="polite"></div>
+            </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="action-buttons">
+            <button type="button" id="copyMarkdownBtn">Copy Markdown</button>
+            <button type="button" id="copyHtmlBtn">Copy HTML</button>
+            <button type="button" id="downloadBtn">Download .md</button>
+            <button type="button" id="clearBtn" style="background: transparent; border: 1px solid var(--pico-muted-border-color); color: var(--pico-color);">Clear</button>
+        </div>
+
+        <p style="margin-top:1rem"><a href="index.html" class="back-link">← Back to Tools</a></p>
+    </main>
+
+    <!-- marked.js for markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        // Constants
+        const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+        const DEBOUNCE_DELAY = 300;
+        const AUTOSAVE_DELAY = 3000;
+        const STORAGE_KEY = 'markdown-editor-content';
+
+        // DOM Elements
+        const markdownInput = document.getElementById('markdownInput');
+        const preview = document.getElementById('preview');
+        const status = document.getElementById('status');
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const autosaveIndicator = document.getElementById('autosaveIndicator');
+
+        // Toolbar buttons
+        const boldBtn = document.getElementById('boldBtn');
+        const italicBtn = document.getElementById('italicBtn');
+        const h1Btn = document.getElementById('h1Btn');
+        const h2Btn = document.getElementById('h2Btn');
+        const h3Btn = document.getElementById('h3Btn');
+        const linkBtn = document.getElementById('linkBtn');
+        const imageBtn = document.getElementById('imageBtn');
+        const codeBtn = document.getElementById('codeBtn');
+        const codeBlockBtn = document.getElementById('codeBlockBtn');
+        const ulBtn = document.getElementById('ulBtn');
+        const olBtn = document.getElementById('olBtn');
+        const quoteBtn = document.getElementById('quoteBtn');
+
+        // Action buttons
+        const copyMarkdownBtn = document.getElementById('copyMarkdownBtn');
+        const copyHtmlBtn = document.getElementById('copyHtmlBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const clearBtn = document.getElementById('clearBtn');
+
+        // Debounce timer
+        let debounceTimer = null;
+        let autosaveTimer = null;
+
+        // Configure marked.js for safe rendering
+        marked.setOptions({
+            breaks: true,
+            gfm: true
+        });
+
+        // Show status message
+        function showStatus(message, isError = false) {
+            status.textContent = message;
+            status.className = 'visible';
+            if (isError) {
+                status.classList.add('error');
+            }
+        }
+
+        // Hide status message
+        function hideStatus() {
+            status.className = '';
+            status.textContent = '';
+        }
+
+        // Update preview with debouncing
+        function updatePreview() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                try {
+                    const markdown = markdownInput.value;
+                    const html = marked.parse(markdown);
+                    preview.innerHTML = html;
+                } catch (error) {
+                    console.error('Markdown parse error:', error);
+                    showStatus('Error parsing markdown: ' + error.message, true);
+                }
+            }, DEBOUNCE_DELAY);
+        }
+
+        // Autosave to localStorage
+        function autosave() {
+            clearTimeout(autosaveTimer);
+            autosaveTimer = setTimeout(() => {
+                try {
+                    const content = markdownInput.value;
+                    const data = {
+                        content: content,
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                    updateAutosaveIndicator();
+                } catch (e) {
+                    if (e.name === 'QuotaExceededError') {
+                        console.warn('localStorage quota exceeded');
+                    }
+                }
+            }, AUTOSAVE_DELAY);
+        }
+
+        // Update autosave indicator
+        function updateAutosaveIndicator() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    const date = new Date(data.timestamp);
+                    const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    autosaveIndicator.textContent = 'Last saved: ' + timeStr;
+                }
+            } catch (e) {
+                autosaveIndicator.textContent = '';
+            }
+        }
+
+        // Load from localStorage on page load
+        function loadFromStorage() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const data = JSON.parse(saved);
+                    if (data.content) {
+                        markdownInput.value = data.content;
+                        updatePreview();
+                        updateAutosaveIndicator();
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading from localStorage:', e);
+            }
+        }
+
+        // Insert text at cursor position
+        function insertAtCursor(before, after = '', defaultText = '') {
+            const start = markdownInput.selectionStart;
+            const end = markdownInput.selectionEnd;
+            const text = markdownInput.value;
+            const selectedText = text.substring(start, end) || defaultText;
+
+            const newText = text.substring(0, start) + before + selectedText + after + text.substring(end);
+            markdownInput.value = newText;
+
+            // Set cursor position
+            const newCursorPos = start + before.length + selectedText.length;
+            markdownInput.setSelectionRange(newCursorPos, newCursorPos);
+            markdownInput.focus();
+
+            updatePreview();
+            autosave();
+        }
+
+        // Insert at line start
+        function insertAtLineStart(prefix) {
+            const start = markdownInput.selectionStart;
+            const text = markdownInput.value;
+
+            // Find the start of the current line
+            let lineStart = start;
+            while (lineStart > 0 && text[lineStart - 1] !== '\n') {
+                lineStart--;
+            }
+
+            const newText = text.substring(0, lineStart) + prefix + text.substring(lineStart);
+            markdownInput.value = newText;
+
+            // Set cursor position after prefix
+            const newCursorPos = start + prefix.length;
+            markdownInput.setSelectionRange(newCursorPos, newCursorPos);
+            markdownInput.focus();
+
+            updatePreview();
+            autosave();
+        }
+
+        // Toolbar button handlers
+        boldBtn.addEventListener('click', () => insertAtCursor('**', '**', 'bold'));
+        italicBtn.addEventListener('click', () => insertAtCursor('*', '*', 'italic'));
+        h1Btn.addEventListener('click', () => insertAtLineStart('# '));
+        h2Btn.addEventListener('click', () => insertAtLineStart('## '));
+        h3Btn.addEventListener('click', () => insertAtLineStart('### '));
+
+        linkBtn.addEventListener('click', () => {
+            const url = prompt('Enter URL:', 'https://');
+            if (url) {
+                const start = markdownInput.selectionStart;
+                const end = markdownInput.selectionEnd;
+                const selectedText = markdownInput.value.substring(start, end) || 'link text';
+                insertAtCursor('[' + selectedText + '](', ')', url);
+            }
+        });
+
+        imageBtn.addEventListener('click', () => {
+            const url = prompt('Enter image URL:', 'https://');
+            if (url) {
+                insertAtCursor('![alt text](', ')', url);
+            }
+        });
+
+        codeBtn.addEventListener('click', () => insertAtCursor('`', '`', 'code'));
+
+        codeBlockBtn.addEventListener('click', () => {
+            const start = markdownInput.selectionStart;
+            const text = markdownInput.value;
+            const selectedText = text.substring(start, markdownInput.selectionEnd) || 'code here';
+
+            // Add newlines if not at line start
+            let prefix = '```\n';
+            if (start > 0 && text[start - 1] !== '\n') {
+                prefix = '\n' + prefix;
+            }
+
+            insertAtCursor(prefix, '\n```', selectedText);
+        });
+
+        ulBtn.addEventListener('click', () => insertAtLineStart('- '));
+        olBtn.addEventListener('click', () => insertAtLineStart('1. '));
+        quoteBtn.addEventListener('click', () => insertAtLineStart('> '));
+
+        // Keyboard shortcuts
+        markdownInput.addEventListener('keydown', (e) => {
+            const isMeta = e.metaKey || e.ctrlKey;
+
+            if (isMeta && e.key === 'b') {
+                e.preventDefault();
+                insertAtCursor('**', '**', 'bold');
+            } else if (isMeta && e.key === 'i') {
+                e.preventDefault();
+                insertAtCursor('*', '*', 'italic');
+            } else if (isMeta && e.key === 'k') {
+                e.preventDefault();
+                linkBtn.click();
+            }
+        });
+
+        // Input event for live preview
+        markdownInput.addEventListener('input', () => {
+            updatePreview();
+            autosave();
+        });
+
+        // Copy markdown to clipboard
+        copyMarkdownBtn.addEventListener('click', async () => {
+            try {
+                copyMarkdownBtn.disabled = true;
+                await navigator.clipboard.writeText(markdownInput.value);
+                showStatus('Markdown copied to clipboard!');
+                setTimeout(hideStatus, 2000);
+            } catch (error) {
+                showStatus('Failed to copy: ' + error.message, true);
+            } finally {
+                copyMarkdownBtn.disabled = false;
+            }
+        });
+
+        // Copy HTML to clipboard
+        copyHtmlBtn.addEventListener('click', async () => {
+            try {
+                copyHtmlBtn.disabled = true;
+                const html = marked.parse(markdownInput.value);
+                await navigator.clipboard.writeText(html);
+                showStatus('HTML copied to clipboard!');
+                setTimeout(hideStatus, 2000);
+            } catch (error) {
+                showStatus('Failed to copy: ' + error.message, true);
+            } finally {
+                copyHtmlBtn.disabled = false;
+            }
+        });
+
+        // Download as .md file
+        downloadBtn.addEventListener('click', () => {
+            try {
+                downloadBtn.disabled = true;
+                const content = markdownInput.value;
+                if (!content.trim()) {
+                    showStatus('Nothing to download. Add some markdown first.', true);
+                    setTimeout(hideStatus, 2000);
+                    return;
+                }
+
+                const blob = new Blob([content], { type: 'text/markdown' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'document.md';
+                link.click();
+                URL.revokeObjectURL(url);
+
+                showStatus('Download started!');
+                setTimeout(hideStatus, 2000);
+            } catch (error) {
+                showStatus('Download failed: ' + error.message, true);
+            } finally {
+                downloadBtn.disabled = false;
+            }
+        });
+
+        // Clear editor
+        clearBtn.addEventListener('click', () => {
+            if (markdownInput.value.trim() && !confirm('Clear all content? This cannot be undone.')) {
+                return;
+            }
+            markdownInput.value = '';
+            preview.innerHTML = '';
+            localStorage.removeItem(STORAGE_KEY);
+            autosaveIndicator.textContent = '';
+            hideStatus();
+            markdownInput.focus();
+        });
+
+        // File upload handling
+        function handleFile(file) {
+            if (!file) return;
+
+            // Validate file type
+            const validTypes = ['.md', '.markdown'];
+            const fileName = file.name.toLowerCase();
+            const isValidType = validTypes.some(ext => fileName.endsWith(ext)) ||
+                               file.type === 'text/markdown' ||
+                               file.type === 'text/plain';
+
+            if (!isValidType) {
+                showStatus('Invalid file type. Please upload a .md or .markdown file.', true);
+                return;
+            }
+
+            // Validate file size
+            if (file.size > MAX_FILE_SIZE) {
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                showStatus(`File too large: ${sizeMB} MB. Maximum 5 MB.`, true);
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                markdownInput.value = e.target.result;
+                updatePreview();
+                autosave();
+                showStatus('File loaded: ' + file.name);
+                setTimeout(hideStatus, 2000);
+            };
+            reader.onerror = () => {
+                showStatus('Error reading file', true);
+            };
+            reader.readAsText(file);
+        }
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            handleFile(e.target.files[0]);
+            fileInput.value = ''; // Reset for re-upload
+        });
+
+        // Click on upload area
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadFromStorage();
+            // If no saved content, show sample markdown
+            if (!markdownInput.value) {
+                markdownInput.value = `# Welcome to Markdown Editor
+
+Start typing to see **live preview** on the right!
+
+## Features
+
+- **Bold** and *italic* text
+- Headings (H1, H2, H3)
+- [Links](https://example.com)
+- Images
+- \`inline code\` and code blocks
+- Lists (ordered and unordered)
+- > Blockquotes
+
+## Code Example
+
+\`\`\`javascript
+function hello() {
+    console.log("Hello, World!");
+}
+\`\`\`
+
+## Table Example
+
+| Name | Description |
+|------|-------------|
+| Markdown | Lightweight markup |
+| HTML | HyperText Markup |
+
+---
+
+Happy writing!`;
+                updatePreview();
+            }
+        });
+    </script>
+</body>
+</html>
