@@ -1,0 +1,3 @@
+Provide a second perspective on "{nodeName}". First response: {firstContentPreview}...
+
+Offer your own take. Be concise.

@@ -21,11 +21,14 @@
             flex: 1;
             min-width: 150px;
             margin: 0;
+            padding: 0.35rem 0.5rem;
+            height: 2.25rem;
         }
 
         .api-key-section button {
             margin: 0;
-            padding: 0.375rem 0.75rem;
+            padding: 0.35rem 0.75rem;
+            height: 2.25rem;
         }
 
         .api-key-status {
@@ -354,40 +357,20 @@
         }
 
         .setup-section {
-            background: var(--pico-card-background-color);
-            padding: 1rem;
-            border-radius: var(--pico-border-radius);
-            margin-bottom: 1rem;
+            margin-top: 1.5rem;
             border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            padding: 0.75rem;
         }
 
         .setup-section summary {
             cursor: pointer;
             font-weight: 600;
-            font-size: 0.95rem;
-            color: #6b8dd6;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            list-style-type: disclosure-closed;
         }
 
-        .setup-section summary::before {
-            content: "›";
-            display: inline-block;
-            font-size: 1rem;
-            transition: transform 0.2s;
-            color: #6b8dd6;
-            margin-right: 0.25rem;
-        }
-
-        .setup-section[open] summary::before {
-            transform: rotate(90deg);
-        }
-
-        .setup-section summary:hover {
-            background: rgba(107, 141, 214, 0.05);
-            border-radius: 4px;
-            padding: 0.15rem 0.3rem;
+        .setup-section[open] summary {
+            list-style-type: disclosure-open;
         }
 
         .setup-content {
@@ -461,6 +444,62 @@
             outline: 2px solid #6b8dd6;
             outline-offset: 2px;
         }
+
+        .tag-btn {
+            background-color: var(--pico-card-background-color);
+            border: 1px solid var(--pico-muted-border-color);
+            color: var(--pico-muted-color);
+            transition: all 0.2s;
+        }
+
+        .tag-btn:hover {
+            background-color: rgba(107, 141, 214, 0.1);
+            border-color: #6b8dd6;
+            color: #6b8dd6;
+        }
+
+        .tag-btn.active {
+            background-color: #6b8dd6;
+            border-color: #6b8dd6;
+            color: white;
+        }
+
+        .loading-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 2rem 1rem;
+            color: #6b8dd6;
+            font-weight: 500;
+        }
+
+        .loading-dot {
+            width: 0.5rem;
+            height: 0.5rem;
+            border-radius: 50%;
+            background-color: #6b8dd6;
+            animation: pulse 1.4s infinite;
+        }
+
+        .loading-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.3;
+                transform: scale(0.8);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
     </style>
 </head>
 <body>
@@ -489,20 +528,36 @@
         </div>
 
         <div id="modelSelectors" style="display: none;">
-            <div class="model-selectors">
-                <div class="model-selector-group">
-                    <label for="primaryModelSelect">Primary Model</label>
-                    <select id="primaryModelSelect" onchange="savePrimaryModel()">
-                        <option>Loading models...</option>
-                    </select>
+            <details>
+                <summary style="cursor: pointer; font-weight: 600; padding: 0.35rem; list-style-type: disclosure-closed;">Model Selection</summary>
+                <div style="padding: 0.5rem 0;">
+                    <div style="margin-bottom: 0.5rem;">
+                        <input
+                            type="text"
+                            id="modelSearch"
+                            placeholder="Search..."
+                            oninput="filterModels()"
+                            style="margin: 0; font-size: 0.85rem; padding: 0.3rem;"
+                        >
+                    </div>
+
+                    <div style="margin-bottom: 0.5rem;">
+                        <div id="modelTags" style="display: flex; flex-wrap: wrap; gap: 0.25rem;"></div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                        <div>
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.25rem; font-size: 0.85rem;">Primary</label>
+                            <div id="primaryModelList" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); padding: 0.35rem; font-size: 0.8rem;"></div>
+                        </div>
+
+                        <div>
+                            <label style="display: block; font-weight: 600; margin-bottom: 0.25rem; font-size: 0.85rem;">Secondary</label>
+                            <div id="secondaryModelList" style="max-height: 150px; overflow-y: auto; border: 1px solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); padding: 0.35rem; font-size: 0.8rem;"></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="model-selector-group">
-                    <label for="secondOpinionModelSelect">Second Opinion Model</label>
-                    <select id="secondOpinionModelSelect" onchange="saveSecondOpinionModel()">
-                        <option>Loading models...</option>
-                    </select>
-                </div>
-            </div>
+            </details>
         </div>
 
         <div id="controls" style="display: none;">
@@ -570,6 +625,9 @@
             skeleton: null,
             expandedNodes: new Set(),
             apiKey: null,
+            allModels: [],
+            filteredModels: [],
+            selectedTags: new Set(),
             budget: {
                 totalTokensUsed: 0,
                 totalSearches: 0,
@@ -578,19 +636,26 @@
             modelPricing: {},
             webSearchEnabled: true,
             primaryModel: 'anthropic/claude-sonnet-4',
-            secondOpinionModel: 'openai/gpt-4o'
+            secondOpinionModel: 'openai/gpt-4o',
+            prompts: {}
         };
 
         // ==================== INITIALIZATION ====================
         async function initializeApp() {
+            // Load prompts
+            await loadPrompts();
+
             // Load skeleton
             try {
                 const response = await fetch('skeleton.yaml');
                 const yaml = await response.text();
                 state.skeleton = jsyaml.load(yaml);
+                // Generate IDs for all nodes
+                assignNodeIds(state.skeleton);
             } catch (error) {
                 console.error('Failed to load skeleton:', error);
                 state.skeleton = createFallbackSkeleton();
+                assignNodeIds(state.skeleton);
             }
 
             // Load from storage
@@ -616,6 +681,63 @@
                 summary: "A comprehensive overview of AI tools and concepts",
                 children: []
             };
+        }
+
+        function assignNodeIds(node, parentId = '') {
+            // Generate ID based on node name
+            if (!node.id) {
+                const nameId = node.name ? node.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'node';
+                node.id = parentId ? `${parentId}-${nameId}` : nameId;
+            }
+
+            // Recursively assign IDs to children
+            if (node.children && Array.isArray(node.children)) {
+                node.children.forEach(child => {
+                    assignNodeIds(child, node.id);
+                });
+            }
+        }
+
+        async function loadPrompts() {
+            const promptFiles = ['node-overview', 'second-opinion', 'system-web-search'];
+            const PROMPT_CACHE_TTL = 6 * 60 * 60 * 1000; // 6 hours
+
+            for (const filename of promptFiles) {
+                const cacheKey = `ai-landscape-prompt-${filename}`;
+                const cached = localStorage.getItem(cacheKey);
+
+                // Check if cache is still valid
+                if (cached) {
+                    try {
+                        const entry = JSON.parse(cached);
+                        if (Date.now() - entry.timestamp < PROMPT_CACHE_TTL) {
+                            state.prompts[filename] = entry.content;
+                            continue;
+                        }
+                    } catch (e) {
+                        // Invalid cache, ignore and fetch fresh
+                    }
+                }
+
+                // Fetch fresh prompt
+                try {
+                    const response = await fetch(`prompts/ai-landscape-explorer/${filename}.txt`);
+                    if (response.ok) {
+                        const content = await response.text();
+                        state.prompts[filename] = content;
+
+                        // Cache it
+                        localStorage.setItem(cacheKey, JSON.stringify({
+                            content,
+                            timestamp: Date.now()
+                        }));
+                    } else {
+                        console.warn(`Failed to load prompt: ${filename}`);
+                    }
+                } catch (error) {
+                    console.warn(`Error loading prompt ${filename}:`, error);
+                }
+            }
         }
 
         function loadApiKey() {
@@ -705,13 +827,16 @@
             // Store model pricing
             models.forEach(model => {
                 state.modelPricing[model.id] = {
-                    prompt: model.pricing?.prompt || 0,
-                    completion: model.pricing?.completion || 0,
+                    prompt: parseFloat(model.pricing?.prompt) || 0,
+                    completion: parseFloat(model.pricing?.completion) || 0,
                     supportsTools: checkToolSupport(model)
                 };
             });
 
-            populateModelDropdowns(models);
+            // Store all models for filtering
+            state.allModels = models;
+
+            renderModelSearch();
         }
 
         function checkToolSupport(model) {
@@ -719,55 +844,157 @@
             return modelStr.includes('web_search') || modelStr.includes('tool');
         }
 
-        function populateModelDropdowns(models) {
-            const popular = [
-                'anthropic/claude-sonnet-4',
-                'anthropic/claude-opus-4-5',
-                'anthropic/claude-3-5-sonnet',
-                'openai/gpt-4o',
-                'openai/gpt-4-turbo',
-                'google/gemini-2.0-flash',
-                'meta-llama/llama-3.1-70b-instruct',
-                'mistralai/mistral-large'
-            ];
+        function extractTags(model) {
+            const tags = new Set();
+            if (model.architecture?.modality) {
+                tags.add(model.architecture.modality.split('->')[0]?.trim());
+            }
+            if (model.architecture?.input_modalities) {
+                model.architecture.input_modalities.forEach(m => tags.add(m));
+            }
+            if (state.modelPricing[model.id]?.supportsTools) {
+                tags.add('web-search');
+            }
+            if (state.modelPricing[model.id]?.prompt === 0 && state.modelPricing[model.id]?.completion === 0) {
+                tags.add('free-model');
+            }
+            return Array.from(tags);
+        }
 
-            const filtered = models.filter(m => popular.includes(m.id));
+        function renderModelSearch() {
+            // Extract all unique tags from models
+            const allTags = new Set();
+            state.allModels.forEach(model => {
+                extractTags(model).forEach(tag => allTags.add(tag));
+            });
 
-            const primarySelect = document.getElementById('primaryModelSelect');
-            const secondarySelect = document.getElementById('secondOpinionModelSelect');
+            // Render tag buttons
+            const tagsContainer = document.getElementById('modelTags');
+            tagsContainer.innerHTML = '';
+            Array.from(allTags).sort().forEach(tag => {
+                const btn = document.createElement('button');
+                btn.style.padding = '0.25rem 0.5rem';
+                btn.style.fontSize = '0.75rem';
+                btn.style.margin = '0';
+                btn.style.whiteSpace = 'nowrap';
+                btn.textContent = tag;
+                btn.className = state.selectedTags.has(tag) ? 'tag-btn active' : 'tag-btn';
+                btn.onclick = () => toggleTag(tag);
+                tagsContainer.appendChild(btn);
+            });
 
-            primarySelect.innerHTML = '';
-            secondarySelect.innerHTML = '';
+            // Render models
+            filterModels();
+        }
 
-            filtered.forEach(model => {
+        function toggleTag(tag) {
+            if (state.selectedTags.has(tag)) {
+                state.selectedTags.delete(tag);
+            } else {
+                state.selectedTags.add(tag);
+            }
+            renderModelSearch();
+        }
+
+        function filterModels() {
+            const searchText = document.getElementById('modelSearch').value.toLowerCase();
+            let filtered = state.allModels;
+
+            // Filter by search text
+            if (searchText) {
+                filtered = filtered.filter(m => m.id.toLowerCase().includes(searchText) || m.name?.toLowerCase().includes(searchText));
+            }
+
+            // Filter by tags
+            if (state.selectedTags.size > 0) {
+                filtered = filtered.filter(model => {
+                    const modelTags = new Set(extractTags(model));
+                    return Array.from(state.selectedTags).some(tag => modelTags.has(tag));
+                });
+            }
+
+            state.filteredModels = filtered;
+            renderModelLists();
+        }
+
+        function renderModelLists() {
+            const primaryList = document.getElementById('primaryModelList');
+            const secondaryList = document.getElementById('secondaryModelList');
+
+            primaryList.innerHTML = '';
+            secondaryList.innerHTML = '';
+
+            state.filteredModels.forEach(model => {
                 const pricing = state.modelPricing[model.id];
-                const prompt = (pricing?.prompt || 0).toFixed(3);
-                const completion = (pricing?.completion || 0).toFixed(3);
-                const toolBadge = pricing?.supportsTools ? '[Web Search] ' : '';
-                const label = `${toolBadge}${model.id} ($${prompt}/$${completion} per 1M)`;
+                const prompt = ((parseFloat(pricing?.prompt) || 0) * 1_000_000).toFixed(2);
+                const completion = ((parseFloat(pricing?.completion) || 0) * 1_000_000).toFixed(2);
 
-                const opt1 = document.createElement('option');
-                opt1.value = model.id;
-                opt1.textContent = label;
-                if (model.id === state.primaryModel) opt1.selected = true;
-                primarySelect.appendChild(opt1);
+                // Primary model
+                const primaryLabel = document.createElement('div');
+                primaryLabel.style.padding = '0.35rem';
+                primaryLabel.style.borderBottom = '1px solid var(--pico-muted-border-color)';
+                primaryLabel.style.cursor = 'pointer';
+                primaryLabel.style.display = 'flex';
+                primaryLabel.style.justifyContent = 'space-between';
+                primaryLabel.style.alignItems = 'center';
+                primaryLabel.style.gap = '0.25rem';
+                primaryLabel.onmouseover = () => primaryLabel.style.background = 'rgba(107, 141, 214, 0.05)';
+                primaryLabel.onmouseout = () => primaryLabel.style.background = 'none';
 
-                const opt2 = document.createElement('option');
-                opt2.value = model.id;
-                opt2.textContent = label;
-                if (model.id === state.secondOpinionModel) opt2.selected = true;
-                secondarySelect.appendChild(opt2);
+                const primaryText = document.createElement('div');
+                primaryText.style.fontSize = '0.8rem';
+                primaryText.style.lineHeight = '1.2';
+                primaryText.innerHTML = `<strong style="display: block; font-size: 0.75rem;">${model.id.split('/')[1]}</strong><small style="color: var(--pico-muted-color); display: block;">$${prompt}/$${completion}</small>`;
+                primaryLabel.appendChild(primaryText);
+
+                const primaryRadio = document.createElement('input');
+                primaryRadio.type = 'radio';
+                primaryRadio.name = 'primary-model';
+                primaryRadio.checked = state.primaryModel === model.id;
+                primaryRadio.onchange = () => selectPrimaryModel(model.id);
+                primaryLabel.appendChild(primaryRadio);
+
+                primaryList.appendChild(primaryLabel);
+
+                // Secondary model
+                const secondaryLabel = document.createElement('div');
+                secondaryLabel.style.padding = '0.35rem';
+                secondaryLabel.style.borderBottom = '1px solid var(--pico-muted-border-color)';
+                secondaryLabel.style.cursor = 'pointer';
+                secondaryLabel.style.display = 'flex';
+                secondaryLabel.style.justifyContent = 'space-between';
+                secondaryLabel.style.alignItems = 'center';
+                secondaryLabel.style.gap = '0.25rem';
+                secondaryLabel.onmouseover = () => secondaryLabel.style.background = 'rgba(107, 141, 214, 0.05)';
+                secondaryLabel.onmouseout = () => secondaryLabel.style.background = 'none';
+
+                const secondaryText = document.createElement('div');
+                secondaryText.style.fontSize = '0.8rem';
+                secondaryText.style.lineHeight = '1.2';
+                secondaryText.innerHTML = `<strong style="display: block; font-size: 0.75rem;">${model.id.split('/')[1]}</strong><small style="color: var(--pico-muted-color); display: block;">$${prompt}/$${completion}</small>`;
+                secondaryLabel.appendChild(secondaryText);
+
+                const secondaryRadio = document.createElement('input');
+                secondaryRadio.type = 'radio';
+                secondaryRadio.name = 'secondary-model';
+                secondaryRadio.checked = state.secondOpinionModel === model.id;
+                secondaryRadio.onchange = () => selectSecondaryModel(model.id);
+                secondaryLabel.appendChild(secondaryRadio);
+
+                secondaryList.appendChild(secondaryLabel);
             });
         }
 
-        function savePrimaryModel() {
-            state.primaryModel = document.getElementById('primaryModelSelect').value;
+        function selectPrimaryModel(modelId) {
+            state.primaryModel = modelId;
             savePreferences();
+            renderModelLists();
         }
 
-        function saveSecondOpinionModel() {
-            state.secondOpinionModel = document.getElementById('secondOpinionModelSelect').value;
+        function selectSecondaryModel(modelId) {
+            state.secondOpinionModel = modelId;
             savePreferences();
+            renderModelLists();
         }
 
         function saveWebSearchPreference() {
@@ -783,6 +1010,7 @@
             };
             localStorage.setItem('ai-landscape-preferences', JSON.stringify(prefs));
         }
+
 
         // ==================== CACHE MANAGEMENT ====================
         function cacheGet(nodeId) {
@@ -909,7 +1137,7 @@
 
                 const headerDiv = document.createElement('div');
                 headerDiv.className = 'card-header';
-                headerDiv.innerHTML = '<div class="loading-spinner"></div> Loading...';
+                headerDiv.innerHTML = '<div class="loading-state">Thinking<div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>';
                 cardEl.appendChild(headerDiv);
 
                 if (isExpanded && hasCache) {
@@ -943,9 +1171,12 @@
                     cardEl.style.display = 'block';
 
                     const cached = cacheGet(nodeId);
-                    if (cached) {
+                    // Only use cached if it's a successful response (has content, not an error)
+                    if (cached && cached.content && !cached.isError) {
                         renderCachedContent(nodeId, cardEl);
                     } else if (state.apiKey) {
+                        // Clear any previous content (errors)
+                        cardEl.innerHTML = '';
                         fetchNodeContent(nodeId, cardEl);
                     } else {
                         cardEl.innerHTML = '<p class="error-message">API key required - please add your key above</p>';
@@ -976,11 +1207,8 @@
                 const supportsTools = modelInfo?.supportsTools;
 
                 let result;
-                if (useWebSearch && supportsTools) {
-                    result = await callOpenRouterWithSearch(state.primaryModel, prompt);
-                } else {
-                    result = await callOpenRouterChat(state.primaryModel, prompt);
-                }
+                // Always use basic chat for now - web search can be added later with proper tool format
+                result = await callOpenRouterChat(state.primaryModel, prompt);
 
                 // Cache the result
                 cacheSet(nodeId, result);
@@ -1008,67 +1236,43 @@
         }
 
         function buildNodePrompt(node) {
-            return `Explain "${node.name}" in the context of AI development.
-
-Brief context: ${node.summary}
-
-Requirements:
-- Search for current information (tools, papers, companies, trends)
-- Include 2-3 concrete examples with citations to sources
-- Mention key frameworks, libraries, or research papers
-- Keep response between 200-300 words
-- Structure your response clearly
-
-Use this format:
-1. Overview (1-2 sentences)
-2. Key concepts and approaches (1 paragraph)
-3. Current state and recent developments (1 paragraph)
-4. Notable tools/resources (bulleted list with links)
-
-Cite all sources using markdown links.`;
+            if (!state.prompts['node-overview']) {
+                console.warn('Node overview prompt not loaded');
+                return '';
+            }
+            const summary = (node.summary || '').substring(0, 500); // Limit summary to 500 chars
+            const prompt = state.prompts['node-overview']
+                .replace('{nodeName}', node.name || '')
+                .replace('{nodeSummary}', summary);
+            console.log('Built prompt length:', prompt.length, 'chars');
+            return prompt;
         }
 
         async function callOpenRouterWithSearch(model, prompt) {
-            const response = await fetchWithRetry(() =>
-                fetch('https://openrouter.ai/api/v1/responses', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${state.apiKey}`,
-                        'HTTP-Referer': window.location.href,
-                        'X-Title': 'AI Landscape Explorer',
-                        'Content-Type': 'application/json'
+            // Note: Using standard chat completions endpoint
+            // Web search capability depends on model support
+            const systemMsg = state.prompts['system-web-search'] || 'Provide accurate, current information. Be concise.';
+            console.log('Model:', model);
+            console.log('System message length:', systemMsg.length);
+            console.log('User prompt length:', prompt.length);
+
+            const body = {
+                model,
+                messages: [
+                    {
+                        role: 'system',
+                        content: systemMsg
                     },
-                    body: JSON.stringify({
-                        model,
-                        messages: [
-                            {
-                                role: 'system',
-                                content: 'You have access to web search. Use it strategically to find current information about tools, frameworks, and companies. Include concrete examples with citations. Keep responses focused and well-structured.'
-                            },
-                            {
-                                role: 'user',
-                                content: prompt
-                            }
-                        ],
-                        tools: [
-                            {
-                                type: "web_search_20250305",
-                                name: "web_search"
-                            }
-                        ]
-                    })
-                })
-            );
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ]
+            };
 
-            if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
-            }
+            console.log('Total body size:', JSON.stringify(body).length);
+            console.log('Full request body:', JSON.stringify(body, null, 2));
 
-            const data = await response.json();
-            return parseSearchResponse(data, model);
-        }
-
-        async function callOpenRouterChat(model, prompt) {
             const response = await fetchWithRetry(() =>
                 fetch('https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
@@ -1078,15 +1282,50 @@ Cite all sources using markdown links.`;
                         'X-Title': 'AI Landscape Explorer',
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        model,
-                        messages: [
-                            {
-                                role: 'user',
-                                content: prompt
-                            }
-                        ]
-                    })
+                    body: JSON.stringify(body)
+                })
+            );
+
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({}));
+                throw new Error(`API error: ${response.status} - ${error.message || 'Unknown error'}`);
+            }
+
+            const data = await response.json();
+            return {
+                content: data.choices[0].message.content,
+                searchesPerformed: [],
+                sources: [],
+                tokenUsage: data.usage,
+                model
+            };
+        }
+
+        async function callOpenRouterChat(model, prompt) {
+            console.log('Chat prompt length:', prompt.length);
+
+            const body = {
+                model,
+                messages: [
+                    {
+                        role: 'user',
+                        content: prompt
+                    }
+                ]
+            };
+
+            console.log('Total chat body size:', JSON.stringify(body).length);
+
+            const response = await fetchWithRetry(() =>
+                fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${state.apiKey}`,
+                        'HTTP-Referer': window.location.href,
+                        'X-Title': 'AI Landscape Explorer',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
                 })
             );
 
@@ -1252,7 +1491,7 @@ Cite all sources using markdown links.`;
             const cardEl = document.getElementById(`card-${nodeId}`);
             if (!cardEl) return;
 
-            cardEl.innerHTML = '<div class="card-header"><div class="loading-spinner"></div> Refreshing...</div>';
+            cardEl.innerHTML = '<div class="card-header"><div class="loading-state">Refreshing<div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div></div>';
             localStorage.removeItem(`ai-landscape-${nodeId}`);
             await fetchNodeContent(nodeId, cardEl);
         }
@@ -1294,12 +1533,14 @@ Cite all sources using markdown links.`;
         }
 
         function buildSecondOpinionPrompt(node, firstContent) {
-            return `You are reviewing another AI's response about "${node.name}".
-First response: ${firstContent.substring(0, 500)}...
-
-Provide a second perspective on this topic. You may agree or disagree with the first response.
-Include your own research and examples.
-Use the same format as above.`;
+            if (!state.prompts['second-opinion']) {
+                console.warn('Second opinion prompt not loaded');
+                return '';
+            }
+            const preview = firstContent.substring(0, 500);
+            return state.prompts['second-opinion']
+                .replace('{nodeName}', node.name)
+                .replace('{firstContentPreview}', preview);
         }
 
         function renderSecondOpinionUI(cardEl, cached, secondOpinion) {

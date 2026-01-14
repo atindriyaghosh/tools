@@ -1,0 +1,3 @@
+Explain "{nodeName}" in 2-3 paragraphs. Context: {nodeSummary}
+
+Focus on: key concepts, current tools/frameworks, and recent developments. Keep it concise.
