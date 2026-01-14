@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Landscape Explorer</title>
+
+    <!-- Pico CSS -->
+    <link rel="stylesheet" href="https://cdn.pico.css/pico/1.5.10/pico.min.css">
+
+    <!-- Common Styles -->
+    <link rel="stylesheet" href="common-styles.css">
+
+    <style>
+        :root {
+            --primary-color: #6b8dd6;
+            --tree-indent-mobile: 12px;
+            --tree-indent-desktop: 24px;
+            --node-header-height: 60px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        header {
+            background: #f5f5f5;
+            border-bottom: 1px solid #ddd;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header-title {
+            margin: 0 0 1.5rem 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .header-section {
+            margin-bottom: 1rem;
+        }
+
+        .api-key-input-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .api-key-input-group input {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .api-key-input-group button {
+            padding: 0.5rem 1rem;
+        }
+
+        .api-key-status {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #2e7d32;
+        }
+
+        .model-selectors {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+        }
+
+        .model-selector-group {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .model-selector-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+            color: #666;
+        }
+
+        .model-selector-group select {
+            width: 100%;
+            padding: 0.5rem;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin: 1rem 0;
+        }
+
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .toggle-group input[type="checkbox"] {
+            cursor: pointer;
+            width: auto;
+        }
+
+        .toggle-group label {
+            cursor: pointer;
+            margin: 0;
+            font-size: 0.95rem;
+        }
+
+        .budget-display {
+            padding: 0.75rem 1rem;
+            background: #f0f4ff;
+            border-left: 3px solid var(--primary-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+
+        .budget-display summary {
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--primary-color);
+        }
+
+        .budget-details {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            font-size: 0.85rem;
+            background: white;
+            border-radius: 3px;
+        }
+
+        .tree-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .tree-node {
+            margin-bottom: 1rem;
+        }
+
+        .node-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            min-height: var(--node-header-height);
+        }
+
+        .node-header:hover {
+            background-color: #f9f9ff;
+        }
+
+        .expand-btn {
+            flex-shrink: 0;
+            width: 2.5rem;
+            height: 2.5rem;
+            padding: 0;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.2s;
+            margin-top: 0;
+        }
+
+        .expand-btn:hover:not(:disabled) {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .expand-btn:disabled {
+            background: #f5f5f5;
+            color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .node-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .node-info h2 {
+            margin: 0 0 0.25rem 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .node-info p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .node-content {
+            margin-left: 1rem;
+            padding-left: 1rem;
+            border-left: 2px solid #e0e0e0;
+        }
+
+        .node-content.hidden {
+            display: none;
+        }
+
+        .expansion-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            background: #e3f2fd;
+            color: #1976d2;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .badge.search {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .badge.search.green {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .badge.model {
+            background: #e3f2fd;
+            color: var(--primary-color);
+        }
+
+        .staleness-warning {
+            color: #f57c00;
+        }
+
+        .refresh-btn {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.85rem;
+            border: 1px solid #ddd;
+            background: white;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .expansion-card article {
+            margin: 0;
+        }
+
+        .expansion-card article p,
+        .expansion-card article ul,
+        .expansion-card article ol {
+            margin: 0.75rem 0;
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        .expansion-card article a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .expansion-card article a:hover {
+            text-decoration: underline;
+        }
+
+        .expansion-card article code {
+            background: #f5f5f5;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .expansion-card article pre {
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        .sources-section {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #eee;
+        }
+
+        .sources-section summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--primary-color);
+            padding: 0.5rem;
+            border-radius: 3px;
+            user-select: none;
+        }
+
+        .sources-section summary:hover {
+            background: #f0f4ff;
+        }
+
+        .source-list {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0;
+        }
+
+        .source-item {
+            padding: 0.75rem;
+            background: #f9f9f9;
+            border-left: 3px solid var(--primary-color);
+            border-radius: 3px;
+            margin-bottom: 0.75rem;
+        }
+
+        .quality-badge {
+            margin-right: 0.35rem;
+        }
+
+        .source-item a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .source-item a:hover {
+            text-decoration: underline;
+        }
+
+        .source-excerpt {
+            font-size: 0.85rem;
+            color: #666;
+            margin: 0.25rem 0;
+            font-style: italic;
+        }
+
+        .source-domain {
+            font-size: 0.8rem;
+            color: #999;
+            display: block;
+            margin-top: 0.25rem;
+        }
+
+        .second-opinion-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            background: white;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+
+        .second-opinion-btn:hover {
+            background: #f0f4ff;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 1rem;
+            gap: 0.5rem;
+        }
+
+        .tab-btn {
+            padding: 0.75rem 1rem;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: #666;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            font-size: 0.95rem;
+        }
+
+        .tab-btn.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .setup-section {
+            background: #f9f9f9;
+            padding: 1.5rem;
+            border-radius: 6px;
+            margin-bottom: 2rem;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .setup-section summary {
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1.05rem;
+            padding: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .setup-section summary:hover {
+            background: #f0f4ff;
+            border-radius: 3px;
+        }
+
+        .setup-content {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 4px;
+        }
+
+        .setup-content p, .setup-content li {
+            margin: 0.5rem 0;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .setup-content code {
+            background: #f5f5f5;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+
+        footer {
+            background: #f5f5f5;
+            border-top: 1px solid #ddd;
+            padding: 1.5rem;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid #e0e0e0;
+            border-top-color: var(--primary-color);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            padding: 0.75rem 1rem;
+            background: #ffebee;
+            border-left: 3px solid #d32f2f;
+            color: #c62828;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        .success-message {
+            padding: 0.75rem 1rem;
+            background: #e8f5e9;
+            border-left: 3px solid #388e3c;
+            color: #2e7d32;
+            border-radius: 4px;
+            margin: 0.5rem 0;
+            font-size: 0.9rem;
+        }
+
+        .child-nodes {
+            margin-top: 1rem;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            :root {
+                --tree-indent-mobile: 12px;
+            }
+
+            .header-content {
+                padding: 0;
+            }
+
+            .model-selectors {
+                flex-direction: column;
+            }
+
+            .model-selector-group {
+                min-width: auto;
+            }
+
+            .api-key-input-group {
+                flex-direction: column;
+            }
+
+            .api-key-input-group input,
+            .api-key-input-group button {
+                width: 100%;
+            }
+
+            .header-controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .node-header {
+                padding: 0.5rem;
+            }
+
+            .expand-btn {
+                width: 2rem;
+                height: 2rem;
+                font-size: 1rem;
+            }
+
+            .node-info h2 {
+                font-size: 1rem;
+            }
+
+            .node-info p {
+                font-size: 0.85rem;
+            }
+
+            .expansion-card {
+                padding: 1rem;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab-btn {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.85rem;
+            }
+
+            .source-item {
+                padding: 0.5rem;
+            }
+
+            .source-excerpt {
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Accessibility */
+        .expand-btn:focus,
+        .tab-btn:focus,
+        .refresh-btn:focus,
+        .second-opinion-btn:focus {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+
+        [aria-live] {
+            position: relative;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <div class="header-title">🔍 AI Landscape Explorer</div>
+
+            <div class="header-section" id="apiKeySection">
+                <div class="api-key-input-group">
+                    <input
+                        type="password"
+                        id="apiKeyInput"
+                        placeholder="Enter your OpenRouter API key..."
+                        aria-label="OpenRouter API key"
+                    >
+                    <button onclick="saveApiKey()">Save Key</button>
+                </div>
+            </div>
+
+            <div class="header-section" id="apiKeyStatus" style="display: none;">
+                <span class="api-key-status">✓ API Key Active</span>
+                <button onclick="clearApiKey()" style="margin-left: 0.5rem;">Clear Key</button>
+            </div>
+
+            <div id="modelSelectors" style="display: none;">
+                <div class="model-selectors">
+                    <div class="model-selector-group">
+                        <label for="primaryModelSelect">Primary Model</label>
+                        <select id="primaryModelSelect" onchange="savePrimaryModel()">
+                            <option>Loading models...</option>
+                        </select>
+                    </div>
+                    <div class="model-selector-group">
+                        <label for="secondOpinionModelSelect">Second Opinion Model</label>
+                        <select id="secondOpinionModelSelect" onchange="saveSecondOpinionModel()">
+                            <option>Loading models...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="controls" style="display: none;">
+                <div class="header-controls">
+                    <div class="toggle-group">
+                        <input
+                            type="checkbox"
+                            id="webSearchToggle"
+                            onchange="saveWebSearchPreference()"
+                            checked
+                            aria-label="Enable web search"
+                        >
+                        <label for="webSearchToggle">Enable web search (provides current info & citations)</label>
+                    </div>
+                    <button onclick="clearAllCache()" style="margin-left: auto;">🗑️ Clear Cache</button>
+                </div>
+            </div>
+
+            <div id="budgetDisplay" style="display: none;">
+                <details class="budget-display">
+                    <summary id="budgetSummary">💰 $0.00 spent • 0 searches</summary>
+                    <div class="budget-details">
+                        <div>Tokens used: <span id="tokensUsed">0</span></div>
+                        <div>Searches performed: <span id="searchesCount">0</span></div>
+                        <div>Estimated cost: <span id="estimatedCost">$0.00</span></div>
+                    </div>
+                </details>
+            </div>
+        </div>
+    </header>
+
+    <details class="setup-section">
+        <summary>ℹ️ Setup Instructions</summary>
+        <div class="setup-content">
+            <p><strong>Getting Your OpenRouter API Key:</strong></p>
+            <ol>
+                <li>Visit <a href="https://openrouter.ai/" target="_blank" rel="noopener">openrouter.ai</a></li>
+                <li>Create an account or sign in</li>
+                <li>Go to your profile settings</li>
+                <li>Copy your API key</li>
+                <li>Paste it above and click "Save Key"</li>
+            </ol>
+            <p><strong>Privacy & Security:</strong></p>
+            <ul>
+                <li>Your API key is stored only in your browser's session storage</li>
+                <li>It's automatically cleared when you close the tab (for security)</li>
+                <li>Cached responses are stored locally so you can view them without an API key</li>
+                <li>All processing happens in your browser - nothing is logged to our servers</li>
+            </ul>
+            <p><strong>How It Works:</strong></p>
+            <ul>
+                <li>Click any topic to expand and read an AI-generated overview</li>
+                <li>Web search can be toggled on/off to get current information and citations</li>
+                <li>Use "Get Second Opinion" to compare responses from different AI models</li>
+                <li>Your spending is tracked and displayed in the header</li>
+            </ul>
+        </div>
+    </details>
+
+    <div class="tree-container" id="treeContainer">
+        <div id="tree" role="tree"></div>
+    </div>
+
+    <footer id="footer">
+        <div>AI Landscape Explorer • Powered by OpenRouter</div>
+    </footer>
+
+    <!-- Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+
+    <script>
+        // ==================== STATE ====================
+        const state = {
+            skeleton: null,
+            expandedNodes: new Set(),
+            apiKey: null,
+            budget: {
+                totalTokensUsed: 0,
+                totalSearches: 0,
+                estimatedCost: 0.0
+            },
+            modelPricing: {},
+            webSearchEnabled: true,
+            primaryModel: 'anthropic/claude-sonnet-4',
+            secondOpinionModel: 'openai/gpt-4o'
+        };
+
+        // ==================== INITIALIZATION ====================
+        async function initializeApp() {
+            // Load skeleton
+            try {
+                const response = await fetch('skeleton.yaml');
+                const yaml = await response.text();
+                state.skeleton = jsyaml.load(yaml);
+            } catch (error) {
+                console.error('Failed to load skeleton:', error);
+                state.skeleton = createFallbackSkeleton();
+            }
+
+            // Load from storage
+            loadApiKey();
+            loadPreferences();
+            loadBudget();
+
+            // Render tree
+            renderTree();
+
+            // Initialize models if key exists
+            if (state.apiKey) {
+                showApiKeyStatus();
+                await fetchAndPopulateModels();
+            } else {
+                showApiKeyInput();
+            }
+        }
+
+        function createFallbackSkeleton() {
+            return {
+                name: "AI Development Landscape",
+                summary: "A comprehensive overview of AI tools and concepts",
+                children: []
+            };
+        }
+
+        function loadApiKey() {
+            state.apiKey = sessionStorage.getItem('ai-landscape-apikey');
+        }
+
+        function loadPreferences() {
+            const prefs = localStorage.getItem('ai-landscape-preferences');
+            if (prefs) {
+                const parsed = JSON.parse(prefs);
+                state.primaryModel = parsed.primaryModel || state.primaryModel;
+                state.secondOpinionModel = parsed.secondOpinionModel || state.secondOpinionModel;
+                state.webSearchEnabled = parsed.enableWebSearch !== false;
+                document.getElementById('webSearchToggle').checked = state.webSearchEnabled;
+            }
+        }
+
+        function loadBudget() {
+            const budget = localStorage.getItem('ai-landscape-budget');
+            if (budget) {
+                state.budget = JSON.parse(budget);
+            }
+            updateBudgetDisplay();
+        }
+
+        // ==================== API KEY MANAGEMENT ====================
+        async function saveApiKey() {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            if (!key) {
+                showError('Please enter an API key');
+                return;
+            }
+
+            state.apiKey = key;
+            sessionStorage.setItem('ai-landscape-apikey', key);
+
+            try {
+                await fetchAndPopulateModels();
+                showApiKeyStatus();
+                showSuccess('API key saved successfully!');
+                document.getElementById('apiKeyInput').value = '';
+            } catch (error) {
+                showError('Invalid API key or network error: ' + error.message);
+                state.apiKey = null;
+                sessionStorage.removeItem('ai-landscape-apikey');
+            }
+        }
+
+        function clearApiKey() {
+            state.apiKey = null;
+            sessionStorage.removeItem('ai-landscape-apikey');
+            showApiKeyInput();
+            renderTree();
+        }
+
+        function showApiKeyInput() {
+            document.getElementById('apiKeySection').style.display = 'block';
+            document.getElementById('apiKeyStatus').style.display = 'none';
+            document.getElementById('modelSelectors').style.display = 'none';
+            document.getElementById('controls').style.display = 'none';
+            document.getElementById('budgetDisplay').style.display = 'none';
+        }
+
+        function showApiKeyStatus() {
+            document.getElementById('apiKeySection').style.display = 'none';
+            document.getElementById('apiKeyStatus').style.display = 'block';
+            document.getElementById('modelSelectors').style.display = 'block';
+            document.getElementById('controls').style.display = 'block';
+            document.getElementById('budgetDisplay').style.display = 'block';
+        }
+
+        // ==================== MODEL MANAGEMENT ====================
+        async function fetchAndPopulateModels() {
+            const response = await fetch('https://openrouter.ai/api/v1/models', {
+                headers: {
+                    'Authorization': `Bearer ${state.apiKey}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const models = data.data || [];
+
+            // Store model pricing
+            models.forEach(model => {
+                state.modelPricing[model.id] = {
+                    prompt: model.pricing?.prompt || 0,
+                    completion: model.pricing?.completion || 0,
+                    supportsTools: checkToolSupport(model)
+                };
+            });
+
+            populateModelDropdowns(models);
+        }
+
+        function checkToolSupport(model) {
+            const modelStr = JSON.stringify(model);
+            return modelStr.includes('web_search') || modelStr.includes('tool');
+        }
+
+        function populateModelDropdowns(models) {
+            const popular = [
+                'anthropic/claude-sonnet-4',
+                'anthropic/claude-opus-4-5',
+                'anthropic/claude-3-5-sonnet',
+                'openai/gpt-4o',
+                'openai/gpt-4-turbo',
+                'google/gemini-2.0-flash',
+                'meta-llama/llama-3.1-70b-instruct',
+                'mistralai/mistral-large'
+            ];
+
+            const filtered = models.filter(m => popular.includes(m.id));
+
+            const primarySelect = document.getElementById('primaryModelSelect');
+            const secondarySelect = document.getElementById('secondOpinionModelSelect');
+
+            primarySelect.innerHTML = '';
+            secondarySelect.innerHTML = '';
+
+            filtered.forEach(model => {
+                const pricing = state.modelPricing[model.id];
+                const prompt = (pricing?.prompt || 0).toFixed(3);
+                const completion = (pricing?.completion || 0).toFixed(3);
+                const toolBadge = pricing?.supportsTools ? '🔍 ' : '';
+                const label = `${toolBadge}${model.id} ($${prompt}/$${completion} per 1M)`;
+
+                const opt1 = document.createElement('option');
+                opt1.value = model.id;
+                opt1.textContent = label;
+                if (model.id === state.primaryModel) opt1.selected = true;
+                primarySelect.appendChild(opt1);
+
+                const opt2 = document.createElement('option');
+                opt2.value = model.id;
+                opt2.textContent = label;
+                if (model.id === state.secondOpinionModel) opt2.selected = true;
+                secondarySelect.appendChild(opt2);
+            });
+        }
+
+        function savePrimaryModel() {
+            state.primaryModel = document.getElementById('primaryModelSelect').value;
+            savePreferences();
+        }
+
+        function saveSecondOpinionModel() {
+            state.secondOpinionModel = document.getElementById('secondOpinionModelSelect').value;
+            savePreferences();
+        }
+
+        function saveWebSearchPreference() {
+            state.webSearchEnabled = document.getElementById('webSearchToggle').checked;
+            savePreferences();
+        }
+
+        function savePreferences() {
+            const prefs = {
+                primaryModel: state.primaryModel,
+                secondOpinionModel: state.secondOpinionModel,
+                enableWebSearch: state.webSearchEnabled
+            };
+            localStorage.setItem('ai-landscape-preferences', JSON.stringify(prefs));
+        }
+
+        // ==================== CACHE MANAGEMENT ====================
+        function cacheGet(nodeId) {
+            const cached = localStorage.getItem(`ai-landscape-${nodeId}`);
+            if (!cached) return null;
+
+            try {
+                const entry = JSON.parse(cached);
+                const expiry = entry.expiry || (entry.timestamp + 30 * 24 * 60 * 60 * 1000);
+
+                if (Date.now() > expiry) {
+                    localStorage.removeItem(`ai-landscape-${nodeId}`);
+                    return null;
+                }
+
+                return entry.value || entry; // Support v1 format
+            } catch {
+                return null;
+            }
+        }
+
+        function cacheSet(nodeId, value) {
+            const entry = {
+                cacheVersion: 2,
+                value,
+                timestamp: Date.now(),
+                expiry: Date.now() + 30 * 24 * 60 * 60 * 1000
+            };
+            localStorage.setItem(`ai-landscape-${nodeId}`, JSON.stringify(entry));
+        }
+
+        function clearAllCache() {
+            if (!confirm('Clear all cached content? You can still use cached items from this session.')) return;
+
+            const keys = Object.keys(localStorage);
+            keys.forEach(key => {
+                if (key.startsWith('ai-landscape-') && !key.includes('preferences') && !key.includes('budget') && !key.includes('apikey')) {
+                    localStorage.removeItem(key);
+                }
+            });
+
+            state.expandedNodes.clear();
+            renderTree();
+            showSuccess('Cache cleared');
+        }
+
+        // ==================== TREE RENDERING ====================
+        function renderTree() {
+            const treeEl = document.getElementById('tree');
+            if (!state.skeleton) {
+                treeEl.innerHTML = '<p>Loading tree...</p>';
+                return;
+            }
+
+            treeEl.innerHTML = '';
+            renderNode(state.skeleton, treeEl, 0);
+        }
+
+        function renderNode(node, parent, level) {
+            const isMobile = window.innerWidth <= 768;
+            const nodeEl = document.createElement('div');
+            nodeEl.className = 'tree-node';
+            nodeEl.setAttribute('data-id', node.id || 'root');
+            nodeEl.setAttribute('data-level', level);
+            nodeEl.setAttribute('role', 'treeitem');
+
+            // Header
+            const headerEl = document.createElement('div');
+            headerEl.className = 'node-header';
+
+            const isExpanded = state.expandedNodes.has(node.id);
+            const hasCache = node.id && cacheGet(node.id) !== null;
+            const hasApiKey = state.apiKey !== null;
+            const canExpand = node.children && node.children.length > 0;
+
+            // Expand button
+            const btnEl = document.createElement('button');
+            btnEl.className = 'expand-btn';
+            btnEl.setAttribute('aria-expanded', isExpanded);
+            btnEl.setAttribute('aria-label', `Expand ${node.name}`);
+            btnEl.textContent = isExpanded ? '−' : '+';
+            btnEl.disabled = !canExpand || (!hasCache && !hasApiKey);
+            btnEl.title = !canExpand ? 'No subcategories' :
+                          (!hasCache && !hasApiKey) ? 'API key required to expand' : '';
+            btnEl.onclick = (e) => {
+                e.stopPropagation();
+                toggleNode(node.id, btnEl);
+            };
+            headerEl.appendChild(btnEl);
+
+            // Info
+            const infoEl = document.createElement('div');
+            infoEl.className = 'node-info';
+            const titleEl = document.createElement('h2');
+            titleEl.textContent = node.name || 'Unnamed';
+            const summaryEl = document.createElement('p');
+            summaryEl.textContent = node.summary || '';
+            infoEl.appendChild(titleEl);
+            infoEl.appendChild(summaryEl);
+            headerEl.appendChild(infoEl);
+
+            nodeEl.appendChild(headerEl);
+
+            // Content
+            const contentEl = document.createElement('div');
+            contentEl.className = 'node-content' + (isExpanded ? '' : ' hidden');
+
+            if (node.id && node.children && node.children.length > 0) {
+                const childrenEl = document.createElement('div');
+                childrenEl.className = 'child-nodes';
+
+                node.children.forEach(child => {
+                    renderNode(child, childrenEl, level + 1);
+                });
+
+                contentEl.appendChild(childrenEl);
+            }
+
+            if (node.id && canExpand) {
+                const cardEl = document.createElement('div');
+                cardEl.className = 'expansion-card';
+                cardEl.id = `card-${node.id}`;
+                cardEl.style.display = isExpanded ? 'block' : 'none';
+
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'card-header';
+                headerDiv.innerHTML = '<div class="loading-spinner"></div> Loading...';
+                cardEl.appendChild(headerDiv);
+
+                if (isExpanded && hasCache) {
+                    renderCachedContent(node.id, cardEl);
+                }
+
+                contentEl.insertBefore(cardEl, contentEl.firstChild);
+            }
+
+            nodeEl.appendChild(contentEl);
+            parent.appendChild(nodeEl);
+        }
+
+        function toggleNode(nodeId, btnEl) {
+            const isExpanded = state.expandedNodes.has(nodeId);
+
+            if (isExpanded) {
+                state.expandedNodes.delete(nodeId);
+                const contentEl = document.querySelector(`[data-id="${nodeId}"] .node-content`);
+                if (contentEl) contentEl.classList.add('hidden');
+                const cardEl = document.getElementById(`card-${nodeId}`);
+                if (cardEl) cardEl.style.display = 'none';
+                btnEl.textContent = '+';
+                btnEl.setAttribute('aria-expanded', 'false');
+            } else {
+                state.expandedNodes.add(nodeId);
+                const contentEl = document.querySelector(`[data-id="${nodeId}"] .node-content`);
+                if (contentEl) contentEl.classList.remove('hidden');
+                const cardEl = document.getElementById(`card-${nodeId}`);
+                if (cardEl) {
+                    cardEl.style.display = 'block';
+
+                    const cached = cacheGet(nodeId);
+                    if (cached) {
+                        renderCachedContent(nodeId, cardEl);
+                    } else if (state.apiKey) {
+                        fetchNodeContent(nodeId, cardEl);
+                    } else {
+                        cardEl.innerHTML = '<p class="error-message">API key required - please add your key above</p>';
+                    }
+                }
+                btnEl.textContent = '−';
+                btnEl.setAttribute('aria-expanded', 'true');
+            }
+        }
+
+        // ==================== CONTENT FETCHING ====================
+        async function fetchNodeContent(nodeId, cardEl) {
+            const node = findNode(state.skeleton, nodeId);
+            if (!node) return;
+
+            const headerDiv = cardEl.querySelector('.card-header');
+            if (!headerDiv) {
+                const h = document.createElement('div');
+                h.className = 'card-header';
+                h.innerHTML = '<div class="loading-spinner"></div> Loading...';
+                cardEl.insertBefore(h, cardEl.firstChild);
+            }
+
+            try {
+                const prompt = buildNodePrompt(node);
+                const useWebSearch = state.webSearchEnabled;
+                const modelInfo = state.modelPricing[state.primaryModel];
+                const supportsTools = modelInfo?.supportsTools;
+
+                let result;
+                if (useWebSearch && supportsTools) {
+                    result = await callOpenRouterWithSearch(state.primaryModel, prompt);
+                } else {
+                    result = await callOpenRouterChat(state.primaryModel, prompt);
+                }
+
+                // Cache the result
+                cacheSet(nodeId, result);
+
+                // Render content
+                renderExpandedContent(nodeId, cardEl, result, node);
+
+                // Update budget
+                updateBudget(result.tokenUsage, result.searchesPerformed.length, state.modelPricing[state.primaryModel]);
+
+            } catch (error) {
+                cardEl.innerHTML = `<p class="error-message">Error: ${error.message}</p>`;
+            }
+        }
+
+        function findNode(skeleton, nodeId) {
+            if (skeleton.id === nodeId) return skeleton;
+            if (!skeleton.children) return null;
+
+            for (let child of skeleton.children) {
+                const found = findNode(child, nodeId);
+                if (found) return found;
+            }
+            return null;
+        }
+
+        function buildNodePrompt(node) {
+            return `Explain "${node.name}" in the context of AI development.
+
+Brief context: ${node.summary}
+
+Requirements:
+- Search for current information (tools, papers, companies, trends)
+- Include 2-3 concrete examples with citations to sources
+- Mention key frameworks, libraries, or research papers
+- Keep response between 200-300 words
+- Structure your response clearly
+
+Use this format:
+1. Overview (1-2 sentences)
+2. Key concepts and approaches (1 paragraph)
+3. Current state and recent developments (1 paragraph)
+4. Notable tools/resources (bulleted list with links)
+
+Cite all sources using markdown links.`;
+        }
+
+        async function callOpenRouterWithSearch(model, prompt) {
+            const response = await fetchWithRetry(() =>
+                fetch('https://openrouter.ai/api/v1/responses', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${state.apiKey}`,
+                        'HTTP-Referer': window.location.href,
+                        'X-Title': 'AI Landscape Explorer',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model,
+                        messages: [
+                            {
+                                role: 'system',
+                                content: 'You have access to web search. Use it strategically to find current information about tools, frameworks, and companies. Include concrete examples with citations. Keep responses focused and well-structured.'
+                            },
+                            {
+                                role: 'user',
+                                content: prompt
+                            }
+                        ],
+                        tools: [
+                            {
+                                type: "web_search_20250305",
+                                name: "web_search"
+                            }
+                        ]
+                    })
+                })
+            );
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return parseSearchResponse(data, model);
+        }
+
+        async function callOpenRouterChat(model, prompt) {
+            const response = await fetchWithRetry(() =>
+                fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${state.apiKey}`,
+                        'HTTP-Referer': window.location.href,
+                        'X-Title': 'AI Landscape Explorer',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model,
+                        messages: [
+                            {
+                                role: 'user',
+                                content: prompt
+                            }
+                        ]
+                    })
+                })
+            );
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return {
+                content: data.choices[0].message.content,
+                searchesPerformed: [],
+                sources: [],
+                tokenUsage: data.usage,
+                model
+            };
+        }
+
+        function parseSearchResponse(response, model) {
+            const content = response.choices[0].message.content;
+
+            const textBlocks = [];
+            const searches = [];
+            const sources = [];
+
+            content.forEach(block => {
+                if (block.type === 'text') {
+                    textBlocks.push(block.text);
+                } else if (block.type === 'tool_use' && block.name === 'web_search') {
+                    searches.push(block.input.query);
+                } else if (block.type === 'tool_result' && Array.isArray(block.content)) {
+                    block.content.forEach(result => {
+                        if (result.url && result.title) {
+                            const domain = new URL(result.url).hostname;
+                            const highQuality = ['.edu', '.gov', 'arxiv.org', 'github.com'];
+                            const quality = highQuality.some(hq => domain.includes(hq)) ? 'high' : 'medium';
+
+                            sources.push({
+                                url: result.url,
+                                title: result.title,
+                                relevantExcerpt: result.snippet || '',
+                                quality
+                            });
+                        }
+                    });
+                }
+            });
+
+            return {
+                content: textBlocks.join('\n\n'),
+                searchesPerformed: searches,
+                sources,
+                tokenUsage: response.usage,
+                model
+            };
+        }
+
+        async function fetchWithRetry(fetchFn, maxRetries = 3) {
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                    return await fetchFn();
+                } catch (error) {
+                    if (attempt === maxRetries) throw error;
+                    if (error.status && error.status >= 400 && error.status < 500) throw error;
+
+                    const delay = Math.pow(2, attempt - 1) * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+
+        // ==================== CONTENT RENDERING ====================
+        function renderCachedContent(nodeId, cardEl) {
+            const cached = cacheGet(nodeId);
+            const node = findNode(state.skeleton, nodeId);
+            if (!cached || !node) return;
+
+            renderExpandedContent(nodeId, cardEl, cached, node);
+        }
+
+        function renderExpandedContent(nodeId, cardEl, content, node) {
+            const timeNow = Date.now();
+            const ageMs = timeNow - (content.timestamp || timeNow);
+            const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
+
+            const headerDiv = cardEl.querySelector('.card-header');
+            let stalenessIndicator = '';
+            if (ageDays > 20) {
+                stalenessIndicator = `<span class="staleness-warning">⚠️ Generated ${ageDays} days ago</span>`;
+            } else if (ageDays > 10) {
+                stalenessIndicator = `<span>Generated ${ageDays} days ago</span>`;
+            }
+
+            let searchBadge = '';
+            if (content.searchesPerformed && content.searchesPerformed.length > 0) {
+                const count = content.searchesPerformed.length;
+                const className = count >= 3 ? 'search green' : 'search';
+                searchBadge = `<span class="badge ${className}">🔍 ${count} search${count !== 1 ? 'es' : ''}</span>`;
+            }
+
+            const modelBadge = `<span class="badge model">${content.model?.split('/')[1] || 'unknown'}</span>`;
+
+            headerDiv.innerHTML = `
+                ${modelBadge}
+                ${searchBadge}
+                ${stalenessIndicator}
+                <button class="refresh-btn" onclick="refreshNode('${nodeId}')" title="Fetch fresh content">↻</button>
+            `;
+
+            const article = document.createElement('article');
+            article.innerHTML = marked.parse(content.content);
+            cardEl.appendChild(article);
+
+            if (content.sources && content.sources.length > 0) {
+                const sourcesHTML = renderSources(content.sources);
+                const sourcesEl = document.createElement('div');
+                sourcesEl.innerHTML = sourcesHTML;
+                cardEl.appendChild(sourcesEl);
+            }
+
+            if (state.apiKey) {
+                const secondOpinionBtn = document.createElement('button');
+                secondOpinionBtn.className = 'second-opinion-btn';
+                secondOpinionBtn.textContent = 'Get Second Opinion';
+                secondOpinionBtn.onclick = () => getSecondOpinion(nodeId, cardEl, node);
+                cardEl.appendChild(secondOpinionBtn);
+            }
+        }
+
+        function renderSources(sources) {
+            const sourcesHTML = sources.map(source => {
+                const badge = source.quality === 'high' ? '<span class="quality-badge">⭐</span>' : '';
+                const url = source.url;
+                const title = escapeHtml(source.title);
+                const excerpt = escapeHtml(source.relevantExcerpt || '');
+                const domain = new URL(url).hostname;
+
+                return `
+                    <li class="source-item">
+                        ${badge}<a href="${url}" target="_blank" rel="noopener noreferrer">${title}</a>
+                        <p class="source-excerpt">${excerpt}</p>
+                        <span class="source-domain">${domain}</span>
+                    </li>
+                `;
+            }).join('');
+
+            return `
+                <details class="sources-section">
+                    <summary>Sources (${sources.length})</summary>
+                    <ul class="source-list">
+                        ${sourcesHTML}
+                    </ul>
+                </details>
+            `;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function refreshNode(nodeId) {
+            const cardEl = document.getElementById(`card-${nodeId}`);
+            if (!cardEl) return;
+
+            cardEl.innerHTML = '<div class="card-header"><div class="loading-spinner"></div> Refreshing...</div>';
+            localStorage.removeItem(`ai-landscape-${nodeId}`);
+            await fetchNodeContent(nodeId, cardEl);
+        }
+
+        // ==================== SECOND OPINION ====================
+        async function getSecondOpinion(nodeId, cardEl, node) {
+            const cached = cacheGet(nodeId);
+            if (!cached || !cached.secondOpinion) {
+                const btn = cardEl.querySelector('.second-opinion-btn');
+                if (btn) btn.textContent = 'Loading second opinion...';
+
+                try {
+                    const prompt = buildSecondOpinionPrompt(node, cached.content);
+                    const useWebSearch = state.webSearchEnabled;
+                    const modelInfo = state.modelPricing[state.secondOpinionModel];
+                    const supportsTools = modelInfo?.supportsTools;
+
+                    let result;
+                    if (useWebSearch && supportsTools) {
+                        result = await callOpenRouterWithSearch(state.secondOpinionModel, prompt);
+                    } else {
+                        result = await callOpenRouterChat(state.secondOpinionModel, prompt);
+                    }
+
+                    // Update cache
+                    const updated = cacheGet(nodeId);
+                    updated.secondOpinion = result;
+                    cacheSet(nodeId, updated);
+
+                    updateBudget(result.tokenUsage, result.searchesPerformed.length, state.modelPricing[state.secondOpinionModel]);
+
+                    renderSecondOpinionUI(cardEl, cached, result);
+                } catch (error) {
+                    showError('Failed to get second opinion: ' + error.message);
+                }
+            } else {
+                renderSecondOpinionUI(cardEl, cached, cached.secondOpinion);
+            }
+        }
+
+        function buildSecondOpinionPrompt(node, firstContent) {
+            return `You are reviewing another AI's response about "${node.name}".
+First response: ${firstContent.substring(0, 500)}...
+
+Provide a second perspective on this topic. You may agree or disagree with the first response.
+Include your own research and examples.
+Use the same format as above.`;
+        }
+
+        function renderSecondOpinionUI(cardEl, cached, secondOpinion) {
+            const existingTabs = cardEl.querySelector('.tabs');
+            if (existingTabs) existingTabs.remove();
+
+            const tabsHTML = `
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab(event, 'primary')">
+                        ${cached.model?.split('/')[1] || 'Primary'}${cached.searchesPerformed?.length ? '  🔍 ' + cached.searchesPerformed.length : ''}
+                    </button>
+                    <button class="tab-btn" onclick="switchTab(event, 'secondary')">
+                        ${secondOpinion.model?.split('/')[1] || 'Secondary'}${secondOpinion.searchesPerformed?.length ? '  🔍 ' + secondOpinion.searchesPerformed.length : ''}
+                    </button>
+                </div>
+                <div id="primary" class="tab-content active">
+                    <article>${marked.parse(cached.content)}</article>
+                    ${cached.sources?.length ? renderSources(cached.sources) : ''}
+                </div>
+                <div id="secondary" class="tab-content">
+                    <article>${marked.parse(secondOpinion.content)}</article>
+                    ${secondOpinion.sources?.length ? renderSources(secondOpinion.sources) : ''}
+                </div>
+            `;
+
+            const secondOpinionBtn = cardEl.querySelector('.second-opinion-btn');
+            if (secondOpinionBtn) secondOpinionBtn.remove();
+
+            cardEl.insertAdjacentHTML('beforeend', tabsHTML);
+        }
+
+        function switchTab(event, tabId) {
+            event.target.parentElement.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            event.target.parentElement.parentElement.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // ==================== BUDGET TRACKING ====================
+        function updateBudget(usage, searchCount, modelInfo) {
+            if (!usage) return;
+
+            const promptCost = (usage.prompt_tokens / 1_000_000) * (modelInfo?.prompt || 0);
+            const completionCost = (usage.completion_tokens / 1_000_000) * (modelInfo?.completion || 0);
+            const searchCost = searchCount * 0.005;
+            const totalCost = promptCost + completionCost + searchCost;
+
+            state.budget.totalTokensUsed += usage.total_tokens;
+            state.budget.totalSearches += searchCount;
+            state.budget.estimatedCost += totalCost;
+
+            localStorage.setItem('ai-landscape-budget', JSON.stringify(state.budget));
+            updateBudgetDisplay();
+        }
+
+        function updateBudgetDisplay() {
+            const summary = document.getElementById('budgetSummary');
+            if (summary) {
+                summary.textContent = `💰 $${state.budget.estimatedCost.toFixed(2)} spent • ${state.budget.totalSearches} searches`;
+            }
+
+            document.getElementById('tokensUsed').textContent = state.budget.totalTokensUsed.toLocaleString();
+            document.getElementById('searchesCount').textContent = state.budget.totalSearches;
+            document.getElementById('estimatedCost').textContent = `$${state.budget.estimatedCost.toFixed(2)}`;
+        }
+
+        // ==================== UTILITY ====================
+        function showError(message) {
+            const container = document.getElementById('apiKeyStatus') || document.getElementById('apiKeySection');
+            const el = document.createElement('div');
+            el.className = 'error-message';
+            el.textContent = message;
+            container.insertAdjacentElement('afterend', el);
+            setTimeout(() => el.remove(), 5000);
+        }
+
+        function showSuccess(message) {
+            const container = document.getElementById('apiKeyStatus') || document.getElementById('apiKeySection');
+            const el = document.createElement('div');
+            el.className = 'success-message';
+            el.textContent = message;
+            container.insertAdjacentElement('afterend', el);
+            setTimeout(() => el.remove(), 5000);
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+        // Mobile default: collapse all nodes
+        window.addEventListener('load', () => {
+            const isMobile = window.innerWidth <= 768;
+            if (isMobile && state.expandedNodes.size === 0) {
+                state.expandedNodes.clear();
+            }
+        });
+    </script>
+</body>
+</html>
