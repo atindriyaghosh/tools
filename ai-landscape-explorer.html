@@ -1,104 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Landscape Explorer</title>
-
-    <!-- Pico CSS -->
-    <link rel="stylesheet" href="https://cdn.pico.css/pico/1.5.10/pico.min.css">
-
-    <!-- Common Styles -->
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
     <link rel="stylesheet" href="common-styles.css">
 
     <style>
-        :root {
-            --primary-color: #6b8dd6;
-            --tree-indent-mobile: 12px;
-            --tree-indent-desktop: 24px;
-            --node-header-height: 60px;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: system-ui, -apple-system, sans-serif;
-            line-height: 1.6;
-            color: #333;
-        }
-
-        header {
-            background: #f5f5f5;
-            border-bottom: 1px solid #ddd;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .header-content {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .header-title {
-            margin: 0 0 1.5rem 0;
-            font-size: 1.5rem;
-            font-weight: 600;
-        }
-
-        .header-section {
-            margin-bottom: 1rem;
-        }
-
-        .api-key-input-group {
+        .api-key-section {
             display: flex;
             gap: 0.5rem;
             margin-bottom: 1rem;
         }
 
-        .api-key-input-group input {
+        .api-key-section input {
             flex: 1;
-            min-width: 250px;
+            min-width: 200px;
         }
 
-        .api-key-input-group button {
+        .api-key-section button {
             padding: 0.5rem 1rem;
         }
 
         .api-key-status {
-            display: inline-block;
-            padding: 0.5rem 1rem;
-            background: #e8f5e9;
-            border: 1px solid #4caf50;
-            border-radius: 4px;
+            padding: 0.75rem 1rem;
+            background: rgba(107, 141, 214, 0.1);
+            border: 1px solid rgba(107, 141, 214, 0.3);
+            border-radius: var(--pico-border-radius);
+            color: #6b8dd6;
             font-size: 0.9rem;
-            color: #2e7d32;
+            margin-bottom: 1rem;
         }
 
         .model-selectors {
-            display: flex;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 1rem;
-            flex-wrap: wrap;
-            margin: 1rem 0;
-        }
-
-        .model-selector-group {
-            flex: 1;
-            min-width: 250px;
+            margin-bottom: 1rem;
         }
 
         .model-selector-group label {
             display: block;
             font-size: 0.9rem;
-            font-weight: 500;
+            font-weight: 600;
             margin-bottom: 0.25rem;
-            color: #666;
-        }
-
-        .model-selector-group select {
-            width: 100%;
-            padding: 0.5rem;
         }
 
         .header-controls {
@@ -106,7 +54,7 @@
             gap: 1rem;
             flex-wrap: wrap;
             align-items: center;
-            margin: 1rem 0;
+            margin-bottom: 1rem;
         }
 
         .toggle-group {
@@ -117,7 +65,6 @@
 
         .toggle-group input[type="checkbox"] {
             cursor: pointer;
-            width: auto;
         }
 
         .toggle-group label {
@@ -128,30 +75,23 @@
 
         .budget-display {
             padding: 0.75rem 1rem;
-            background: #f0f4ff;
-            border-left: 3px solid var(--primary-color);
-            border-radius: 4px;
+            background: rgba(107, 141, 214, 0.1);
+            border: 1px solid rgba(107, 141, 214, 0.3);
+            border-radius: var(--pico-border-radius);
             font-size: 0.9rem;
+            margin-bottom: 1rem;
         }
 
         .budget-display summary {
             cursor: pointer;
-            font-weight: 500;
-            color: var(--primary-color);
+            font-weight: 600;
+            color: #6b8dd6;
         }
 
         .budget-details {
             margin-top: 0.5rem;
             padding: 0.5rem;
             font-size: 0.85rem;
-            background: white;
-            border-radius: 3px;
-        }
-
-        .tree-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 1rem;
         }
 
         .tree-node {
@@ -163,44 +103,44 @@
             align-items: flex-start;
             gap: 0.75rem;
             padding: 0.75rem;
-            background: white;
-            border: 1px solid #eee;
-            border-radius: 6px;
+            background: var(--pico-card-background-color);
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
             cursor: pointer;
             transition: background-color 0.2s;
-            min-height: var(--node-header-height);
+            min-height: auto;
         }
 
         .node-header:hover {
-            background-color: #f9f9ff;
+            background-color: rgba(107, 141, 214, 0.05);
         }
 
         .expand-btn {
             flex-shrink: 0;
-            width: 2.5rem;
-            height: 2.5rem;
+            width: 2.25rem;
+            height: 2.25rem;
             padding: 0;
-            border: 1px solid #ddd;
-            background: white;
-            border-radius: 4px;
+            border: 1px solid var(--pico-muted-border-color);
+            background: var(--pico-button-background-color);
+            border-radius: var(--pico-border-radius);
             font-weight: bold;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
+            font-size: 1rem;
             transition: all 0.2s;
-            margin-top: 0;
+            margin: 0;
         }
 
         .expand-btn:hover:not(:disabled) {
-            background: var(--primary-color);
+            background-color: #6b8dd6;
+            border-color: #6b8dd6;
             color: white;
-            border-color: var(--primary-color);
         }
 
         .expand-btn:disabled {
-            background: #f5f5f5;
+            background-color: #f5f5f5;
             color: #ccc;
             cursor: not-allowed;
         }
@@ -210,22 +150,22 @@
             min-width: 0;
         }
 
-        .node-info h2 {
+        .node-info h3 {
             margin: 0 0 0.25rem 0;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 600;
         }
 
         .node-info p {
             margin: 0;
             font-size: 0.9rem;
-            color: #666;
+            color: var(--pico-muted-color);
         }
 
         .node-content {
             margin-left: 1rem;
             padding-left: 1rem;
-            border-left: 2px solid #e0e0e0;
+            border-left: 2px solid var(--pico-muted-border-color);
         }
 
         .node-content.hidden {
@@ -233,11 +173,11 @@
         }
 
         .expansion-card {
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            padding: 1.5rem;
-            margin-bottom: 1rem;
+            background: var(--pico-card-background-color);
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            padding: 1rem;
+            margin: 1rem 0;
         }
 
         .card-header {
@@ -246,46 +186,37 @@
             gap: 0.75rem;
             margin-bottom: 1rem;
             flex-wrap: wrap;
-            font-size: 0.9rem;
-            color: #666;
+            font-size: 0.85rem;
+            color: var(--pico-muted-color);
         }
 
         .badge {
             display: inline-block;
             padding: 0.25rem 0.75rem;
-            background: #e3f2fd;
-            color: #1976d2;
-            border-radius: 12px;
-            font-size: 0.85rem;
+            background: rgba(107, 141, 214, 0.1);
+            color: #6b8dd6;
+            border-radius: 4px;
+            font-size: 0.8rem;
             font-weight: 500;
         }
 
         .badge.search {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-
-        .badge.search.green {
-            background: #e8f5e9;
-            color: #2e7d32;
+            background: rgba(107, 141, 214, 0.1);
+            color: #6b8dd6;
         }
 
         .badge.model {
-            background: #e3f2fd;
-            color: var(--primary-color);
-        }
-
-        .staleness-warning {
-            color: #f57c00;
+            background: rgba(107, 141, 214, 0.1);
+            color: #6b8dd6;
         }
 
         .refresh-btn {
-            padding: 0.25rem 0.75rem;
-            font-size: 0.85rem;
-            border: 1px solid #ddd;
-            background: white;
+            padding: 0.4rem 0.6rem;
+            font-size: 0.8rem;
+            border: 1px solid var(--pico-muted-border-color);
+            background: var(--pico-button-background-color);
             cursor: pointer;
-            border-radius: 3px;
+            border-radius: var(--pico-border-radius);
         }
 
         .expansion-card article {
@@ -297,51 +228,26 @@
         .expansion-card article ol {
             margin: 0.75rem 0;
             font-size: 0.95rem;
-            line-height: 1.7;
-        }
-
-        .expansion-card article a {
-            color: var(--primary-color);
-            text-decoration: none;
-        }
-
-        .expansion-card article a:hover {
-            text-decoration: underline;
-        }
-
-        .expansion-card article code {
-            background: #f5f5f5;
-            padding: 0.2rem 0.4rem;
-            border-radius: 3px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.9rem;
-        }
-
-        .expansion-card article pre {
-            background: #f5f5f5;
-            padding: 1rem;
-            border-radius: 4px;
-            overflow-x: auto;
-            margin: 1rem 0;
+            line-height: 1.6;
         }
 
         .sources-section {
             margin-top: 1.5rem;
             padding-top: 1.5rem;
-            border-top: 1px solid #eee;
+            border-top: 1px solid var(--pico-muted-border-color);
         }
 
         .sources-section summary {
             cursor: pointer;
             font-weight: 600;
-            color: var(--primary-color);
+            color: #6b8dd6;
             padding: 0.5rem;
-            border-radius: 3px;
+            border-radius: 4px;
             user-select: none;
         }
 
         .sources-section summary:hover {
-            background: #f0f4ff;
+            background: rgba(107, 141, 214, 0.05);
         }
 
         .source-list {
@@ -352,18 +258,14 @@
 
         .source-item {
             padding: 0.75rem;
-            background: #f9f9f9;
-            border-left: 3px solid var(--primary-color);
-            border-radius: 3px;
+            background: var(--pico-card-background-color);
+            border-left: 3px solid #6b8dd6;
+            border-radius: 4px;
             margin-bottom: 0.75rem;
         }
 
-        .quality-badge {
-            margin-right: 0.35rem;
-        }
-
         .source-item a {
-            color: var(--primary-color);
+            color: #6b8dd6;
             text-decoration: none;
             font-weight: 500;
             display: block;
@@ -376,14 +278,14 @@
 
         .source-excerpt {
             font-size: 0.85rem;
-            color: #666;
+            color: var(--pico-muted-color);
             margin: 0.25rem 0;
             font-style: italic;
         }
 
         .source-domain {
             font-size: 0.8rem;
-            color: #999;
+            color: var(--pico-muted-color);
             display: block;
             margin-top: 0.25rem;
         }
@@ -391,21 +293,12 @@
         .second-opinion-btn {
             padding: 0.5rem 1rem;
             font-size: 0.9rem;
-            background: white;
-            border: 1px solid var(--primary-color);
-            color: var(--primary-color);
-            border-radius: 4px;
-            cursor: pointer;
             margin-top: 1rem;
-        }
-
-        .second-opinion-btn:hover {
-            background: #f0f4ff;
         }
 
         .tabs {
             display: flex;
-            border-bottom: 2px solid #e0e0e0;
+            border-bottom: 2px solid var(--pico-muted-border-color);
             margin-bottom: 1rem;
             gap: 0.5rem;
         }
@@ -415,7 +308,7 @@
             border: none;
             background: none;
             cursor: pointer;
-            color: #666;
+            color: var(--pico-muted-color);
             font-weight: 500;
             border-bottom: 3px solid transparent;
             margin-bottom: -2px;
@@ -423,8 +316,8 @@
         }
 
         .tab-btn.active {
-            color: var(--primary-color);
-            border-bottom-color: var(--primary-color);
+            color: #6b8dd6;
+            border-bottom-color: #6b8dd6;
         }
 
         .tab-content {
@@ -436,64 +329,36 @@
         }
 
         .setup-section {
-            background: #f9f9f9;
+            background: var(--pico-card-background-color);
             padding: 1.5rem;
-            border-radius: 6px;
+            border-radius: var(--pico-border-radius);
             margin-bottom: 2rem;
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
+            border: 1px solid var(--pico-muted-border-color);
         }
 
         .setup-section summary {
             cursor: pointer;
             font-weight: 600;
-            font-size: 1.05rem;
-            padding: 0.5rem;
-            color: var(--primary-color);
+            font-size: 1rem;
+            color: #6b8dd6;
         }
 
         .setup-section summary:hover {
-            background: #f0f4ff;
-            border-radius: 3px;
+            background: rgba(107, 141, 214, 0.05);
+            border-radius: 4px;
+            padding: 0.25rem 0.5rem;
         }
 
         .setup-content {
             margin-top: 1rem;
-            padding: 1rem;
-            background: white;
-            border-radius: 4px;
-        }
-
-        .setup-content p, .setup-content li {
-            margin: 0.5rem 0;
-            font-size: 0.95rem;
-            line-height: 1.6;
-        }
-
-        .setup-content code {
-            background: #f5f5f5;
-            padding: 0.2rem 0.4rem;
-            border-radius: 3px;
-            font-family: 'Courier New', monospace;
-        }
-
-        footer {
-            background: #f5f5f5;
-            border-top: 1px solid #ddd;
-            padding: 1.5rem;
-            margin-top: 2rem;
-            font-size: 0.9rem;
-            color: #666;
-            text-align: center;
         }
 
         .loading-spinner {
             display: inline-block;
             width: 1rem;
             height: 1rem;
-            border: 2px solid #e0e0e0;
-            border-top-color: var(--primary-color);
+            border: 2px solid var(--pico-muted-border-color);
+            border-top-color: #6b8dd6;
             border-radius: 50%;
             animation: spin 0.6s linear infinite;
         }
@@ -502,54 +367,21 @@
             to { transform: rotate(360deg); }
         }
 
-        .error-message {
-            padding: 0.75rem 1rem;
-            background: #ffebee;
-            border-left: 3px solid #d32f2f;
-            color: #c62828;
-            border-radius: 4px;
-            margin: 0.5rem 0;
-            font-size: 0.9rem;
-        }
-
-        .success-message {
-            padding: 0.75rem 1rem;
-            background: #e8f5e9;
-            border-left: 3px solid #388e3c;
-            color: #2e7d32;
-            border-radius: 4px;
-            margin: 0.5rem 0;
-            font-size: 0.9rem;
-        }
-
         .child-nodes {
             margin-top: 1rem;
         }
 
-        /* Mobile responsive */
         @media (max-width: 768px) {
-            :root {
-                --tree-indent-mobile: 12px;
-            }
-
-            .header-content {
-                padding: 0;
-            }
-
             .model-selectors {
+                grid-template-columns: 1fr;
+            }
+
+            .api-key-section {
                 flex-direction: column;
             }
 
-            .model-selector-group {
-                min-width: auto;
-            }
-
-            .api-key-input-group {
-                flex-direction: column;
-            }
-
-            .api-key-input-group input,
-            .api-key-input-group button {
+            .api-key-section input,
+            .api-key-section button {
                 width: 100%;
             }
 
@@ -558,163 +390,126 @@
                 align-items: flex-start;
             }
 
-            .node-header {
-                padding: 0.5rem;
-            }
-
             .expand-btn {
                 width: 2rem;
                 height: 2rem;
-                font-size: 1rem;
+                font-size: 0.9rem;
             }
 
-            .node-info h2 {
-                font-size: 1rem;
-            }
-
-            .node-info p {
-                font-size: 0.85rem;
+            .node-info h3 {
+                font-size: 0.95rem;
             }
 
             .expansion-card {
-                padding: 1rem;
-            }
-
-            .tabs {
-                flex-wrap: wrap;
+                padding: 0.75rem;
             }
 
             .tab-btn {
                 padding: 0.5rem 0.75rem;
                 font-size: 0.85rem;
             }
-
-            .source-item {
-                padding: 0.5rem;
-            }
-
-            .source-excerpt {
-                font-size: 0.8rem;
-            }
         }
 
-        /* Accessibility */
-        .expand-btn:focus,
-        .tab-btn:focus,
-        .refresh-btn:focus,
-        .second-opinion-btn:focus {
-            outline: 2px solid var(--primary-color);
+        .expand-btn:focus {
+            outline: 2px solid #6b8dd6;
             outline-offset: 2px;
-        }
-
-        [aria-live] {
-            position: relative;
         }
     </style>
 </head>
 <body>
-    <header>
-        <div class="header-content">
-            <div class="header-title">🔍 AI Landscape Explorer</div>
+    <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">Back to Tools</a></p>
+        <hgroup>
+            <h1>AI Landscape Explorer</h1>
+            <p>Interactive exploration of AI development tools and concepts with AI-generated insights</p>
+        </hgroup>
 
-            <div class="header-section" id="apiKeySection">
-                <div class="api-key-input-group">
+        <div id="apiKeySection">
+            <div class="api-key-section">
+                <input
+                    type="password"
+                    id="apiKeyInput"
+                    placeholder="OpenRouter API key..."
+                    aria-label="OpenRouter API key"
+                >
+                <button onclick="saveApiKey()">Save Key</button>
+            </div>
+        </div>
+
+        <div id="apiKeyStatus" style="display: none;">
+            <div class="api-key-status">API Key Active</div>
+            <button onclick="clearApiKey()" style="margin-bottom: 1rem;">Clear Key</button>
+        </div>
+
+        <div id="modelSelectors" style="display: none;">
+            <div class="model-selectors">
+                <div class="model-selector-group">
+                    <label for="primaryModelSelect">Primary Model</label>
+                    <select id="primaryModelSelect" onchange="savePrimaryModel()">
+                        <option>Loading models...</option>
+                    </select>
+                </div>
+                <div class="model-selector-group">
+                    <label for="secondOpinionModelSelect">Second Opinion Model</label>
+                    <select id="secondOpinionModelSelect" onchange="saveSecondOpinionModel()">
+                        <option>Loading models...</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="controls" style="display: none;">
+            <div class="header-controls">
+                <div class="toggle-group">
                     <input
-                        type="password"
-                        id="apiKeyInput"
-                        placeholder="Enter your OpenRouter API key..."
-                        aria-label="OpenRouter API key"
+                        type="checkbox"
+                        id="webSearchToggle"
+                        onchange="saveWebSearchPreference()"
+                        checked
+                        aria-label="Enable web search"
                     >
-                    <button onclick="saveApiKey()">Save Key</button>
+                    <label for="webSearchToggle">Enable web search</label>
                 </div>
-            </div>
-
-            <div class="header-section" id="apiKeyStatus" style="display: none;">
-                <span class="api-key-status">✓ API Key Active</span>
-                <button onclick="clearApiKey()" style="margin-left: 0.5rem;">Clear Key</button>
-            </div>
-
-            <div id="modelSelectors" style="display: none;">
-                <div class="model-selectors">
-                    <div class="model-selector-group">
-                        <label for="primaryModelSelect">Primary Model</label>
-                        <select id="primaryModelSelect" onchange="savePrimaryModel()">
-                            <option>Loading models...</option>
-                        </select>
-                    </div>
-                    <div class="model-selector-group">
-                        <label for="secondOpinionModelSelect">Second Opinion Model</label>
-                        <select id="secondOpinionModelSelect" onchange="saveSecondOpinionModel()">
-                            <option>Loading models...</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div id="controls" style="display: none;">
-                <div class="header-controls">
-                    <div class="toggle-group">
-                        <input
-                            type="checkbox"
-                            id="webSearchToggle"
-                            onchange="saveWebSearchPreference()"
-                            checked
-                            aria-label="Enable web search"
-                        >
-                        <label for="webSearchToggle">Enable web search (provides current info & citations)</label>
-                    </div>
-                    <button onclick="clearAllCache()" style="margin-left: auto;">🗑️ Clear Cache</button>
-                </div>
-            </div>
-
-            <div id="budgetDisplay" style="display: none;">
-                <details class="budget-display">
-                    <summary id="budgetSummary">💰 $0.00 spent • 0 searches</summary>
-                    <div class="budget-details">
-                        <div>Tokens used: <span id="tokensUsed">0</span></div>
-                        <div>Searches performed: <span id="searchesCount">0</span></div>
-                        <div>Estimated cost: <span id="estimatedCost">$0.00</span></div>
-                    </div>
-                </details>
+                <button onclick="clearAllCache()">Clear Cache</button>
             </div>
         </div>
-    </header>
 
-    <details class="setup-section">
-        <summary>ℹ️ Setup Instructions</summary>
-        <div class="setup-content">
-            <p><strong>Getting Your OpenRouter API Key:</strong></p>
-            <ol>
-                <li>Visit <a href="https://openrouter.ai/" target="_blank" rel="noopener">openrouter.ai</a></li>
-                <li>Create an account or sign in</li>
-                <li>Go to your profile settings</li>
-                <li>Copy your API key</li>
-                <li>Paste it above and click "Save Key"</li>
-            </ol>
-            <p><strong>Privacy & Security:</strong></p>
-            <ul>
-                <li>Your API key is stored only in your browser's session storage</li>
-                <li>It's automatically cleared when you close the tab (for security)</li>
-                <li>Cached responses are stored locally so you can view them without an API key</li>
-                <li>All processing happens in your browser - nothing is logged to our servers</li>
-            </ul>
-            <p><strong>How It Works:</strong></p>
-            <ul>
-                <li>Click any topic to expand and read an AI-generated overview</li>
-                <li>Web search can be toggled on/off to get current information and citations</li>
-                <li>Use "Get Second Opinion" to compare responses from different AI models</li>
-                <li>Your spending is tracked and displayed in the header</li>
-            </ul>
+        <div id="budgetDisplay" style="display: none;">
+            <details class="budget-display">
+                <summary id="budgetSummary">Budget: $0.00 (0 searches)</summary>
+                <div class="budget-details">
+                    <p>Tokens: <strong id="tokensUsed">0</strong></p>
+                    <p>Searches: <strong id="searchesCount">0</strong></p>
+                    <p>Cost: <strong id="estimatedCost">$0.00</strong></p>
+                </div>
+            </details>
         </div>
-    </details>
 
-    <div class="tree-container" id="treeContainer">
+        <details class="setup-section">
+            <summary>Setup Instructions</summary>
+            <div class="setup-content">
+                <p><strong>Getting your OpenRouter API key:</strong></p>
+                <ol>
+                    <li>Visit <a href="https://openrouter.ai/" target="_blank" rel="noopener">openrouter.ai</a></li>
+                    <li>Create an account or sign in</li>
+                    <li>Go to your profile settings</li>
+                    <li>Copy your API key</li>
+                    <li>Paste it above and click "Save Key"</li>
+                </ol>
+                <p><strong>How it works:</strong></p>
+                <ul>
+                    <li>Your API key is stored in your browser's session storage (cleared when you close the tab)</li>
+                    <li>Cached responses are stored locally so you can view them without an API key</li>
+                    <li>All processing happens in your browser</li>
+                    <li>Click topics to expand and read AI-generated overviews</li>
+                    <li>Toggle web search to get current information with citations</li>
+                    <li>Use "Second Opinion" to compare responses from different models</li>
+                </ul>
+            </div>
+        </details>
+
         <div id="tree" role="tree"></div>
-    </div>
-
-    <footer id="footer">
-        <div>AI Landscape Explorer • Powered by OpenRouter</div>
-    </footer>
+    </main>
 
     <!-- Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
@@ -899,7 +694,7 @@
                 const pricing = state.modelPricing[model.id];
                 const prompt = (pricing?.prompt || 0).toFixed(3);
                 const completion = (pricing?.completion || 0).toFixed(3);
-                const toolBadge = pricing?.supportsTools ? '🔍 ' : '';
+                const toolBadge = pricing?.supportsTools ? '[Web Search] ' : '';
                 const label = `${toolBadge}${model.id} ($${prompt}/$${completion} per 1M)`;
 
                 const opt1 = document.createElement('option');
@@ -1330,7 +1125,7 @@ Cite all sources using markdown links.`;
             const headerDiv = cardEl.querySelector('.card-header');
             let stalenessIndicator = '';
             if (ageDays > 20) {
-                stalenessIndicator = `<span class="staleness-warning">⚠️ Generated ${ageDays} days ago</span>`;
+                stalenessIndicator = `<span class="staleness-warning">Generated ${ageDays} days ago (age warning)</span>`;
             } else if (ageDays > 10) {
                 stalenessIndicator = `<span>Generated ${ageDays} days ago</span>`;
             }
@@ -1339,7 +1134,7 @@ Cite all sources using markdown links.`;
             if (content.searchesPerformed && content.searchesPerformed.length > 0) {
                 const count = content.searchesPerformed.length;
                 const className = count >= 3 ? 'search green' : 'search';
-                searchBadge = `<span class="badge ${className}">🔍 ${count} search${count !== 1 ? 'es' : ''}</span>`;
+                searchBadge = `<span class="badge ${className}">${count} search${count !== 1 ? 'es' : ''}</span>`;
             }
 
             const modelBadge = `<span class="badge model">${content.model?.split('/')[1] || 'unknown'}</span>`;
@@ -1348,7 +1143,7 @@ Cite all sources using markdown links.`;
                 ${modelBadge}
                 ${searchBadge}
                 ${stalenessIndicator}
-                <button class="refresh-btn" onclick="refreshNode('${nodeId}')" title="Fetch fresh content">↻</button>
+                <button class="refresh-btn" onclick="refreshNode('${nodeId}')" title="Refresh">Refresh</button>
             `;
 
             const article = document.createElement('article');
@@ -1373,7 +1168,7 @@ Cite all sources using markdown links.`;
 
         function renderSources(sources) {
             const sourcesHTML = sources.map(source => {
-                const badge = source.quality === 'high' ? '<span class="quality-badge">⭐</span>' : '';
+                const badge = source.quality === 'high' ? '<span class="quality-badge">[High Quality]</span>' : '';
                 const url = source.url;
                 const title = escapeHtml(source.title);
                 const excerpt = escapeHtml(source.relevantExcerpt || '');
@@ -1465,10 +1260,10 @@ Use the same format as above.`;
             const tabsHTML = `
                 <div class="tabs">
                     <button class="tab-btn active" onclick="switchTab(event, 'primary')">
-                        ${cached.model?.split('/')[1] || 'Primary'}${cached.searchesPerformed?.length ? '  🔍 ' + cached.searchesPerformed.length : ''}
+                        ${cached.model?.split('/')[1] || 'Primary'}${cached.searchesPerformed?.length ? ' (' + cached.searchesPerformed.length + ')' : ''}
                     </button>
                     <button class="tab-btn" onclick="switchTab(event, 'secondary')">
-                        ${secondOpinion.model?.split('/')[1] || 'Secondary'}${secondOpinion.searchesPerformed?.length ? '  🔍 ' + secondOpinion.searchesPerformed.length : ''}
+                        ${secondOpinion.model?.split('/')[1] || 'Secondary'}${secondOpinion.searchesPerformed?.length ? ' (' + secondOpinion.searchesPerformed.length + ')' : ''}
                     </button>
                 </div>
                 <div id="primary" class="tab-content active">
@@ -1519,7 +1314,7 @@ Use the same format as above.`;
         function updateBudgetDisplay() {
             const summary = document.getElementById('budgetSummary');
             if (summary) {
-                summary.textContent = `💰 $${state.budget.estimatedCost.toFixed(2)} spent • ${state.budget.totalSearches} searches`;
+                summary.textContent = `Budget: $${state.budget.estimatedCost.toFixed(2)} (${state.budget.totalSearches} searches)`;
             }
 
             document.getElementById('tokensUsed').textContent = state.budget.totalTokensUsed.toLocaleString();
