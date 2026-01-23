@@ -1,21 +1,6 @@
 Explain "{nodeName}". Context: {nodeSummary}
 
-Format your response as markdown with clear structure:
+Focus on: key concepts, practical use cases, current tools/frameworks, and recent developments. Keep it concise.
+Output shouldn't be a wall of text. Use headings, sub-headings, bullet points etc to make the content easy to read.
+Tone should be business casual. 
 
-## Overview
-Brief 1-2 sentence summary of what this encompasses.
-
-## Key Concepts & Tools
-- Core concept 1 and relevant tools
-- Core concept 2 and relevant tools
-- Core concept 3 and relevant tools
-
-## Current Landscape
-1-2 sentences on the current state, major frameworks, and emerging trends.
-
-## Recent Developments
-- Key trend or tool with brief description
-- Another recent development
-- Forward-looking trend for 2025+
-
-Keep each section concise but informative.
