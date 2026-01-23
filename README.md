@@ -21,6 +21,27 @@ This repository contains standalone HTML tools for common tasks like PDF convers
 - **DateTime Format Converter** - Parses and reformats date/time strings with custom patterns
 - **Date Calculator** - Calculates differences between dates or adds/subtracts time periods from a date
 
+### Text & Data Tools
+- **Text Case Converter** - Converts text between case formats (camelCase, snake_case, kebab-case, PascalCase, etc.)
+- **Markdown Editor** - Write and preview markdown with real-time conversion to HTML
+- **NATO Phonetic Converter** - Converts text to NATO phonetic alphabet spelling
+
+### Development & Code Tools
+- **Regex Tester** - Test and debug regular expressions with pattern matching and flags
+- **Cron Expression Generator** - Generate and explain cron expressions for scheduled tasks
+- **Hash Generator** - Generate MD5, SHA1, SHA256, and SHA512 hashes from text or files
+- **UUID Generator** - Generate v4 UUIDs with one-click copying
+
+### Data Format Tools
+- **JSON/XML/YAML Converter** - Convert between JSON, XML, and YAML formats
+- **JSON/XML/YAML Formatter** - Format, validate, and beautify JSON, XML, and YAML data
+- **Base64 Encoder/Decoder** - Encode text to Base64 or decode Base64 strings
+- **Unit Converter** - Convert between units (length, weight, temperature, etc.)
+
+### Reference Tools
+- **HTTP Status Codes** - Reference guide for HTTP status codes with descriptions
+- **AI Landscape Explorer** - Explore the AI/ML tools and models landscape
+
 ## Tech Stack
 
 - **Styling**: [Pico CSS](https://picocss.com/) via CDN
