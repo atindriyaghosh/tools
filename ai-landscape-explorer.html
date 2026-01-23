@@ -634,6 +634,11 @@
                 estimatedCost: 0.0
             },
             modelPricing: {},
+            modelLimits: {},
+            defaultLimits: {
+                contextWindow: 8000,
+                maxOutput: 2000
+            },
             webSearchEnabled: true,
             primaryModel: 'anthropic/claude-sonnet-4',
             secondOpinionModel: 'openai/gpt-4o',
@@ -824,12 +829,20 @@
             const data = await response.json();
             const models = data.data || [];
 
-            // Store model pricing
+            // Store model pricing and limits
             models.forEach(model => {
+                const contextWindow = model.context_length || 8000;
+                const isFree = parseFloat(model.pricing?.prompt) === 0 && parseFloat(model.pricing?.completion) === 0;
+
                 state.modelPricing[model.id] = {
                     prompt: parseFloat(model.pricing?.prompt) || 0,
                     completion: parseFloat(model.pricing?.completion) || 0,
                     supportsTools: checkToolSupport(model)
+                };
+
+                state.modelLimits[model.id] = {
+                    contextWindow: contextWindow,
+                    maxOutput: isFree ? Math.min(2000, contextWindow * 0.25) : Math.min(4000, contextWindow * 0.5)
                 };
             });
 
@@ -928,6 +941,8 @@
                 const pricing = state.modelPricing[model.id];
                 const prompt = ((parseFloat(pricing?.prompt) || 0) * 1_000_000).toFixed(2);
                 const completion = ((parseFloat(pricing?.completion) || 0) * 1_000_000).toFixed(2);
+                const limits = state.modelLimits[model.id];
+                const limitText = limits ? `${(limits.contextWindow/1000).toFixed(0)}k ctx / ${(limits.maxOutput/1000).toFixed(1)}k out` : '';
 
                 // Primary model
                 const primaryLabel = document.createElement('div');
@@ -944,7 +959,7 @@
                 const primaryText = document.createElement('div');
                 primaryText.style.fontSize = '0.8rem';
                 primaryText.style.lineHeight = '1.2';
-                primaryText.innerHTML = `<strong style="display: block; font-size: 0.75rem;">${model.id.split('/')[1]}</strong><small style="color: var(--pico-muted-color); display: block;">$${prompt}/$${completion}</small>`;
+                primaryText.innerHTML = `<strong style="display: block; font-size: 0.75rem;">${model.id.split('/')[1]}</strong><small style="color: var(--pico-muted-color); display: block;">$${prompt}/$${completion}</small>${limitText ? `<small style="color: var(--pico-muted-color); display: block;">${limitText}</small>` : ''}`;
                 primaryLabel.appendChild(primaryText);
 
                 const primaryRadio = document.createElement('input');
@@ -971,7 +986,7 @@
                 const secondaryText = document.createElement('div');
                 secondaryText.style.fontSize = '0.8rem';
                 secondaryText.style.lineHeight = '1.2';
-                secondaryText.innerHTML = `<strong style="display: block; font-size: 0.75rem;">${model.id.split('/')[1]}</strong><small style="color: var(--pico-muted-color); display: block;">$${prompt}/$${completion}</small>`;
+                secondaryText.innerHTML = `<strong style="display: block; font-size: 0.75rem;">${model.id.split('/')[1]}</strong><small style="color: var(--pico-muted-color); display: block;">$${prompt}/$${completion}</small>${limitText ? `<small style="color: var(--pico-muted-color); display: block;">${limitText}</small>` : ''}`;
                 secondaryLabel.appendChild(secondaryText);
 
                 const secondaryRadio = document.createElement('input');
@@ -1201,6 +1216,15 @@
             }
 
             try {
+                // Estimate tokens and warn if approaching limit
+                const modelLimits = state.modelLimits[state.primaryModel] || state.defaultLimits;
+                const estimatedPrompt = estimatePromptTokens(node);
+                const estimatedTotal = estimatedPrompt + modelLimits.maxOutput;
+
+                if (estimatedTotal > modelLimits.contextWindow * 0.9) {
+                    console.warn(`Token usage approaching limit: ${estimatedTotal}/${modelLimits.contextWindow}`);
+                }
+
                 const prompt = buildNodePrompt(node);
                 const useWebSearch = state.webSearchEnabled;
                 const modelInfo = state.modelPricing[state.primaryModel];
@@ -1240,12 +1264,30 @@
                 console.warn('Node overview prompt not loaded');
                 return '';
             }
-            const summary = (node.summary || '').substring(0, 500); // Limit summary to 500 chars
+            const isFreeModel = state.modelPricing[state.primaryModel]?.prompt === 0;
+            const summaryLimit = isFreeModel ? 200 : 500;
+            const summary = (node.summary || '').substring(0, summaryLimit);
             const prompt = state.prompts['node-overview']
                 .replace('{nodeName}', node.name || '')
                 .replace('{nodeSummary}', summary);
-            console.log('Built prompt length:', prompt.length, 'chars');
+            const estimatedTokens = estimateTokens(prompt);
+            console.log('Built prompt length:', prompt.length, 'chars (~', estimatedTokens, 'tokens)');
             return prompt;
+        }
+
+        // ==================== TOKEN ESTIMATION ====================
+        function estimateTokens(text) {
+            // Rough estimation: 1 token ≈ 4 characters for English
+            return Math.ceil(text.length / 4);
+        }
+
+        function estimatePromptTokens(node) {
+            const prompt = buildNodePrompt(node);
+            return estimateTokens(prompt);
+        }
+
+        function estimateTotalTokens(node, maxOutput) {
+            return estimatePromptTokens(node) + maxOutput;
         }
 
         async function callOpenRouterWithSearch(model, prompt) {
@@ -1256,8 +1298,19 @@
             console.log('System message length:', systemMsg.length);
             console.log('User prompt length:', prompt.length);
 
+            // Calculate token limits
+            const modelLimits = state.modelLimits[model] || state.defaultLimits;
+            const isFreeModel = state.modelPricing[model]?.prompt === 0;
+            const promptTokens = estimateTokens(prompt) + estimateTokens(systemMsg);
+            const availableOutput = Math.min(
+                modelLimits.maxOutput,
+                modelLimits.contextWindow - promptTokens - 100
+            );
+            const maxTokens = isFreeModel ? Math.min(availableOutput, 1500) : availableOutput;
+
             const body = {
                 model,
+                max_tokens: maxTokens,
                 messages: [
                     {
                         role: 'system',
@@ -1270,6 +1323,7 @@
                 ]
             };
 
+            console.log('Token limits - prompt:', promptTokens, 'max_output:', maxTokens, 'context_window:', modelLimits.contextWindow);
             console.log('Total body size:', JSON.stringify(body).length);
             console.log('Full request body:', JSON.stringify(body, null, 2));
 
@@ -1287,8 +1341,21 @@
             );
 
             if (!response.ok) {
-                const error = await response.json().catch(() => ({}));
-                throw new Error(`API error: ${response.status} - ${error.message || 'Unknown error'}`);
+                const errorData = await response.json().catch(() => ({}));
+                const errorMsg = errorData.error?.message || errorData.message || '';
+
+                // Detect token limit errors
+                if (response.status === 400 &&
+                    (errorMsg.toLowerCase().includes('token') || errorMsg.toLowerCase().includes('context') || errorMsg.toLowerCase().includes('length'))) {
+                    throw new Error('Token limit exceeded. Try a model with a larger context window or refresh to get a shorter response.');
+                }
+
+                // Detect rate limit errors
+                if (response.status === 429) {
+                    throw new Error('Rate limit reached. Please wait a moment before trying again.');
+                }
+
+                throw new Error(`API error: ${response.status} - ${errorMsg || 'Unknown error'}`);
             }
 
             const data = await response.json();
@@ -1304,8 +1371,19 @@
         async function callOpenRouterChat(model, prompt) {
             console.log('Chat prompt length:', prompt.length);
 
+            // Calculate token limits
+            const modelLimits = state.modelLimits[model] || state.defaultLimits;
+            const isFreeModel = state.modelPricing[model]?.prompt === 0;
+            const promptTokens = estimateTokens(prompt);
+            const availableOutput = Math.min(
+                modelLimits.maxOutput,
+                modelLimits.contextWindow - promptTokens - 100
+            );
+            const maxTokens = isFreeModel ? Math.min(availableOutput, 1500) : availableOutput;
+
             const body = {
                 model,
+                max_tokens: maxTokens,
                 messages: [
                     {
                         role: 'user',
@@ -1314,6 +1392,7 @@
                 ]
             };
 
+            console.log('Token limits - prompt:', promptTokens, 'max_output:', maxTokens, 'context_window:', modelLimits.contextWindow);
             console.log('Total chat body size:', JSON.stringify(body).length);
 
             const response = await fetchWithRetry(() =>
@@ -1330,7 +1409,21 @@
             );
 
             if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
+                const errorData = await response.json().catch(() => ({}));
+                const errorMsg = errorData.error?.message || errorData.message || '';
+
+                // Detect token limit errors
+                if (response.status === 400 &&
+                    (errorMsg.toLowerCase().includes('token') || errorMsg.toLowerCase().includes('context') || errorMsg.toLowerCase().includes('length'))) {
+                    throw new Error('Token limit exceeded. Try a model with a larger context window or refresh to get a shorter response.');
+                }
+
+                // Detect rate limit errors
+                if (response.status === 429) {
+                    throw new Error('Rate limit reached. Please wait a moment before trying again.');
+                }
+
+                throw new Error(`API error: ${response.status} - ${errorMsg || 'Unknown error'}`);
             }
 
             const data = await response.json();
@@ -1603,11 +1696,18 @@
 
         function updateBudgetDisplay() {
             const summary = document.getElementById('budgetSummary');
+            const sessionTokenLimit = 50000;
+            const percentUsed = (state.budget.totalTokensUsed / sessionTokenLimit) * 100;
+
+            let warningIcon = '';
+            if (percentUsed > 80) warningIcon = '⚠️ ';
+            else if (percentUsed > 50) warningIcon = '⚡ ';
+
             if (summary) {
-                summary.textContent = `Budget: $${state.budget.estimatedCost.toFixed(2)} (${state.budget.totalSearches} searches)`;
+                summary.textContent = `${warningIcon}Budget: $${state.budget.estimatedCost.toFixed(2)} (${state.budget.totalTokensUsed.toLocaleString()} tokens)`;
             }
 
-            document.getElementById('tokensUsed').textContent = state.budget.totalTokensUsed.toLocaleString();
+            document.getElementById('tokensUsed').textContent = `${state.budget.totalTokensUsed.toLocaleString()} / ${sessionTokenLimit.toLocaleString()}`;
             document.getElementById('searchesCount').textContent = state.budget.totalSearches;
             document.getElementById('estimatedCost').textContent = `$${state.budget.estimatedCost.toFixed(2)}`;
         }
