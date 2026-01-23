@@ -176,6 +176,23 @@ try {
 const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
 ```
 
+## HTML & UI Conventions
+
+**Avoid emojis in HTML tools:**
+Don't use emojis in the UI. Instead, use:
+- **Color and styling** to indicate status (red for errors, green for success)
+- **Text labels** for clarity (e.g., "Warning: high usage" instead of "⚠️")
+- **Icons** from icon libraries if visual indicators are necessary
+```javascript
+// ✗ Bad - avoid emojis in displays
+summary.textContent = `⚠️ Budget: $${cost}`;
+status.textContent = '✅ Complete';
+
+// ✅ Good - use text labels or styling
+summary.textContent = `Budget: $${cost} (high usage)`;
+status.className = 'success';
+```
+
 ## Common Patterns
 
 **Disable buttons during operations:**

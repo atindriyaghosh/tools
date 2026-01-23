@@ -1,0 +1,6 @@
+Explain "{nodeName}". Context: {nodeSummary}
+
+Focus on: key concepts, practical use cases, current tools/frameworks, and recent developments. Keep it concise.
+Output shouldn't be a wall of text. Use headings, sub-headings, bullet points etc to make the content easy to read.
+No emojis ever. Tone should be business casual. 
+

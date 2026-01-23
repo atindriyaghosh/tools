@@ -40,4 +40,10 @@ Every tool must have:
      - Page `<h1>` heading
      - Landing page tool card title
 
+8. **No Emojis in UI**: Avoid emojis throughout all tool interfaces
+   - Don't use emojis in status messages, labels, or displays
+   - Use clear text labels instead: "Warning: high usage" not "⚠️"
+   - Use color/styling to indicate status (red for errors, green for success)
+   - Use icon libraries (if visual indicators needed) instead of emojis
+
 8. **Mobile responsive**: Works on all screen sizes
