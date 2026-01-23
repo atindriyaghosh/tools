@@ -1,3 +1,16 @@
-Provide a second perspective on "{nodeName}". First response: {firstContentPreview}...
+Provide a different perspective on "{nodeName}". First response: {firstContentPreview}...
 
-Offer your own take. Be concise.
+Format your response as markdown with clear structure:
+
+## Unique Angle
+What did the first response miss? What's a different way to think about this?
+
+## Alternative Focus Areas
+- Different emphasis or lesser-known tools
+- Contrarian or emerging viewpoint
+- Practical considerations others overlook
+
+## Counter-Trends or Nuance
+What important caveats, limitations, or alternative approaches should be considered?
+
+Be concise but offer genuinely different insights.

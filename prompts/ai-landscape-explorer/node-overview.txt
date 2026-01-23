@@ -1,3 +1,21 @@
-Explain "{nodeName}" in 2-3 paragraphs. Context: {nodeSummary}
+Explain "{nodeName}". Context: {nodeSummary}
 
-Focus on: key concepts, current tools/frameworks, and recent developments. Keep it concise.
+Format your response as markdown with clear structure:
+
+## Overview
+Brief 1-2 sentence summary of what this encompasses.
+
+## Key Concepts & Tools
+- Core concept 1 and relevant tools
+- Core concept 2 and relevant tools
+- Core concept 3 and relevant tools
+
+## Current Landscape
+1-2 sentences on the current state, major frameworks, and emerging trends.
+
+## Recent Developments
+- Key trend or tool with brief description
+- Another recent development
+- Forward-looking trend for 2025+
+
+Keep each section concise but informative.

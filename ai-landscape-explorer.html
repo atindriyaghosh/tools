@@ -238,11 +238,19 @@
         .refresh-btn {
             padding: 0.3rem 0.5rem;
             font-size: 0.75rem;
-            border: 1px solid var(--pico-muted-border-color);
-            background: var(--pico-button-background-color);
+            border: 1px solid #6b8dd6;
+            background: rgba(107, 141, 214, 0.1);
+            color: #6b8dd6;
             cursor: pointer;
             border-radius: var(--pico-border-radius);
             margin: 0;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: #6b8dd6;
+            color: white;
         }
 
         .expansion-card article {
@@ -618,6 +626,21 @@
     <!-- Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+
+    <script>
+        // Configure marked for proper link rendering
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+            pedantic: false
+        });
+
+        const markedRenderer = new marked.Renderer();
+        markedRenderer.link = ({ href, title, text }) => {
+            return `<a href="${href}" target="_blank" rel="noopener noreferrer" title="${title || ''}">${text}</a>`;
+        };
+        marked.setOptions({ renderer: markedRenderer });
+    </script>
 
     <script>
         // ==================== STATE ====================
@@ -1100,6 +1123,7 @@
             const hasCache = node.id && cacheGet(node.id) !== null;
             const hasApiKey = state.apiKey !== null;
             const canExpand = node.children && node.children.length > 0;
+            const canFetchContent = hasCache || hasApiKey;
 
             // Expand button
             const btnEl = document.createElement('button');
@@ -1107,9 +1131,9 @@
             btnEl.setAttribute('aria-expanded', isExpanded);
             btnEl.setAttribute('aria-label', `Expand ${node.name}`);
             btnEl.textContent = isExpanded ? '−' : '+';
-            btnEl.disabled = !canExpand || (!hasCache && !hasApiKey);
-            btnEl.title = !canExpand ? 'No subcategories' :
-                          (!hasCache && !hasApiKey) ? 'API key required to expand' : '';
+            btnEl.disabled = !canExpand && !canFetchContent;
+            btnEl.title = !canExpand && !canFetchContent ? 'No subcategories or API key' :
+                          !canExpand ? 'No subcategories (click for AI overview)' : '';
             btnEl.onclick = (e) => {
                 e.stopPropagation();
                 toggleNode(node.id, btnEl);
@@ -1144,7 +1168,7 @@
                 contentEl.appendChild(childrenEl);
             }
 
-            if (node.id && canExpand) {
+            if (node.id && (canExpand || canFetchContent)) {
                 const cardEl = document.createElement('div');
                 cardEl.className = 'expansion-card';
                 cardEl.id = `card-${node.id}`;
@@ -1231,8 +1255,11 @@
                 const supportsTools = modelInfo?.supportsTools;
 
                 let result;
-                // Always use basic chat for now - web search can be added later with proper tool format
-                result = await callOpenRouterChat(state.primaryModel, prompt);
+                if (useWebSearch && supportsTools) {
+                    result = await callOpenRouterWithSearch(state.primaryModel, prompt);
+                } else {
+                    result = await callOpenRouterChat(state.primaryModel, prompt);
+                }
 
                 // Cache the result
                 cacheSet(nodeId, result);
@@ -1291,12 +1318,13 @@
         }
 
         async function callOpenRouterWithSearch(model, prompt) {
-            // Note: Using standard chat completions endpoint
+            // Note: Using standard chat completions endpoint with web_search tools
             // Web search capability depends on model support
-            const systemMsg = state.prompts['system-web-search'] || 'Provide accurate, current information. Be concise.';
+            const systemMsg = state.prompts['system-web-search'] || 'Provide accurate, current information. When relevant, search the web for current information. Be concise.';
             console.log('Model:', model);
             console.log('System message length:', systemMsg.length);
             console.log('User prompt length:', prompt.length);
+            console.log('Web search enabled for model:', model);
 
             // Calculate token limits
             const modelLimits = state.modelLimits[model] || state.defaultLimits;
@@ -1320,12 +1348,31 @@
                         role: 'user',
                         content: prompt
                     }
+                ],
+                tools: [
+                    {
+                        type: 'function',
+                        function: {
+                            name: 'web_search',
+                            description: 'Search the web for current information',
+                            parameters: {
+                                type: 'object',
+                                properties: {
+                                    query: {
+                                        type: 'string',
+                                        description: 'The search query'
+                                    }
+                                },
+                                required: ['query']
+                            }
+                        }
+                    }
                 ]
             };
 
             console.log('Token limits - prompt:', promptTokens, 'max_output:', maxTokens, 'context_window:', modelLimits.contextWindow);
             console.log('Total body size:', JSON.stringify(body).length);
-            console.log('Full request body:', JSON.stringify(body, null, 2));
+            console.log('Full request body with web search tools:', JSON.stringify(body, null, 2));
 
             const response = await fetchWithRetry(() =>
                 fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -1359,9 +1406,34 @@
             }
 
             const data = await response.json();
+            const message = data.choices[0].message;
+
+            // Parse tool use and extract search queries if present
+            let searchesPerformed = [];
+            let textContent = message.content;
+
+            if (Array.isArray(message.content)) {
+                // Handle structured content blocks
+                const textBlocks = [];
+                message.content.forEach(block => {
+                    if (block.type === 'text') {
+                        textBlocks.push(block.text);
+                    } else if (block.type === 'tool_use' && block.name === 'web_search') {
+                        searchesPerformed.push(block.input?.query || '');
+                        console.log('Captured web search:', block.input?.query);
+                    }
+                });
+                textContent = textBlocks.join('\n\n');
+            } else if (typeof message.content === 'string') {
+                // String content - check for tool use markers
+                textContent = message.content;
+            }
+
+            console.log('Web search response - searches:', searchesPerformed.length, 'searches:', searchesPerformed);
+
             return {
-                content: data.choices[0].message.content,
-                searchesPerformed: [],
+                content: textContent,
+                searchesPerformed,
                 sources: [],
                 tokenUsage: data.usage,
                 model
@@ -1683,7 +1755,7 @@
 
             const promptCost = (usage.prompt_tokens / 1_000_000) * (modelInfo?.prompt || 0);
             const completionCost = (usage.completion_tokens / 1_000_000) * (modelInfo?.completion || 0);
-            const searchCost = searchCount * 0.005;
+            const searchCost = searchCount * 0.02;
             const totalCost = promptCost + completionCost + searchCost;
 
             state.budget.totalTokensUsed += usage.total_tokens;
