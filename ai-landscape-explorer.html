@@ -1769,14 +1769,9 @@
         function updateBudgetDisplay() {
             const summary = document.getElementById('budgetSummary');
             const sessionTokenLimit = 50000;
-            const percentUsed = (state.budget.totalTokensUsed / sessionTokenLimit) * 100;
-
-            let warningIcon = '';
-            if (percentUsed > 80) warningIcon = '⚠️ ';
-            else if (percentUsed > 50) warningIcon = '⚡ ';
 
             if (summary) {
-                summary.textContent = `${warningIcon}Budget: $${state.budget.estimatedCost.toFixed(2)} (${state.budget.totalTokensUsed.toLocaleString()} tokens)`;
+                summary.textContent = `Budget: $${state.budget.estimatedCost.toFixed(2)} (${state.budget.totalTokensUsed.toLocaleString()} tokens)`;
             }
 
             document.getElementById('tokensUsed').textContent = `${state.budget.totalTokensUsed.toLocaleString()} / ${sessionTokenLimit.toLocaleString()}`;
