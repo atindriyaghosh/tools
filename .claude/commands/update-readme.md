@@ -6,8 +6,8 @@ allowed-tools: Bash(./.claude/scripts/get-tools-info.sh:*), Read, Edit, Glob
 Comprehensive analysis of README.md and propose updates with current tool inventory.
 
 This command:
-- Scans all .html tool files in the root directory (includes all tools)
-- Extracts tool names, titles, and descriptions from HTML files
+- Runs @.claude/scripts/get-tools-info.sh to extract tool names, titles, descriptions and libraries used from HTML files
+- Analyzes index.html to get which tools correspond to which sections
 - Compares against current README.md documentation
 - Identifies missing tools and outdated information
 - Reviews Tech Stack section (versions, links, accuracy)
