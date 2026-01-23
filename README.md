@@ -4,43 +4,43 @@ A collection of single-file, browser-based utility tools built with vanilla Java
 
 ## Overview
 
-This repository contains standalone HTML tools for common tasks like PDF conversion, date/time manipulation, and more. Each tool is a self-contained HTML file with no build step required.
+This repository contains **20 standalone HTML tools** for common tasks like PDF conversion, date/time manipulation, text processing, and more. Each tool is a self-contained HTML file with no build step required.
 
 ## Current Tools
 
 **Browse all tools at [atindriyaghosh.com](https://atindriyaghosh.com)**
 
-### PDF Tools
-- **PDF to Image Converter** - Converts PDF pages to PNG or JPEG images with page selection
-- **Merge PDFs** - Combines multiple PDF files into a single document with drag-and-drop reordering
-- **Extract Text from PDF** - Extracts text content from PDFs with plain text or markdown output
+### AI Tools
+- **AI Landscape Explorer** - Interactive exploration of AI development tools and concepts with AI-generated insights and web search
 
 ### Date/Time Tools
-- **Timezone Converter** - Converts dates and times between timezones with DST information
-- **Unix Timestamp Converter** - Converts between Unix timestamps and human-readable dates
-- **DateTime Format Converter** - Parses and reformats date/time strings with custom patterns
-- **Date Calculator** - Calculates differences between dates or adds/subtracts time periods from a date
+- **Timezone Converter** - Convert dates and times between timezones with DST information
+- **Unix Timestamp Converter** - Convert Unix timestamps to human-readable dates and vice versa
+- **DateTime Format Converter** - Parse and reformat date/time strings using custom or standard formats
+- **Date Calculator** - Calculate differences between dates or add/subtract time periods
 
-### Text & Data Tools
-- **Text Case Converter** - Converts text between case formats (camelCase, snake_case, kebab-case, PascalCase, etc.)
-- **Markdown Editor** - Write and preview markdown with real-time conversion to HTML
-- **NATO Phonetic Converter** - Converts text to NATO phonetic alphabet spelling
+### Text Tools
+- **Text to NATO Phonetic Alphabet** - Convert text to NATO phonetic alphabet (Alpha, Bravo, Charlie...) for clear communication
+- **Base64 Encoder/Decoder** - Encode text to Base64 format or decode Base64 strings back to plain text
+- **Hash Generator** - Generate MD5, SHA1, SHA256, and other hash values from text input
+- **JSON/XML/YAML Converter** - Convert between JSON, XML, and YAML formats with instant validation
+- **JSON/XML/YAML Formatter** - Format and prettify JSON, XML, and YAML with syntax highlighting
+- **Markdown Editor** - Write and preview markdown in real-time with live HTML conversion
+- **Regex Tester** - Test regular expressions against text with real-time matching and capture groups
+- **Text Case Converter** - Convert text between case formats (camelCase, snake_case, kebab-case, PascalCase, etc.)
 
-### Development & Code Tools
-- **Regex Tester** - Test and debug regular expressions with pattern matching and flags
-- **Cron Expression Generator** - Generate and explain cron expressions for scheduled tasks
-- **Hash Generator** - Generate MD5, SHA1, SHA256, and SHA512 hashes from text or files
-- **UUID Generator** - Generate v4 UUIDs with one-click copying
+### PDF Tools
+- **PDF to Image Converter** - Convert PDF pages to PNG or JPEG images with page selection
+- **Merge PDFs** - Combine multiple PDF files into a single document with drag-and-drop reordering
+- **Extract Text from PDF** - Extract text content from PDFs with plain text or markdown output
 
-### Data Format Tools
-- **JSON/XML/YAML Converter** - Convert between JSON, XML, and YAML formats
-- **JSON/XML/YAML Formatter** - Format, validate, and beautify JSON, XML, and YAML data
-- **Base64 Encoder/Decoder** - Encode text to Base64 or decode Base64 strings
-- **Unit Converter** - Convert between units (length, weight, temperature, etc.)
+### API Tools
+- **HTTP Status Codes** - Reference guide for HTTP status codes with descriptions and meanings
 
-### Reference Tools
-- **HTTP Status Codes** - Reference guide for HTTP status codes with descriptions
-- **AI Landscape Explorer** - Explore the AI/ML tools and models landscape
+### Other Tools
+- **Cron Expression Generator** - Create and test cron expressions with an intuitive UI
+- **Unit Converter** - Convert between different units (length, weight, temperature, and more)
+- **UUID Generator** - Generate UUID v4 identifiers and copy them easily
 
 ## Tech Stack
 
@@ -50,10 +50,14 @@ This repository contains standalone HTML tools for common tasks like PDF convers
 
 ## Libraries Used
 
-- **[Pico CSS v2](https://picocss.com/)** - Minimal CSS framework
-- **[PDF.js v3.11.174](https://mozilla.github.io/pdf.js/)** - PDF rendering
-- **[pdf-lib v1.17.1](https://pdf-lib.js.org/)** - PDF manipulation
-- **[Sortable.js v1.15.0](https://sortablejs.github.io/Sortable/)** - Drag-and-drop reordering
+- **[Pico CSS v2](https://picocss.com/)** - Minimal CSS framework used across all tools
+- **[PDF.js v3.11.174](https://mozilla.github.io/pdf.js/)** - PDF rendering for PDF tools
+- **[pdf-lib v1.17.1](https://pdf-lib.js.org/)** - PDF manipulation for merging PDFs
+- **[Sortable.js v1.15.0](https://sortablejs.github.io/Sortable/)** - Drag-and-drop reordering for PDF merge
+- **[js-yaml v4.1.0](https://github.com/nodeca/js-yaml)** - YAML parsing and generation for data converters
+- **[marked v11.1.1](https://marked.js.org/)** - Markdown parsing for markdown editor and AI landscape explorer
+- **[croner v8](https://croner.dev/)** - Cron expression parsing and validation
+- **[spark-md5 v3.0.2](https://github.com/satazor/js-spark-md5)** - Fast MD5 hashing for hash generator
 
 ## Local Development
 
