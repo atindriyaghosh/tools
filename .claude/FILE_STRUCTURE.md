@@ -12,15 +12,16 @@
 
 **`.claude/` directory**: Developer documentation (excluded from web build)
 - `CLAUDE.md` - Development workflow and branching strategy
-- `PATTERNS.md` - Common code patterns and best practices
-- `TOOL_TEMPLATE.md` - HTML structure template
+- `TOOL_TEMPLATE.md` - HTML structure template and pre-completion checklist
+- `NAMING_CONVENTIONS.md` - Naming rules for files, tools, variables, and CSS (consolidated)
+- `FILE_UPLOAD_PATTERNS.md` - File upload, validation, and download patterns (consolidated)
 - `STANDARD_FEATURES.md` - Required features for all tools
-- `CODING_STYLE.md` - Code style preferences
+- `PATTERNS.md` - Common code patterns and best practices
+- `CODING_STYLE.md` - Code formatting and style preferences
 - `TECH_STACK.md` - Framework, deployment, performance targets
 - `LANDING_PAGE.md` - Landing page structure and organization
-- `FILE_STRUCTURE.md` - This file
-- `QUALITY_CHECKLIST.md` - Pre-completion validation checklist
 - `ERROR_HANDLING_GUIDE.md` - Error patterns and user feedback
+- `FILE_STRUCTURE.md` - This file (directory layout reference)
 
 **`.github/` directory**: GitHub configuration (not web-accessible)
 - `workflows/` - CI/CD automation (build, deploy)
@@ -35,17 +36,17 @@
 
 ## Naming Conventions
 
-- **Tool files**: lowercase with hyphens
-  - Examples: `pdf-merge.html`, `timezone-converter.html`, `unix-timestamp.html`
-  - NOT: `PDFMerge.html`, `pdf_merge.html`, `pdfmerge.html`
+For comprehensive naming conventions, see @./NAMING_CONVENTIONS.md which covers:
+- File naming (tools, directories)
+- Tool names in UI
+- Variable and function naming
+- CSS class and ID naming
+- Category organization
 
-- **Tool names in UI**: Title Case (no emojis in title)
-  - Examples: "PDF Merge", "Timezone Converter", "Unix Timestamp"
-  - NOT: "pdf merge", "TIMEZONE CONVERTER", "📄 PDF Merge"
-
-- **Directory names**: lowercase with hyphens, start with dot for hidden
-  - `.claude/`, `.github/`, `.brainstorm/`
-  - NOT: `.Claude/`, `claude/`, `_claude/`
+Quick reference:
+- **Tool files**: lowercase with hyphens (e.g., `pdf-merge.html`)
+- **Directories**: lowercase with hyphens, dot-prefixed for hidden (e.g., `.claude/`)
+- **Tool UI names**: Title Case, no emojis (e.g., "PDF Merge")
 
 ## Web-Accessible vs Hidden
 

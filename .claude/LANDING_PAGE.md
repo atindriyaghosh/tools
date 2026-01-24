@@ -30,21 +30,19 @@ Organize tools into these categories on the landing page:
 
 Place in the appropriate category section.
 
-## Tool Icons & Titles
+## Tool Card Titles & Naming
 
-**Tool Card Titles:**
+**For comprehensive naming conventions:**
+See @./NAMING_CONVENTIONS.md for all naming rules including:
+- Tool name format (Title Case)
+- Emoji usage guidelines
+- Consistency requirements across pages
+
+**Quick reference:**
 - Use Title Case (e.g., "PDF Merge", "Unix Timestamp Converter")
-- No emojis or icons in HTML `<title>` or `<h1>` tags
-- Keep names clear and descriptive (searchable keywords)
-- Titles must match EXACTLY across:
-  - HTML `<title>` tag (page title)
-  - `<h1>` heading on tool page
-  - Tool card link on landing page
-
-**Emoji Usage:**
-- Tool card descriptions CAN include emojis (optional, for visual interest)
-- Example: "📄 Combine multiple PDF files into a single document"
-- Emoji is decorative only, not in the title
+- No emojis in HTML `<title>` or `<h1>` tags
+- Match titles exactly across: `<title>` tag, `<h1>` heading, and landing page card
+- Card descriptions CAN include decorative emojis (e.g., "📄 Combine multiple PDFs")
 
 ## Category Organization Tips
 

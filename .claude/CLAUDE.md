@@ -40,13 +40,19 @@ Use one of these prefixes:
 Quick reference - detailed specs in `.claude/`:
 - `TECH_STACK.md` - Framework, deployment
 - `FILE_STRUCTURE.md` - Directory layout
-- `TOOL_TEMPLATE.md` - HTML structure template
-- `STANDARD_FEATURES.md` - Required features
-- `LANDING_PAGE.md` - Homepage structure
-- `PATTERNS.md` - Common code patterns, best practices
-- `CODING_STYLE.md` - Style preferences
-- `QUALITY_CHECKLIST.md` - Pre-completion checklist
+- `TOOL_TEMPLATE.md` - HTML structure template and pre-completion checklist
+- `NAMING_CONVENTIONS.md` - File, tool, variable, and CSS naming rules (consolidated)
+- `FILE_UPLOAD_PATTERNS.md` - File upload, validation, and download patterns (consolidated)
+- `STANDARD_FEATURES.md` - Required features for all tools
+- `LANDING_PAGE.md` - Homepage structure and organization
+- `PATTERNS.md` - Common code patterns and best practices
+- `CODING_STYLE.md` - Code formatting and style preferences
 - `ERROR_HANDLING_GUIDE.md` - Error patterns and user feedback
+
+**Consolidated files** (for maintainability):
+- `NAMING_CONVENTIONS.md` consolidates naming rules from FILE_STRUCTURE.md, STANDARD_FEATURES.md, LANDING_PAGE.md, and CODING_STYLE.md
+- `FILE_UPLOAD_PATTERNS.md` consolidates file upload patterns from TOOL_TEMPLATE.md, STANDARD_FEATURES.md, and PATTERNS.md
+- `TOOL_TEMPLATE.md` now includes Pre-Completion Checklist (merged from separate QUALITY_CHECKLIST.md)
 
 ## Design & Planning
 
