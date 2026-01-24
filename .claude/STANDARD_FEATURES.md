@@ -2,16 +2,9 @@
 
 Every tool must have:
 
-1. **Back link**: Link to index.html at top and bottom
-   - HTML: `<a href="index.html" class="back-link">← Back to Tools</a>`
-   - Styling handled by `common-styles.css`
-   - See @./PATTERNS.md for back navigation pattern
+1. **Back link**: See @./PATTERNS.md for back navigation pattern (top and bottom of tool page)
 
-2. **File handling** (if applicable): Validate file size and type
-   - Display max file size in UI
-   - Validate both FILE SIZE and FILE TYPE (not just size alone)
-   - Show user-friendly errors: "File too large: 120 MB. Maximum 50 MB."
-   - See @./FILE_UPLOAD_PATTERNS.md for file upload patterns and validation
+2. **File handling** (if applicable): See @./FILE_UPLOAD_PATTERNS.md for file upload, validation, and status patterns
 
 3. **Error handling**: Clear error messages for user actions
    - Include specific details (what went wrong, why, how to fix)

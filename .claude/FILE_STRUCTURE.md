@@ -38,15 +38,10 @@
 
 For comprehensive naming conventions, see @./NAMING_CONVENTIONS.md which covers:
 - File naming (tools, directories)
-- Tool names in UI
+- Tool names in UI (including emoji guidelines)
 - Variable and function naming
 - CSS class and ID naming
 - Category organization
-
-Quick reference:
-- **Tool files**: lowercase with hyphens (e.g., `pdf-merge.html`)
-- **Directories**: lowercase with hyphens, dot-prefixed for hidden (e.g., `.claude/`)
-- **Tool UI names**: Title Case, no emojis (e.g., "PDF Merge")
 
 ## Web-Accessible vs Hidden
 

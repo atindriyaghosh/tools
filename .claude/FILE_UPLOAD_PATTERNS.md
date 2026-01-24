@@ -58,23 +58,14 @@ The status div must appear immediately after the upload area, NOT at the end of 
 
 ## Status Messages
 
-Display messages with error state:
+**For showStatus() function implementations and best practices, see @./ERROR_HANDLING_GUIDE.md#status-message-display**.
 
-```javascript
-function showStatus(message, isError) {
-    status.textContent = message;
-    status.className = 'visible';
-    if (isError) status.setAttribute('aria-invalid', 'true');
-}
-```
-
-Best practices:
+Best practices summary:
 - Include specific details (what went wrong, why, how to fix)
 - Show errors prominently (don't use small gray text)
 - Keep errors visible long enough to read (minimum 2-3 seconds)
 - Show progress: "Processing page 1 of 10" (not just "Loading...")
 - Disable buttons during processing (prevent duplicate submissions)
-- Use status messages: "Processing...", then "Complete!" when done
 
 ## File Validation
 
