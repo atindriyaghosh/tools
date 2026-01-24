@@ -5,45 +5,36 @@ Every tool must have:
 1. **Back link**: Link to index.html at top and bottom
    - HTML: `<a href="index.html" class="back-link">← Back to Tools</a>`
    - Styling handled by `common-styles.css`
+   - See @./PATTERNS.md for back navigation pattern
 
-2. **File size limits** (if applicable): Display max file size in UI, validate on upload
+2. **File handling** (if applicable): Validate file size and type
+   - Display max file size in UI
    - Validate both FILE SIZE and FILE TYPE (not just size alone)
    - Show user-friendly errors: "File too large: 120 MB. Maximum 50 MB."
-   - Show file type errors: "Only PDF files are supported, got DOCX"
+   - See @./FILE_UPLOAD_PATTERNS.md for file upload patterns and validation
 
-3. **Status message placement** (for file upload tools):
-   - Status div MUST appear immediately after upload area (not at bottom of form)
-   - Users need to see upload errors/feedback instantly after clicking upload
-   - Don't make users scroll to see error messages
-
-4. **Error handling**: Clear error messages for user actions
+3. **Error handling**: Clear error messages for user actions
    - Include specific details (what went wrong, why, how to fix)
    - Show errors prominently (don't use small gray text)
    - Keep errors visible long enough to read (minimum 2-3 seconds)
+   - See @./ERROR_HANDLING_GUIDE.md for error patterns
 
-5. **Loading states**: Inform users when processing is happening
+4. **Loading states**: Inform users when processing is happening
    - Show progress: "Processing page 1 of 10" (not just "Loading...")
    - Disable buttons during processing (prevent duplicate submissions)
    - Use status messages: "Processing...", then "Complete!" when done
-   - For long operations, show estimated time if possible
+   - Status div must appear immediately after upload area (not at bottom)
 
 5. **Semantic HTML**: Use `<main>`, `<article>`, `<hgroup>`, `<fieldset>`, `<section>` appropriately
 
 6. **Accessibility**: Proper labels, ARIA attributes where needed
 
-7. **Tool Name Format**:
-   - Use Title Case (e.g., "Timezone Converter", "Unix Timestamp Converter")
-   - No icons or emojis in tool names or page titles
-   - Keep tool names clear and descriptive
-   - Consistent naming across:
-     - HTML `<title>` tag
-     - Page `<h1>` heading
-     - Landing page tool card title
-
-8. **No Emojis in UI**: Avoid emojis throughout all tool interfaces
-   - Don't use emojis in status messages, labels, or displays
-   - Use clear text labels instead: "Warning: high usage" not "⚠️"
-   - Use color/styling to indicate status (red for errors, green for success)
-   - Use icon libraries (if visual indicators needed) instead of emojis
+7. **Naming conventions**: Use proper naming across all files, variables, and UI
+   - Tool names use Title Case (no icons/emojis in titles)
+   - Consistent naming across HTML `<title>`, `<h1>`, and landing page
+   - See @./NAMING_CONVENTIONS.md for complete naming rules
 
 8. **Mobile responsive**: Works on all screen sizes
+   - Test with DevTools mobile view
+   - No horizontal scrolling
+   - Buttons clickable size (minimum 44x44px)
