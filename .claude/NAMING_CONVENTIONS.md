@@ -32,15 +32,21 @@ This document consolidates all naming conventions for files, directories, variab
 
 ## Emoji Usage
 
-**In tool card descriptions**: Optional, for visual interest only
-- Example: "📄 Combine multiple PDF files into a single document"
-- Emoji is decorative only, not in the title
+**In HTML `<title>` and `<h1>` tags**: Never use emojis
+- Emojis must not appear in page titles or headings
+- Tool names should be text only: "PDF Merge", not "📄 PDF Merge"
 
-**In tool UI**: Avoid emojis throughout all tool interfaces
-- Don't use emojis in status messages, labels, or displays
+**In tool card descriptions (landing page)**: Optional, for visual interest only
+- Example: "📄 Combine multiple PDF files into a single document"
+- Emoji is decorative only, not part of the official tool title
+- Card descriptions can include emojis for user appeal
+
+**In tool UI and tool interfaces**: Avoid emojis completely
+- Don't use emojis in status messages, labels, buttons, or displays
 - Use clear text labels instead: "Warning: high usage" not "⚠️"
-- Use color/styling to indicate status (red for errors, green for success)
-- Use icon libraries (if visual indicators needed) instead of emojis
+- Use color and styling to indicate status (red for errors, green for success)
+- Use icon libraries (if visual indicators are necessary) instead of emojis
+- Examples to avoid: "✅ Complete", "⚠️ Warning", "❌ Error"
 
 ## Variable Naming
 
@@ -140,19 +146,7 @@ function run() { ... }
 
 ## Category Organization
 
-**Landing page tool categories:**
-- **PDF Tools**: PDF manipulation, conversion, extraction
-- **Image Tools**: Image format conversion, compression, editing
-- **Date/Time Tools**: Date calculations, timezone conversions, formatting
-- **Text Tools**: Markdown processing, text manipulation, formatting
-- **API Tools**: LLM interfaces, external API integrations
-- **Other**: Miscellaneous utilities (catch-all for 1-2 tools)
-
-**Guidelines:**
-- Keep similar tools together by category
-- If a category has only 1 tool, consider moving it to "Other" (unless it's a major category)
-- Periodically review categories as more tools are added (may need reorganization)
-- For large categories (10+ tools), consider subcategories
+**Landing page tool categories**: See @./LANDING_PAGE.md for the authoritative list of tool categories and organization guidelines.
 
 ## Related Documentation
 

@@ -163,7 +163,7 @@ Before considering a tool complete, verify all items:
 
 ### Navigation & Naming
 - [ ] Back navigation to index.html present (top and bottom)
-- [ ] Tool name uses Title Case (no icons/emojis in title)
+- [ ] Tool name follows @./NAMING_CONVENTIONS.md (Title Case, no emojis in title)
 - [ ] Page title matches landing page tool card title EXACTLY
 - [ ] Semantic HTML used (`<main>`, `<article>`, `<hgroup>`)
 - [ ] Form fields have proper labels

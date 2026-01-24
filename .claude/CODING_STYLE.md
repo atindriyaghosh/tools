@@ -63,18 +63,9 @@ function calculateFileSize(bytes) {
 **Keep functions small and focused:**
 ```javascript
 // ✅ Good - single responsibility
-function showStatus(message, isError) {
-    status.textContent = message;
-    status.className = isError ? 'visible error' : 'visible';
-}
+// See @./ERROR_HANDLING_GUIDE.md#status-message-display for showStatus() patterns
 
-function validateFileSize(file) {
-    if (file.size > MAX_SIZE) {
-        showStatus(`File too large: ${formatBytes(file.size)}`, true);
-        return false;
-    }
-    return true;
-}
+// See @./FILE_UPLOAD_PATTERNS.md#file-validation for file validation patterns
 
 // ✗ Avoid - doing too much in one function
 function handleFileUpload(file) {
@@ -113,20 +104,7 @@ var oldStyle = 'file';  // Don't use var
 
 ## HTML & UI Conventions
 
-**Avoid emojis in HTML tools:**
-Don't use emojis in the UI. Instead, use:
-- **Color and styling** to indicate status (red for errors, green for success)
-- **Text labels** for clarity (e.g., "Warning: high usage" instead of "⚠️")
-- **Icons** from icon libraries if visual indicators are necessary
-```javascript
-// ✗ Bad - avoid emojis in displays
-summary.textContent = `⚠️ Budget: $${cost}`;
-status.textContent = '✅ Complete';
-
-// ✅ Good - use text labels or styling
-summary.textContent = `Budget: $${cost} (high usage)`;
-status.className = 'success';
-```
+**Avoid emojis in HTML tools**: See @./NAMING_CONVENTIONS.md#emoji-usage for guidelines on emoji usage in tool UIs, titles, and card descriptions.
 
 ## Common Patterns
 

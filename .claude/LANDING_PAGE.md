@@ -32,17 +32,7 @@ Place in the appropriate category section.
 
 ## Tool Card Titles & Naming
 
-**For comprehensive naming conventions:**
-See @./NAMING_CONVENTIONS.md for all naming rules including:
-- Tool name format (Title Case)
-- Emoji usage guidelines
-- Consistency requirements across pages
-
-**Quick reference:**
-- Use Title Case (e.g., "PDF Merge", "Unix Timestamp Converter")
-- No emojis in HTML `<title>` or `<h1>` tags
-- Match titles exactly across: `<title>` tag, `<h1>` heading, and landing page card
-- Card descriptions CAN include decorative emojis (e.g., "📄 Combine multiple PDFs")
+**For comprehensive naming conventions:** See @./NAMING_CONVENTIONS.md for all naming rules including tool name format, emoji usage guidelines, and consistency requirements across pages.
 
 ## Category Organization Tips
 
@@ -55,10 +45,4 @@ When adding new tools:
    - PDF Tools → "Merge/Combine", "Convert", "Extract"
    - Date/Time Tools → "Converters", "Calculators", "Formatters"
 
-**Current Categories:**
-- **PDF Tools**: PDF manipulation, conversion, extraction (growing category)
-- **Image Tools**: Image format conversion, compression, editing
-- **Date/Time Tools**: Date calculations, timezone conversions, formatting
-- **Text Tools**: Markdown processing, text manipulation, formatting
-- **API Tools**: LLM interfaces, external API integrations
-- **Other**: Miscellaneous utilities (catch-all for 1-2 tools)
+**Note**: See "Tool Categories" section above (lines 14-20) for the definitive category list and organization.

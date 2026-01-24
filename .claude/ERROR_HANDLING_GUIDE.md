@@ -7,25 +7,13 @@ Best practices for handling errors and providing user feedback.
 ### 1. User Input Errors
 Errors caused by user actions (invalid file, oversized file, wrong format).
 
-```javascript
-// File too large
-if (file.size > MAX_SIZE) {
-    showStatus(`File too large: ${formatBytes(file.size)}. Maximum: ${formatBytes(MAX_SIZE)}`, true);
-    return;
-}
+**For file validation logic and error patterns, see @./FILE_UPLOAD_PATTERNS.md#file-validation**.
 
-// Wrong file type
-if (!file.type.includes('pdf')) {
-    showStatus('Only PDF files are supported. You uploaded a ' + file.type, true);
-    return;
-}
-
-// No file selected
-if (!files || files.length === 0) {
-    showStatus('Please select a file to upload', true);
-    return;
-}
-```
+Common error message patterns:
+- **File too large**: "File too large: 150 MB. Maximum 50 MB."
+- **Wrong file type**: "Only PDF files are supported. You uploaded a DOCX"
+- **No file selected**: "Please select a file to upload"
+- **Invalid file format**: "This file is not a valid PDF. Please check the file and try again."
 
 ### 2. Processing Errors
 Errors during file processing (invalid PDF, corrupted data, out of memory).
