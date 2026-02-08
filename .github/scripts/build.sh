@@ -49,6 +49,7 @@ files_to_copy=(
   "CNAME"
   ".nojekyll"
   "favicon.png"
+  "skeleton.yaml"
 )
 
 for file in "${files_to_copy[@]}"; do
@@ -60,9 +61,20 @@ for file in "${files_to_copy[@]}"; do
   fi
 done
 
-# 4. Validate required files exist
+# 4. Copy prompts directory
 echo ""
-echo "Step 4: Validating required files..."
+echo "Step 4: Copying prompts directory..."
+if [ -d "$REPO_ROOT/prompts" ]; then
+  cp -r "$REPO_ROOT/prompts" "$SITE_DIR/prompts"
+  prompt_count=$(find "$SITE_DIR/prompts" -type f | wc -l)
+  echo "  ✓ prompts/ ($prompt_count files)"
+else
+  echo "  ⚠ prompts/ (directory not found, skipping)"
+fi
+
+# 5. Validate required files exist
+echo ""
+echo "Step 5: Validating required files..."
 required_files=(
   "index.html"
   "CNAME"
@@ -77,7 +89,7 @@ for file in "${required_files[@]}"; do
   echo "  ✓ $file"
 done
 
-# 5. Print summary
+# 6. Print summary
 echo ""
 echo "✓ Build complete!"
 echo ""
