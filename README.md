@@ -4,7 +4,7 @@ A collection of single-file, browser-based utility tools built with vanilla Java
 
 ## Overview
 
-This repository contains **20 standalone HTML tools** for common tasks like PDF conversion, date/time manipulation, text processing, and more. Each tool is a self-contained HTML file with no build step required.
+This repository contains **21 standalone HTML tools** for common tasks like PDF conversion, date/time manipulation, text processing, and more. Each tool is a self-contained HTML file with no build step required.
 
 ## Current Tools
 
@@ -33,6 +33,7 @@ This repository contains **20 standalone HTML tools** for common tasks like PDF 
 - **PDF to Image Converter** - Convert PDF pages to PNG or JPEG images with page selection
 - **Merge PDFs** - Combine multiple PDF files into a single document with drag-and-drop reordering
 - **Extract Text from PDF** - Extract text content from PDFs with plain text or markdown output
+- **PDF Size Reducer** - Reduce PDF file size with lossless optimization or image-based compression quality presets
 
 ### API Tools
 - **HTTP Status Codes** - Reference guide for HTTP status codes with descriptions and meanings
