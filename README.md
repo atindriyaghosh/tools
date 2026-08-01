@@ -39,6 +39,7 @@ This repository contains **21 standalone HTML tools** for common tasks like PDF 
 - **HTTP Status Codes** - Reference guide for HTTP status codes with descriptions and meanings
 
 ### Other Tools
+- **BMI Calculator** - Calculate Body Mass Index from height and weight, with category and healthy weight range
 - **Cron Expression Generator** - Create and test cron expressions with an intuitive UI
 - **Unit Converter** - Convert between different units (length, weight, temperature, and more)
 - **UUID Generator** - Generate UUID v4 identifiers and copy them easily

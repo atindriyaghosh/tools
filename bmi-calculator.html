@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BMI Calculator</title>
+    <link rel="shortcut icon" type="image/png" href="favicon.png">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="common-styles.css">
+    <style>
+        .unit-toggle {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .unit-toggle label {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            margin: 0;
+        }
+        .unit-toggle input[type="radio"] {
+            margin: 0;
+            width: auto;
+        }
+        .input-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .input-grid label {
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+        }
+        .input-grid label > span {
+            font-weight: bold;
+            color: #6b8dd6;
+            margin-bottom: 0.35rem;
+            font-size: 0.95rem;
+        }
+        .input-grid input {
+            margin-top: 0;
+            padding: 0.5rem;
+        }
+        .height-imperial {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .height-imperial > div {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .height-imperial input {
+            padding: 0.5rem;
+        }
+        .result-display {
+            padding: 1rem;
+            background: var(--pico-card-background-color);
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .result-display .result-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            word-break: break-all;
+        }
+        .result-display .result-category {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 0.25rem;
+        }
+        .result-display .result-range {
+            font-size: 0.9rem;
+            color: var(--pico-muted-color);
+            margin-top: 0.4rem;
+        }
+        .bmi-underweight { color: #3b82c4; }
+        .bmi-normal { color: #2e9e5b; }
+        .bmi-overweight { color: #d68a1c; }
+        .bmi-obese { color: #dc3545; }
+        .gauge-container {
+            margin: 1.25rem 0 0.5rem 0;
+        }
+        .gauge-bar {
+            position: relative;
+            display: flex;
+            height: 0.9rem;
+            border-radius: var(--pico-border-radius);
+            overflow: visible;
+        }
+        .gauge-segment {
+            height: 100%;
+        }
+        .gauge-segment.underweight { background: #3b82c4; border-radius: var(--pico-border-radius) 0 0 var(--pico-border-radius); }
+        .gauge-segment.normal { background: #2e9e5b; }
+        .gauge-segment.overweight { background: #d68a1c; }
+        .gauge-segment.obese { background: #dc3545; border-radius: 0 var(--pico-border-radius) var(--pico-border-radius) 0; }
+        .gauge-marker {
+            position: absolute;
+            top: -0.35rem;
+            width: 2px;
+            height: 1.6rem;
+            background: var(--pico-color);
+            transform: translateX(-1px);
+        }
+        .gauge-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--pico-muted-color);
+            margin-top: 0.35rem;
+        }
+        .error-message {
+            color: #dc3545;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+        .disclaimer {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: var(--pico-card-background-color);
+            border: 1px solid var(--pico-muted-border-color);
+            border-radius: var(--pico-border-radius);
+            font-size: 0.85rem;
+            color: var(--pico-muted-color);
+        }
+        @media (max-width: 768px) {
+            .input-grid {
+                grid-template-columns: 1fr;
+            }
+            .result-display .result-value {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <p style="margin-bottom: 1rem;"><a href="index.html" class="back-link">← Back to Tools</a></p>
+        <hgroup>
+            <h1>BMI Calculator</h1>
+            <p>Calculate your Body Mass Index from height and weight, with category and healthy weight range.</p>
+        </hgroup>
+
+        <section class="panel" id="calculator">
+            <div class="unit-toggle">
+                <label>
+                    <input type="radio" name="units" value="metric" checked> Metric (kg, cm)
+                </label>
+                <label>
+                    <input type="radio" name="units" value="imperial"> Imperial (lb, ft/in)
+                </label>
+            </div>
+
+            <div class="input-grid">
+                <label>
+                    <span id="weightLabel">Weight (kg)</span>
+                    <input type="number" id="weightInput" step="any" min="0" placeholder="e.g. 70" aria-describedby="errorMsg">
+                </label>
+
+                <label id="heightMetricField">
+                    <span>Height (cm)</span>
+                    <input type="number" id="heightCmInput" step="any" min="0" placeholder="e.g. 175" aria-describedby="errorMsg">
+                </label>
+
+                <label id="heightImperialField" style="display:none;">
+                    <span>Height</span>
+                    <div class="height-imperial">
+                        <div>
+                            <input type="number" id="heightFtInput" step="1" min="0" placeholder="ft" aria-label="Feet" aria-describedby="errorMsg">
+                        </div>
+                        <div>
+                            <input type="number" id="heightInInput" step="any" min="0" max="11.99" placeholder="in" aria-label="Inches" aria-describedby="errorMsg">
+                        </div>
+                    </div>
+                </label>
+            </div>
+
+            <div class="result-display" aria-live="polite">
+                <div class="result-value" id="resultValue">-</div>
+                <div class="result-category" id="resultCategory"></div>
+                <div class="result-range" id="resultRange"></div>
+                <div class="error-message" id="errorMsg"></div>
+
+                <div class="gauge-container" id="gaugeContainer" style="display:none;">
+                    <div class="gauge-bar">
+                        <div class="gauge-segment underweight" style="width: 14%;"></div>
+                        <div class="gauge-segment normal" style="width: 26%;"></div>
+                        <div class="gauge-segment overweight" style="width: 20%;"></div>
+                        <div class="gauge-segment obese" style="width: 40%;"></div>
+                        <div class="gauge-marker" id="gaugeMarker"></div>
+                    </div>
+                    <div class="gauge-labels">
+                        <span>15</span>
+                        <span>18.5</span>
+                        <span>25</span>
+                        <span>30</span>
+                        <span>40+</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="disclaimer">
+                BMI is a general screening measure based on height and weight only. It does not account for
+                muscle mass, bone density, age, sex, or overall body composition, and does not directly measure
+                body fat or health. Consult a healthcare professional for a full assessment.
+            </div>
+        </section>
+
+        <p style="margin-top:1rem"><a href="index.html" class="back-link">← Back to Tools</a></p>
+    </main>
+
+    <script>
+        const CATEGORIES = [
+            { key: 'underweight', label: 'Underweight', min: -Infinity, max: 18.5, className: 'bmi-underweight' },
+            { key: 'normal', label: 'Normal weight', min: 18.5, max: 25, className: 'bmi-normal' },
+            { key: 'overweight', label: 'Overweight', min: 25, max: 30, className: 'bmi-overweight' },
+            { key: 'obese', label: 'Obese', min: 30, max: Infinity, className: 'bmi-obese' }
+        ];
+
+        const STORAGE_KEY = 'bmiCalculatorState';
+
+        let state = {
+            units: 'metric',
+            weight: '',
+            heightCm: '',
+            heightFt: '',
+            heightIn: ''
+        };
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.units === 'metric' || parsed.units === 'imperial') {
+                        state.units = parsed.units;
+                    }
+                    ['weight', 'heightCm', 'heightFt', 'heightIn'].forEach(key => {
+                        if (typeof parsed[key] === 'string' || typeof parsed[key] === 'number') {
+                            state[key] = parsed[key];
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error('Error loading state:', e);
+            }
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            } catch (e) {
+                console.error('Error saving state:', e);
+            }
+        }
+
+        function getCategory(bmi) {
+            return CATEGORIES.find(cat => bmi >= cat.min && bmi < cat.max) || CATEGORIES[CATEGORIES.length - 1];
+        }
+
+        // Healthy weight range (BMI 18.5-24.9) for a given height in meters, returned in the active unit system
+        function getHealthyWeightRange(heightM, units) {
+            const minKg = 18.5 * heightM * heightM;
+            const maxKg = 24.9 * heightM * heightM;
+            if (units === 'imperial') {
+                const minLb = minKg * 2.20462;
+                const maxLb = maxKg * 2.20462;
+                return `${minLb.toFixed(1)}–${maxLb.toFixed(1)} lb`;
+            }
+            return `${minKg.toFixed(1)}–${maxKg.toFixed(1)} kg`;
+        }
+
+        function updateUnitFields() {
+            const isMetric = state.units === 'metric';
+            document.getElementById('weightLabel').textContent = isMetric ? 'Weight (kg)' : 'Weight (lb)';
+            document.getElementById('heightMetricField').style.display = isMetric ? '' : 'none';
+            document.getElementById('heightImperialField').style.display = isMetric ? 'none' : '';
+        }
+
+        function getWeightKg() {
+            const weight = parseFloat(state.weight);
+            if (isNaN(weight)) return null;
+            return state.units === 'imperial' ? weight / 2.20462 : weight;
+        }
+
+        function getHeightM() {
+            if (state.units === 'imperial') {
+                const ft = parseFloat(state.heightFt);
+                const inch = parseFloat(state.heightIn) || 0;
+                if (isNaN(ft) && isNaN(parseFloat(state.heightIn))) return null;
+                const totalIn = (isNaN(ft) ? 0 : ft) * 12 + inch;
+                return totalIn * 0.0254;
+            }
+            const cm = parseFloat(state.heightCm);
+            if (isNaN(cm)) return null;
+            return cm / 100;
+        }
+
+        function validateInputs(weightKg, heightM) {
+            if (weightKg === null || heightM === null) {
+                return 'Enter both weight and height';
+            }
+            if (weightKg <= 0) {
+                return 'Weight must be greater than 0';
+            }
+            if (heightM <= 0) {
+                return 'Height must be greater than 0';
+            }
+            if (weightKg > 500) {
+                return 'Enter a realistic weight';
+            }
+            if (heightM > 2.75) {
+                return 'Enter a realistic height';
+            }
+            return null;
+        }
+
+        function updateGauge(bmi) {
+            const gaugeContainer = document.getElementById('gaugeContainer');
+            const marker = document.getElementById('gaugeMarker');
+            gaugeContainer.style.display = '';
+
+            // Gauge spans 15 to 40+, matching the segment widths in the markup
+            const clamped = Math.min(Math.max(bmi, 15), 40);
+            const percent = ((clamped - 15) / (40 - 15)) * 100;
+            marker.style.left = `${percent}%`;
+        }
+
+        function performCalculation() {
+            const resultEl = document.getElementById('resultValue');
+            const categoryEl = document.getElementById('resultCategory');
+            const rangeEl = document.getElementById('resultRange');
+            const errorEl = document.getElementById('errorMsg');
+            const gaugeContainer = document.getElementById('gaugeContainer');
+
+            const weightKg = getWeightKg();
+            const heightM = getHeightM();
+            const error = validateInputs(weightKg, heightM);
+
+            resultEl.className = 'result-value';
+
+            if (error) {
+                resultEl.textContent = '-';
+                categoryEl.textContent = '';
+                rangeEl.textContent = '';
+                errorEl.textContent = error;
+                gaugeContainer.style.display = 'none';
+                return;
+            }
+
+            errorEl.textContent = '';
+
+            const bmi = weightKg / (heightM * heightM);
+            const category = getCategory(bmi);
+
+            resultEl.textContent = bmi.toFixed(1);
+            resultEl.classList.add(category.className);
+            categoryEl.textContent = category.label;
+            categoryEl.className = `result-category ${category.className}`;
+            rangeEl.textContent = `Healthy weight range for this height: ${getHealthyWeightRange(heightM, state.units)}`;
+
+            updateGauge(bmi);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            updateUnitFields();
+
+            document.querySelector(`input[name="units"][value="${state.units}"]`).checked = true;
+            document.getElementById('weightInput').value = state.weight;
+            document.getElementById('heightCmInput').value = state.heightCm;
+            document.getElementById('heightFtInput').value = state.heightFt;
+            document.getElementById('heightInInput').value = state.heightIn;
+
+            document.querySelectorAll('input[name="units"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    state.units = e.target.value;
+                    updateUnitFields();
+                    saveState();
+                    performCalculation();
+                });
+            });
+
+            document.getElementById('weightInput').addEventListener('input', (e) => {
+                state.weight = e.target.value;
+                saveState();
+                performCalculation();
+            });
+
+            document.getElementById('heightCmInput').addEventListener('input', (e) => {
+                state.heightCm = e.target.value;
+                saveState();
+                performCalculation();
+            });
+
+            document.getElementById('heightFtInput').addEventListener('input', (e) => {
+                state.heightFt = e.target.value;
+                saveState();
+                performCalculation();
+            });
+
+            document.getElementById('heightInInput').addEventListener('input', (e) => {
+                state.heightIn = e.target.value;
+                saveState();
+                performCalculation();
+            });
+
+            performCalculation();
+        });
+    </script>
+</body>
+</html>
