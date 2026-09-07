@@ -3,13 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'none';
+                   script-src 'self' 'unsafe-inline';
+                   style-src 'self' 'unsafe-inline';
+                   img-src 'self' data: blob:;
+                   connect-src 'none';">
     <title>PDF Size Reducer</title>
     <link rel="shortcut icon" type="image/png" href="favicon.png">
-    <link rel="preconnect" href="https://cdn.jsdelivr.net">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="vendor/@picocss/pico@2.1.1/pico.min.css">
     <link rel="stylesheet" href="common-styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="vendor/pdfjs-dist@3.11.174/pdf.min.js"></script>
+    <script src="vendor/pdf-lib@1.17.1/pdf-lib.min.js"></script>
     <style>
         .upload-area {
             border: 2px dashed var(--pico-muted-border-color);
@@ -233,7 +238,7 @@
 
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc =
-            'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+            'vendor/pdfjs-dist@3.11.174/pdf.worker.min.js';
 
         const MAX_FILE_SIZE = 100 * 1024 * 1024;
         const LARGE_FILE_THRESHOLD = 50 * 1024 * 1024;

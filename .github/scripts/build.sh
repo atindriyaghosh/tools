@@ -72,9 +72,20 @@ else
   echo "  ⚠ prompts/ (directory not found, skipping)"
 fi
 
-# 5. Validate required files exist
+# 5. Copy vendored dependencies
 echo ""
-echo "Step 5: Validating required files..."
+echo "Step 5: Copying vendor directory..."
+if [ -d "$REPO_ROOT/vendor" ]; then
+  cp -r "$REPO_ROOT/vendor" "$SITE_DIR/vendor"
+  vendor_count=$(find "$SITE_DIR/vendor" -type f | wc -l)
+  echo "  ✓ vendor/ ($vendor_count files)"
+else
+  echo "  ⚠ vendor/ (directory not found, skipping)"
+fi
+
+# 6. Validate required files exist
+echo ""
+echo "Step 6: Validating required files..."
 required_files=(
   "index.html"
   "CNAME"
@@ -89,7 +100,7 @@ for file in "${required_files[@]}"; do
   echo "  ✓ $file"
 done
 
-# 6. Print summary
+# 7. Print summary
 echo ""
 echo "✓ Build complete!"
 echo ""

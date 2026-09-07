@@ -3,11 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'none';
+                   script-src 'self' 'unsafe-inline';
+                   style-src 'self' 'unsafe-inline';
+                   img-src 'self' data: blob:;
+                   connect-src 'none';">
     <title>JSON/XML/YAML Converter</title>
     <link rel="shortcut icon" type="image/png" href="favicon.png">
-    <link rel="preconnect" href="https://cdn.jsdelivr.net">
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <link rel="stylesheet" href="vendor/@picocss/pico@2.1.1/pico.min.css">
     <link rel="stylesheet" href="common-styles.css">
     <style>
         .format-row {
@@ -149,7 +153,7 @@
         <p style="margin-top:1rem"><a href="index.html" class="back-link">← Back to Tools</a></p>
     </main>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <script src="vendor/js-yaml@4.1.0/js-yaml.min.js"></script>
     <script>
         // DOM Elements
         const sourceFormatEl = document.getElementById('sourceFormat');
