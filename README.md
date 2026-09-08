@@ -47,7 +47,7 @@ This repository contains **22 standalone HTML tools** for common tasks like PDF 
 
 ## Tech Stack
 
-- **Styling**: [Pico CSS](https://picocss.com/) via CDN
+- **Styling**: [Pico CSS](https://picocss.com/)
 - **JavaScript**: Vanilla JS only, no frameworks
 - **Deployment**: GitHub Pages
 
