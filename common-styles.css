@@ -22,6 +22,23 @@ a.back-link:hover {
     color: #5b7dc6;
 }
 
+/* Homepage link */
+.home-link {
+    text-align: right;
+    margin-bottom: 0.5rem;
+}
+
+.home-link a {
+    font-size: 0.75rem;
+    color: var(--pico-muted-color);
+    text-decoration: none;
+}
+
+.home-link a:hover {
+    color: #6b8dd6;
+    text-decoration: underline;
+}
+
 /* Button styling */
 button {
     background-color: #6b8dd6;
