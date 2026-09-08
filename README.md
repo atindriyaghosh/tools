@@ -8,7 +8,7 @@ This repository contains **22 standalone HTML tools** for common tasks like PDF 
 
 ## Current Tools
 
-**Browse all tools at [atindriyaghosh.com](https://atindriyaghosh.com)**
+**Browse all tools at [tools.atindriyaghosh.com](https://tools.atindriyaghosh.com)**
 
 ### AI Tools
 - **AI Landscape Explorer** - Interactive exploration of AI development tools and concepts with AI-generated insights and web search
